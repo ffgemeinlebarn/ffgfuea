@@ -36,8 +36,8 @@
       <mat-card-content>
         <mat-form-field>
           <mat-label>Personen</mat-label>
-          <mat-select [(ngModel)]="newEreignis.personen" [compareWith]="stammdaten.compareById" multiple>
-            @for (person of stammdaten.personen; track person) {
+          <mat-select [(ngModel)]="newEreignis.personen" [compareWith]="compareById" multiple>
+            @for (person of data.personen(); track person.id) {
               <mat-option [value]="person">{{ person.vorname }} {{ person.nachname }}</mat-option>
             }
           </mat-select>
@@ -58,7 +58,7 @@
     </mat-card>
   </div>
   <div class="start">
-    <button mat-raised-button color="warn" (click)="createEreignis(newEreignis)">
+    <button mat-raised-button color="warn" (click)="createEreignis()">
       <span>Start </span>
       <mat-icon>east</mat-icon>
     </button>

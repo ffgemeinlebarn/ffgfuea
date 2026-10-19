@@ -1,32 +1,19 @@
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { SharedModule } from '../../shared.module';
+import { TestBed } from '@angular/core/testing';
+import { createFeuerwehr, createFuellung } from 'src/app/testing/test-data';
 import { FuellungItemComponent } from './fuellung-item.component';
-import { provideHttpClient, withInterceptorsFromDi, withXhr } from '@angular/common/http';
 
 describe('FuellungItemComponent', () =>
 {
-    let component: FuellungItemComponent;
-    let fixture: ComponentFixture<FuellungItemComponent>;
-
-    beforeEach(async () =>
+    it('zeigt Feuerwehr, Flasche und Uhrzeit', async () =>
     {
-        await TestBed.configureTestingModule({
-    imports: [SharedModule, FuellungItemComponent],
-    providers: [provideHttpClient(withXhr(), withInterceptorsFromDi()), provideHttpClientTesting()]
-})
-            .compileComponents();
-    });
+        const flasche = createFeuerwehr(1, ['11111']).flaschen[0];
+        const fixture = TestBed.createComponent(FuellungItemComponent);
+        fixture.componentRef.setInput('fuellung', createFuellung(flasche, new Date(2026, 0, 1, 14, 3, 9)));
+        await fixture.whenStable();
 
-    beforeEach(() =>
-    {
-        fixture = TestBed.createComponent(FuellungItemComponent);
-        component = fixture.componentInstance;
-        fixture.detectChanges();
-    });
-
-    it('should create', () =>
-    {
-        expect(component).toBeTruthy();
+        const text = fixture.nativeElement.textContent;
+        expect(text).toContain('FF 1 - Nr. 1');
+        expect(text).toContain('Barcode: 11111');
+        expect(text).toContain('14:03:09 Uhr');
     });
 });

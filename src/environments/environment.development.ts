@@ -3,5 +3,7 @@ export const environment = {
     database: {
         name: 'ffgfuea'
     },
+    // Fake-Daten statt des lokalen MAT Sync-Services verwenden
+    fakeSyncApi: true,
     version: 'Development'
 };

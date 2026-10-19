@@ -3,7 +3,7 @@
   <mat-form-field appearance="fill">
     <mat-label>Feuerwehr</mat-label>
     <mat-select [(ngModel)]="selectedFeuerwehr" (ngModelChange)="feuerwehrChanged()">
-      @for (feuerwehr of stammdaten.feuerwehren; track feuerwehr) {
+      @for (feuerwehr of data.feuerwehren(); track feuerwehr.feuerwehrNummer) {
         <mat-option [value]="feuerwehr">{{ feuerwehr.name }} ({{ feuerwehr.feuerwehrNummer }})</mat-option>
       }
     </mat-select>

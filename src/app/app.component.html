@@ -1,11 +1,11 @@
-@if (sync.progressActive) {
+@if (sync.progressActive()) {
   <div class="progress">
     <mat-spinner></mat-spinner>
-    <h2>{{ sync.progressMessage }}</h2>
+    <h2>{{ sync.progressMessage() }}</h2>
   </div>
 }
 
-@if (settings.testMode) {
+@if (settings.testMode()) {
   <mat-toolbar color="warn">
     <mat-toolbar-row>
       <h3>Der Testmodus ist aktiviert! Die Daten sind nicht produktiv, es kannn alles ausprobiert werden!</h3>

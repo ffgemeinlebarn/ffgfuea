@@ -1,5 +1,5 @@
 <h1 class="page-title">Ereignisse</h1>
-@for (ereignis of ereignisse.list; track ereignis) {
+@for (ereignis of data.ereignisse(); track ereignis.id) {
 <mat-expansion-panel>
     <mat-expansion-panel-header>
         <mat-panel-title>{{ ereignis?.type == EreignisType.Uebung ? 'Übung' : 'Einsatz' }}{{ ereignis?.ort ? ' in '+
@@ -35,7 +35,7 @@
                     <tr>
                         <th>Füllersonal:</th>
                         <td>
-                            @for (person of ereignis.personen; track person; let last = $last) {
+                            @for (person of ereignis.personen; track person.id; let last = $last) {
                             <span>{{ person.vorname }} {{ person.nachname }}{{ last ? '' : ', ' }}</span>
                             }
                         </td>
@@ -50,7 +50,7 @@
         <div class="fuellungen">
             <h2>Füllungen</h2>
             <mat-list>
-                @for (fuellung of ereignis?.fuellungen; track fuellung) {
+                @for (fuellung of ereignis.fuellungen; track $index) {
                 <ffg-fuellung-item [fuellung]="fuellung"></ffg-fuellung-item>
                 }
             </mat-list>

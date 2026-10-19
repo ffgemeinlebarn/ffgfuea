@@ -2,6 +2,12 @@
 
 FF Gemeinlebarn Füllapplikation
 
+## Entwicklung
+
+- `npm start` – Entwicklungsserver. Verwendet Beispieldaten statt des lokalen MAT Sync-Services (`fakeSyncApi` in `src/environments/environment.development.ts`).
+- `npm test` – Unit-Tests mit Vitest
+- `npm run build` – Produktions-Build nach `dist/ffgfuea/browser`
+
 ## Import
 
 ```json

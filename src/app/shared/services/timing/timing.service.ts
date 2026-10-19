@@ -1,60 +1,36 @@
-import { Injectable } from '@angular/core';
+import { Injectable, computed, signal } from '@angular/core';
+
+const pad = (value: number) => String(value).padStart(2, '0');
 
 @Injectable({
     providedIn: 'root'
 })
 export class TimingService
 {
-    public currentTime: string = '';
-    public ereignisTime = null;
-    private ereignisStart: Date = null;
+    private readonly now = signal(new Date());
+
+    public readonly ereignisStart = signal<Date>(null);
+
+    public readonly currentTime = computed(() =>
+    {
+        const now = this.now();
+        return `${pad(now.getHours())} : ${pad(now.getMinutes())} : ${pad(now.getSeconds())}`;
+    });
+
+    public readonly ereignisDuration = computed(() =>
+    {
+        const start = this.ereignisStart();
+        if (!start) return null;
+
+        const diffMinutes = Math.floor((this.now().getTime() - start.getTime()) / 1000 / 60);
+        return {
+            hours: Math.floor(diffMinutes / 60),
+            minutes: diffMinutes % 60
+        };
+    });
 
     constructor()
     {
-        setInterval(() => this.run(), 1000);
-    }
-
-    public setEreignisStartTime(start: Date)
-    {
-        this.ereignisStart = start;
-    }
-
-    private run()
-    {
-        const time = new Date();
-
-        let hours = time.getHours().toString();
-        let minutes = time.getMinutes().toString();
-        let seconds = time.getSeconds().toString();
-
-        if (this.ereignisStart)
-        {
-            const diff = time.getTime() - this.ereignisStart.getTime();
-
-            const diffSeconds = Math.floor(diff / 1000);
-            const diffHours = Math.floor(diffSeconds / 60 / 60);
-            const diffMinutes = Math.floor(diffSeconds / 60) - (diffHours * 60);
-            this.ereignisTime = {
-                hours: diffHours,
-                minutes: diffMinutes
-            };
-        }
-
-        if (hours.length < 2)
-        {
-            hours = '0' + hours;
-        }
-
-        if (minutes.length < 2)
-        {
-            minutes = '0' + minutes;
-        }
-
-        if (seconds.length < 2)
-        {
-            seconds = '0' + seconds;
-        }
-
-        this.currentTime = hours + ' : ' + minutes + ' : ' + seconds;
+        setInterval(() => this.now.set(new Date()), 1000);
     }
 }

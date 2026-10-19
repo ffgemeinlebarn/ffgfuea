@@ -1,16 +1,15 @@
-import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { IEreignis } from '../../interfaces/i-ereignis';
 import { IFeuerwehr } from '../../interfaces/i-feuerwehr';
 import { IFlasche } from '../../interfaces/i-flasche';
 import { IPerson } from '../../interfaces/i-person';
 import { MangelType } from '../../models/mangel-type/mangel-type';
+import { DataService, compareById } from '../../services/data/data.service';
 import { MaengelService } from '../../services/maengel/maengel.service';
-import { StammdatenService } from '../../services/stammdaten/stammdaten.service';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatSelect, MatOption } from '@angular/material/select';
 import { FormsModule } from '@angular/forms';
-
 import { MatInput } from '@angular/material/input';
 import { MatButton } from '@angular/material/button';
 
@@ -18,28 +17,21 @@ import { MatButton } from '@angular/material/button';
     selector: 'ffg-add-mangel',
     templateUrl: './add-mangel.component.html',
     styleUrls: ['./add-mangel.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatFormField, MatLabel, MatSelect, FormsModule, MatOption, MatInput, MatButton]
 })
-export class AddMangelComponent implements OnInit
+export class AddMangelComponent
 {
-    dialog = inject<MatDialogRef<AddMangelComponent>>(MatDialogRef);
+    private dialog = inject<MatDialogRef<AddMangelComponent>>(MatDialogRef);
     data = inject<IEreignis>(MAT_DIALOG_DATA);
-    stammdaten = inject(StammdatenService);
-    private maengelService = inject(MaengelService);
+    stammdaten = inject(DataService);
 
-    public mangelTypes: Array<MangelType> = [];
-
+    public compareById = compareById;
+    public mangelTypes: Array<MangelType> = inject(MaengelService).mangelTyps;
     public selectedFeuerwehr: IFeuerwehr;
     public selectedFlasche: IFlasche;
     public selectedPerson: IPerson;
     public selectedMangelType: MangelType;
     public selectedMangelNote = '';
-
-    public ngOnInit(): void
-    {
-        this.mangelTypes = this.maengelService.mangelTyps;
-    }
 
     public feuerwehrChanged()
     {

@@ -4,7 +4,7 @@
   <mat-form-field appearance="fill">
     <mat-label>Feuerwehr</mat-label>
     <mat-select [(ngModel)]="selectedFeuerwehr" (ngModelChange)="feuerwehrChanged()">
-      @for (feuerwehr of stammdaten.feuerwehren; track feuerwehr) {
+      @for (feuerwehr of stammdaten.feuerwehren(); track feuerwehr) {
         <mat-option [value]="feuerwehr">{{ feuerwehr.name }}</mat-option>
       }
     </mat-select>
@@ -33,8 +33,8 @@
   <h2>Festgestellt von</h2>
   <mat-form-field appearance="fill">
     <mat-label>Person</mat-label>
-    <mat-select [(ngModel)]="selectedPerson" [compareWith]="stammdaten.compareById">
-      @for (person of stammdaten.personen; track person) {
+    <mat-select [(ngModel)]="selectedPerson" [compareWith]="compareById">
+      @for (person of stammdaten.personen(); track person) {
         <mat-option [value]="person">{{ person.vorname}} {{ person.nachname }}</mat-option>
       }
     </mat-select>

@@ -1,9 +1,9 @@
-import { Component, ElementRef, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, DOCUMENT, ElementRef, inject, viewChild } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { EreignisType } from '../../enums/ereignis-type';
-import { EreignisseService } from '../../services/ereignisse/ereignisse.service';
-import { ViewChild } from '@angular/core';
 import { IEreignis } from '../../interfaces/i-ereignis';
+import { IFeuerwehr } from '../../interfaces/i-feuerwehr';
+import { IFuellung } from '../../interfaces/i-fuellung';
 import { MatList, MatListItem } from '@angular/material/list';
 import { DatePipe } from '@angular/common';
 import { MatRipple } from '@angular/material/core';
@@ -11,63 +11,62 @@ import { MatCheckbox } from '@angular/material/checkbox';
 import { FormsModule } from '@angular/forms';
 import { MatButton } from '@angular/material/button';
 
+interface IFeuerwehrFuellungen extends IFeuerwehr
+{
+    fuellungen: Array<IFuellung>;
+}
+
+interface IReport
+{
+    name: string;
+    type: 'gesamt' | 'feuerwehr';
+    data: Array<IFeuerwehrFuellungen>;
+    print: boolean;
+}
+
 @Component({
     selector: 'ffg-print-reports',
     templateUrl: './print-reports.component.html',
     styleUrls: ['./print-reports.component.scss'],
-    providers: [
-        { provide: Window, useValue: window }
-    ],
-    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatList, MatListItem, MatRipple, MatCheckbox, FormsModule, MatButton, DatePipe]
 })
-export class PrintReportsComponent implements OnInit
+export class PrintReportsComponent
 {
-    window = inject(Window);
-    dialog = inject<MatDialogRef<PrintReportsComponent>>(MatDialogRef);
+    private document = inject(DOCUMENT);
+    private dialog = inject<MatDialogRef<PrintReportsComponent>>(MatDialogRef);
     data = inject<IEreignis>(MAT_DIALOG_DATA);
-    ereignisse = inject(EreignisseService);
 
-    @ViewChild('printContent') public printElement: ElementRef;
+    private printElement = viewChild.required<ElementRef<HTMLElement>>('printContent');
 
     public EreignisType = EreignisType;
-    public printedDateTime = null;
+    public printedDateTime = new Date();
+    public reports: Array<IReport> = this.createReports();
 
-    public fuellungenPerFeuerwehr = [];
-    public reports = [];
-
-    public async ngOnInit(): Promise<void>
+    private createReports(): Array<IReport>
     {
-        this.printedDateTime = new Date();
+        const fuellungenPerFeuerwehr = new Map<number, IFeuerwehrFuellungen>();
 
-        this.data.fuellungen.forEach((fuellung) =>
+        for (const fuellung of this.data.fuellungen)
         {
-            if (!this.fuellungenPerFeuerwehr.find(ff => ff.feuerwehrNummer === fuellung.flasche.feuerwehr.feuerwehrNummer))
+            const feuerwehr = fuellung.flasche.feuerwehr;
+            if (!fuellungenPerFeuerwehr.has(feuerwehr.feuerwehrNummer))
             {
-                this.fuellungenPerFeuerwehr.push(fuellung.flasche.feuerwehr);
+                fuellungenPerFeuerwehr.set(feuerwehr.feuerwehrNummer, { ...feuerwehr, fuellungen: [] });
             }
-        });
+            fuellungenPerFeuerwehr.get(feuerwehr.feuerwehrNummer).fuellungen.push(fuellung);
+        }
 
-        this.fuellungenPerFeuerwehr.forEach(feuerwehr => feuerwehr.fuellungen = this.data.fuellungen.filter(fuellung => fuellung.flasche.feuerwehr.feuerwehrNummer === feuerwehr.feuerwehrNummer));
+        const feuerwehren = [...fuellungenPerFeuerwehr.values()];
 
-        this.reports = [
-            {
-                name: 'Gesamtbericht',
-                type: 'gesamt',
-                data: this.fuellungenPerFeuerwehr,
-                print: true
-            }
-        ];
-
-        this.fuellungenPerFeuerwehr.forEach(feuerwehr =>
-        {
-            this.reports.push({
+        return [
+            { name: 'Gesamtbericht', type: 'gesamt', data: feuerwehren, print: true },
+            ...feuerwehren.map((feuerwehr): IReport => ({
                 name: `Bericht für die Feuerwehr ${feuerwehr.name}`,
                 type: 'feuerwehr',
                 data: [feuerwehr],
                 print: true
-            });
-        });
+            }))
+        ];
     }
 
     public close(): void
@@ -77,13 +76,8 @@ export class PrintReportsComponent implements OnInit
 
     public print()
     {
-        this.window.document.body.innerHTML = this.printElement.nativeElement.innerHTML;
-        this.window.print();
-        this.window.location.reload();
-    }
-
-    public onReportPrintBoolChange(change: any)
-    {
-        console.log(change);
+        this.document.body.innerHTML = this.printElement().nativeElement.innerHTML;
+        this.document.defaultView.print();
+        this.document.defaultView.location.reload();
     }
 }

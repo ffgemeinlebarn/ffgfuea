@@ -13,8 +13,8 @@
   </mat-form-field>
   <mat-form-field appearance="fill">
     <mat-label>Personen</mat-label>
-    <mat-select [(ngModel)]="ereignis.personen" [compareWith]="stammdaten.compareById" multiple>
-      @for (person of stammdaten.personen; track person) {
+    <mat-select [(ngModel)]="ereignis.personen" [compareWith]="compareById" multiple>
+      @for (person of data.personen(); track person.id) {
         <mat-option [value]="person">{{ person.vorname }} {{ person.nachname }}</mat-option>
       }
     </mat-select>

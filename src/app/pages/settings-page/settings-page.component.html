@@ -3,7 +3,7 @@
   <button mat-raised-button (click)="save()">Speichern</button>
 </h1>
 
-@if (showTestmodusSetting) {
+@if (showTestmodusSetting()) {
   <mat-card>
     <h2>Test Modus</h2>
     <p>Um in Schulungen nicht mit den originalen Daten zu arbeiten und den Datenbestand nicht zu verunreinigen, kann
@@ -31,7 +31,7 @@
       <input matInput placeholder="URL zum Sync-Service" [(ngModel)]="settings.syncUrl">
     </mat-form-field>
   </div>
-  <p>Stand des MAT Sync Datensatzes: {{ settings.syncLastEdit }}</p>
+  <p>Stand des MAT Sync Datensatzes: {{ settings.syncLastEdit() }}</p>
 </mat-card>
 
 <mat-card>
@@ -48,7 +48,7 @@
 
   <mat-card>
     <h2>Export</h2>
-    <samp>{{ exportedData | json }}</samp>
+    <samp>{{ exportedData() | json }}</samp>
     <br>
       <button mat-raised-button (click)="export()">Daten-Export durchführen</button>
     </mat-card>

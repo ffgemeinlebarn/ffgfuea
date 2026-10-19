@@ -1,23 +1,36 @@
 import { TestBed } from '@angular/core/testing';
-import { RouterTestingModule } from '@angular/router/testing';
+import { provideRouter } from '@angular/router';
 import { AppComponent } from './app.component';
+import { SettingsService } from './shared/services/settings/settings.service';
+import { SyncApi } from './shared/services/sync-api/sync-api';
 
 describe('AppComponent', () =>
 {
-    beforeEach(async () =>
+    beforeEach(() =>
     {
-        await TestBed.configureTestingModule({
-    imports: [
-        RouterTestingModule,
-        AppComponent
-    ]
-}).compileComponents();
+        TestBed.configureTestingModule({
+            providers: [
+                provideRouter([]),
+                { provide: SyncApi, useValue: { getLastEdit: vi.fn(async () => ''), getFeuerwehr: vi.fn() } }
+            ]
+        });
     });
 
-    it('should create the app', () =>
+    it('zeigt die Navigation und startet die Synchronisierung', async () =>
     {
         const fixture = TestBed.createComponent(AppComponent);
-        const app = fixture.componentInstance;
-        expect(app).toBeTruthy();
+        await fixture.whenStable();
+
+        expect(fixture.nativeElement.textContent).toContain('Einsätze & Übungen');
+        expect(TestBed.inject(SyncApi).getLastEdit).toHaveBeenCalled();
+    });
+
+    it('zeigt den Hinweis im Testmodus', async () =>
+    {
+        const fixture = TestBed.createComponent(AppComponent);
+        TestBed.inject(SettingsService).testMode.set(true);
+        await fixture.whenStable();
+
+        expect(fixture.nativeElement.textContent).toContain('Der Testmodus ist aktiviert!');
     });
 });

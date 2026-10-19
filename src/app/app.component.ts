@@ -1,6 +1,5 @@
-import { Component, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { SettingsService } from './shared/services/settings/settings.service';
-import { StammdatenService } from './shared/services/stammdaten/stammdaten.service';
 import { SyncService } from './shared/services/sync/sync.service';
 
 import { MatProgressSpinner } from '@angular/material/progress-spinner';
@@ -13,14 +12,12 @@ import { MatIcon } from '@angular/material/icon';
     selector: 'ffg-root',
     templateUrl: './app.component.html',
     styleUrls: ['./app.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatProgressSpinner, MatToolbar, MatToolbarRow, MatButton, RouterLink, MatIcon, RouterOutlet]
 })
 export class AppComponent
 {
     settings = inject(SettingsService);
     sync = inject(SyncService);
-    stammdaten = inject(StammdatenService);
 
     constructor()
     {
