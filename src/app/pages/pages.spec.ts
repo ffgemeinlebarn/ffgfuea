@@ -123,4 +123,35 @@ describe('Seiten', () =>
         await fixture.whenStable();
         expect(fixture.nativeElement.textContent).not.toContain('Test Modus');
     });
+
+    it('Einstellungen zeigen die Zusammenfassung einer ausgewählten Importdatei', async () =>
+    {
+        const fixture = await render(SettingsPageComponent);
+        const backup = {
+            format: 'ffgfuea-export',
+            version: 1,
+            exportedAt: '2026-10-20T08:00:00.000Z',
+            feuerwehren: [feuerwehr],
+            personen: [],
+            ereignisse: [createEreignis({ datetimeEnd: new Date(), fuellungen: [createFuellung(feuerwehr.flaschen[0])] })]
+        };
+
+        await fixture.componentInstance.selectFile(new File([JSON.stringify(backup)], 'sicherung.json'));
+        await fixture.whenStable();
+
+        expect(fixture.nativeElement.textContent).toContain('1 Feuerwehren mit 2 Flaschen');
+        expect(fixture.nativeElement.textContent).toContain('1 Einsätze & Übungen mit 1 Füllungen');
+        expect(fixture.nativeElement.textContent).toContain('Import durchführen');
+    });
+
+    it('Einstellungen zeigen Probleme einer ungültigen Importdatei', async () =>
+    {
+        const fixture = await render(SettingsPageComponent);
+
+        await fixture.componentInstance.selectFile(new File(['{}'], 'falsch.json'));
+        await fixture.whenStable();
+
+        expect(fixture.nativeElement.textContent).toContain('falsch.json kann nicht importiert werden');
+        expect(fixture.nativeElement.textContent).not.toContain('Import durchführen');
+    });
 });
