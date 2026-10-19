@@ -2,63 +2,70 @@ name: Build & Deploy
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
+    tags: [ 'v*' ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      clean_slate:
+        description: 'Vor dem Upload ALLE Dateien am Server löschen (z. B. beim ersten Deploy, um alte Builds zu entfernen)'
+        type: boolean
+        default: false
 
 jobs:
   build:
-    name: Build & Create Artifact
+    name: Test & Build
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Cache node modules
-        uses: actions/cache@v1
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+        uses: actions/checkout@v7
 
       - name: Use Node.js
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v7
         with:
-          node-version: 12.x
-
-      - name: Install Dependencies
-        run: npm i -g @angular/cli
+          node-version: 24
+          cache: npm
 
       - name: Install Dependencies
         run: npm ci
 
+      - name: Test
+        run: npx ng test --watch=false
+
       - name: Build
-        run: ng build --prod
-      
+        run: npx ng build
+
       - name: Upload Artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v7
         with:
           name: FFGFUEA
-          path: ./dist/ffgfuea/*
+          path: dist/ffgfuea/browser/
+          include-hidden-files: true
 
   deploy:
     name: Deploy via FTP
     runs-on: ubuntu-latest
-    needs: [build]
-    
+    needs: [ build ]
+    # Nur Release-Tags (v*) oder manuell gestartet von main bzw. einem Tag
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    environment: production
+
     steps:
-      - uses: actions/download-artifact@v2
+      - name: Download Artifact
+        uses: actions/download-artifact@v8
         with:
           name: FFGFUEA
-          path: ./
-      
+          path: deploy
+
+      # Lädt nur geänderte Dateien hoch und entfernt veraltete; der Stand liegt in .ftp-deploy-sync-state.json am Server
       - name: Deploy in Stage 'Production' via FTP
-        uses: JakobVesely/ftp-action-delete-and-upload@master
+        uses: SamKirkland/FTP-Deploy-Action@110f9186c050f71550953127052e77650219c287 # v4.4.0
         with:
-          host: ${{ secrets.FTP_DEPLOY_HOST }}
-          user: ${{ secrets.FTP_DEPLOY_USERNAME }}
+          server: ${{ secrets.FTP_DEPLOY_HOST }}
+          username: ${{ secrets.FTP_DEPLOY_USERNAME }}
           password: ${{ secrets.FTP_DEPLOY_PASSWORD }}
-          localDir: "."
-          remoteDir: "."
+          local-dir: ./deploy/
+          server-dir: ./
+          dangerous-clean-slate: ${{ github.event.inputs.clean_slate == 'true' }}

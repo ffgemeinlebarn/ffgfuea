@@ -8,6 +8,15 @@ FF Gemeinlebarn Füllapplikation
 - `npm test` – Unit-Tests mit Vitest
 - `npm run build` – Produktions-Build nach `dist/ffgfuea/browser`
 
+## Release
+
+Pull Requests und Pushes auf `main` werden von GitHub Actions getestet und gebaut. Deployt wird nur ein Release:
+
+1. Version in `package.json` und `src/environments/environment.ts` anheben
+2. Tag pushen, z. B. `git tag v1.4.0 && git push origin v1.4.0`
+
+Alternativ in GitHub unter *Actions → Build & Deploy → Run workflow* von `main` manuell starten. Die Option „Clean slate“ löscht vorher alle Dateien am Server (z. B. beim ersten Deploy, um alte Builds zu entfernen).
+
 ## Import
 
 ```json
