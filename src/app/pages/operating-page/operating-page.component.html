@@ -1,10 +1,10 @@
-@if (operating.ereignis) {
+@if (operating.ereignis(); as ereignis) {
   <mat-grid-list cols="12" rowHeight="25%" gutterSize="0px">
     <mat-grid-tile colspan="2" rowspan="1">
       <div class="tile-wrapper">
         <mat-card>
           <div class="card-wrapper card-wrapper--center">
-            <h1>{{ operating.ereignis?.fuellungen?.length }}</h1>
+            <h1>{{ ereignis.fuellungen.length }}</h1>
             <p>Gesamtanzahl der gefüllten Flaschen</p>
           </div>
         </mat-card>
@@ -14,7 +14,7 @@
       <div class="tile-wrapper">
         <mat-card>
           <div class="card-wrapper card-wrapper--center">
-            <h1>{{ operating.ereignisAnzahlFeuerwehren }}</h1>
+            <h1>{{ operating.ereignisAnzahlFeuerwehren() }}</h1>
             <p>Feuerwehren</p>
           </div>
         </mat-card>
@@ -24,8 +24,8 @@
       <div class="tile-wrapper">
         <mat-card>
           <div class="card-wrapper card-wrapper--center">
-            <h1>{{ timing.ereignisTime?.hours }} h {{ timing.ereignisTime?.minutes }} m</h1>
-            <p>{{ operating.ereignis?.type == 'einsatz' ? 'Im Einsatz' : 'In Einsatzübung' }} seit</p>
+            <h1>{{ timing.ereignisDuration()?.hours }} h {{ timing.ereignisDuration()?.minutes }} m</h1>
+            <p>{{ ereignis.type == 'einsatz' ? 'Im Einsatz' : 'In Einsatzübung' }} seit</p>
           </div>
         </mat-card>
       </div>
@@ -34,7 +34,7 @@
       <div class="tile-wrapper">
         <mat-card disabled>
           <div class="card-wrapper card-wrapper--center">
-            <h1>{{ operating.ereignisAnzahlMaengel }}</h1>
+            <h1>{{ operating.ereignisAnzahlMaengel() }}</h1>
             <p>ausgestellte Mängel</p>
           </div>
         </mat-card>
@@ -44,7 +44,7 @@
       <div class="tile-wrapper">
         <mat-card>
           <div class="card-wrapper card-wrapper--center">
-            <h1>{{ timing.currentTime }}</h1>
+            <h1>{{ timing.currentTime() }}</h1>
             <p>Akutelle Uhrzeit</p>
           </div>
         </mat-card>
@@ -87,7 +87,7 @@
           <div class="card-wrapper">
             <mat-card-title>Zuletzt gefüllte Flaschen</mat-card-title>
             <mat-list class="fuellungen">
-              @for (fuellung of operating.ereignis?.fuellungen; track fuellung) {
+              @for (fuellung of ereignis.fuellungen; track fuellung) {
                 <ffg-fuellung-item mat-ripple [fuellung]="fuellung" (click)="openFuellungContext(fuellung)"></ffg-fuellung-item>
               }
             </mat-list>
@@ -99,10 +99,10 @@
       <div class="tile-wrapper">
         <mat-card>
           <div class="card-wrapper">
-            <h1>{{ operating.ereignis?.type == 'einsatz' ? 'Aktueller Einsatz' : 'Aktuelle Übung' }}</h1>
-            <p>Beginn: <strong>{{ $safeNavigationMigration(operating.ereignis?.datetimeStart) | date: 'dd.MM.yyyy' }}</strong></p>
-            <p>Ort: <strong>{{ operating.ereignis?.ort }}</strong></p>
-            <p>Personal: <strong>@for (person of operating.ereignis?.personen; track person; let last = $last) {
+            <h1>{{ ereignis.type == 'einsatz' ? 'Aktueller Einsatz' : 'Aktuelle Übung' }}</h1>
+            <p>Beginn: <strong>{{ ereignis.datetimeStart | date: 'dd.MM.yyyy' }}</strong></p>
+            <p>Ort: <strong>{{ ereignis.ort }}</strong></p>
+            <p>Personal: <strong>@for (person of ereignis.personen; track person.id; let last = $last) {
               <span>{{ person.vorname }} {{ person.nachname }}{{ last ? '' : ', ' }}</span>
             }</strong></p>
             <mat-card-actions class="bearbeiten-button">
@@ -126,23 +126,23 @@
     </mat-grid-tile>
     <mat-grid-tile colspan="4" rowspan="1">
       <div class="tile-wrapper">
-        <mat-card matRipple [ngClass]="{'tile-active': operating.barcodeInputActive}" (click)="toggleScannerInput()">
+        <mat-card matRipple [class.tile-active]="operating.barcodeInputActive()" (click)="toggleScannerInput()">
           <div class="card-wrapper card-wrapper--center input-method">
             <mat-icon>document_scanner</mat-icon>
             <h1>Die Barcodescanner-Eingabe ist
-              <strong>{{ operating.barcodeInputActive ? 'aktiviert' : 'deaktiviert' }}</strong>!</h1>
-              <p [hidden]="!operating.barcodeInputActive">Der Barcode-Scanner kann verwendet werden</p>
-              <p [hidden]="operating.barcodeInputActive">Hier drücken, um die Scanner-Eingabe zu verwenden</p>
+              <strong>{{ operating.barcodeInputActive() ? 'aktiviert' : 'deaktiviert' }}</strong>!</h1>
+              <p [hidden]="!operating.barcodeInputActive()">Der Barcode-Scanner kann verwendet werden</p>
+              <p [hidden]="operating.barcodeInputActive()">Hier drücken, um die Scanner-Eingabe zu verwenden</p>
             </div>
           </mat-card>
         </div>
       </mat-grid-tile>
       <mat-grid-tile colspan="2" rowspan="1">
         <div class="tile-wrapper">
-          <mat-card matRipple [ngClass]="{'tile-active': operating.confirmFuellungActive}" (click)="toggleConfirmFuellung()">
+          <mat-card matRipple [class.tile-active]="operating.confirmFuellungActive()" (click)="toggleConfirmFuellung()">
             <div class="card-wrapper card-wrapper--center input-method">
               <mat-icon>check_circle</mat-icon>
-              <h1>Eingabebestätigung ist <strong>{{ operating.confirmFuellungActive ? 'aktiviert' : 'deaktiviert' }}</strong>!</h1>
+              <h1>Eingabebestätigung ist <strong>{{ operating.confirmFuellungActive() ? 'aktiviert' : 'deaktiviert' }}</strong>!</h1>
             </div>
           </mat-card>
         </div>

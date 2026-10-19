@@ -1,10 +1,8 @@
-import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { SyncService } from 'src/app/shared/services/sync/sync.service';
-import { StammdatenService } from 'src/app/shared/services/stammdaten/stammdaten.service';
+import { DataService } from 'src/app/shared/services/data/data.service';
 import { IFeuerwehr } from 'src/app/shared/interfaces/i-feuerwehr';
-import { IFlasche } from 'src/app/shared/interfaces/i-flasche';
-import { SettingsService } from 'src/app/shared/services/settings/settings.service';
 import { RemoveFeuerwehrComponent } from 'src/app/shared/dialogs/remove-feuerwehr/remove-feuerwehr.component';
 import { IPerson } from 'src/app/shared/interfaces/i-person';
 import { EditPersonComponent } from 'src/app/shared/dialogs/edit-person/edit-person.component';
@@ -22,27 +20,18 @@ import { MatTable, MatColumnDef, MatHeaderCellDef, MatHeaderCell, MatCellDef, Ma
     selector: 'ffg-verwaltung-page',
     templateUrl: './verwaltung-page.component.html',
     styleUrls: ['./verwaltung-page.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatCard, MatFormField, MatLabel, MatInput, FormsModule, MatButton, MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle, MatExpansionPanelDescription, MatIcon, MatTable, MatColumnDef, MatHeaderCellDef, MatHeaderCell, MatCellDef, MatCell, MatHeaderRowDef, MatHeaderRow, MatRowDef, MatRow, DatePipe]
 })
-export class VerwaltungPageComponent implements OnInit
+export class VerwaltungPageComponent
 {
-    dialog = inject(MatDialog);
-    sync = inject(SyncService);
-    stammdaten = inject(StammdatenService);
-    settings = inject(SettingsService);
+    private dialog = inject(MatDialog);
+    private sync = inject(SyncService);
+    data = inject(DataService);
 
     public displayedColumns: string[] = ['karteiNr', 'geraeteNr', 'flaschennummer', 'barcode', 'typenBezeichnung', 'typenInformation', 'lastEdit'];
     public feuerwehrNummerToSync = null;
-
-    public selectedFeuerwehr: IFeuerwehr = null;
-    public selectedFlasche: IFlasche = null;
-
-    public personToAdd: IPerson = {
-        vorname: '',
-        nachname: ''
-    };
-    public async ngOnInit(): Promise<void> { }
+    public readonly vorname = signal('');
+    public readonly nachname = signal('');
 
     public addFeuerwehrToSync(feuerwehrNummer: number)
     {
@@ -54,22 +43,20 @@ export class VerwaltungPageComponent implements OnInit
         this.dialog.open(RemoveFeuerwehrComponent, { width: '500px', data: feuerwehr });
     }
 
-    public addPerson()
+    public async addPerson()
     {
-        this.stammdaten.saveOrCreatePerson(this.personToAdd).then(_ =>
-        {
-            this.personToAdd.vorname = '';
-            this.personToAdd.nachname = '';
-        });
+        await this.data.savePerson({ vorname: this.vorname(), nachname: this.nachname() });
+        this.vorname.set('');
+        this.nachname.set('');
     }
 
     public editPerson(person: IPerson)
     {
-        this.dialog.open(EditPersonComponent, { width: '500px', data: person });
+        this.dialog.open(EditPersonComponent, { width: '500px', data: { ...person } });
     }
 
     public removePerson(person: IPerson)
     {
-        this.stammdaten.removePerson(person);
+        this.data.removePerson(person);
     }
 }

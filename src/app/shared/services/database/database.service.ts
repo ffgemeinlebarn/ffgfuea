@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import Dexie from 'dexie';
+import Dexie, { Table } from 'dexie';
 import { environment } from 'src/environments/environment';
 import { IEreignis } from '../../interfaces/i-ereignis';
 import { IFeuerwehr } from '../../interfaces/i-feuerwehr';
@@ -23,22 +23,22 @@ export class DatabaseService
 
     public refresh()
     {
-        const name = environment.database.name + (this.settings.testMode ? '_test' : '');
+        this.db?.close();
+        const name = environment.database.name + (this.settings.testMode() ? '_test' : '');
         this.db = new Database(name);
     }
 }
 
 class Database extends Dexie
 {
-    public feuerwehren: Dexie.Table<IFeuerwehr, number> | undefined;
-    public maengel: Dexie.Table<IMangel, number> | undefined;
-    public personen: Dexie.Table<IPerson, number> | undefined;
-    public ereignisse: Dexie.Table<IEreignis, number> | undefined;
+    public feuerwehren: Table<IFeuerwehr, number>;
+    public maengel: Table<IMangel, number>;
+    public personen: Table<IPerson, number>;
+    public ereignisse: Table<IEreignis, number>;
 
     constructor(name: string)
     {
         super(name);
-
         this.version(1).stores({
             feuerwehren: '&feuerwehrNummer',
             // maengel: '++id, flascheId, datetime, personId, ereignisId, datetimeFixed',

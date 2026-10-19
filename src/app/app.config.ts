@@ -1,28 +1,22 @@
-import
-    {
-        ApplicationConfig,
-        importProvidersFrom
-    } from '@angular/core';
-import { provideRouter } from '@angular/router';
-
-import { CdkColumnDef } from '@angular/cdk/table';
+import { ApplicationConfig, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideHttpClient, withXhr } from '@angular/common/http';
-import { FormsModule } from '@angular/forms';
-import { MatDialogModule } from '@angular/material/dialog';
-import { BrowserModule } from '@angular/platform-browser';
-import { ServiceWorkerModule } from '@angular/service-worker';
+import { provideRouter } from '@angular/router';
+import { provideServiceWorker } from '@angular/service-worker';
 import { environment } from 'src/environments/environment';
 import { routes } from './app.routes';
-import { SharedModule } from './shared/shared.module';
+import { FakeSyncApi } from './shared/services/sync-api/fake-sync-api';
+import { HttpSyncApi } from './shared/services/sync-api/http-sync-api';
+import { SyncApi } from './shared/services/sync-api/sync-api';
 
 export const appConfig: ApplicationConfig = {
     providers: [
+        provideBrowserGlobalErrorListeners(),
         provideRouter(routes),
         provideHttpClient(withXhr()),
-        importProvidersFrom(SharedModule, BrowserModule, FormsModule, MatDialogModule, ServiceWorkerModule.register('ngsw-worker.js', {
+        provideServiceWorker('ngsw-worker.js', {
             enabled: environment.production,
             registrationStrategy: 'registerWhenStable:30000'
-        })),
-        CdkColumnDef
-    ],
+        }),
+        { provide: SyncApi, useClass: environment.fakeSyncApi ? FakeSyncApi : HttpSyncApi }
+    ]
 };

@@ -1,11 +1,8 @@
-import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { EreignisType } from 'src/app/shared/enums/ereignis-type';
 import { IEreignis } from 'src/app/shared/interfaces/i-ereignis';
-import { IPerson } from 'src/app/shared/interfaces/i-person';
-import { EreignisseService } from 'src/app/shared/services/ereignisse/ereignisse.service';
-import { OperatingService } from 'src/app/shared/services/operating/operating.service';
-import { StammdatenService } from 'src/app/shared/services/stammdaten/stammdaten.service';
+import { DataService, compareById } from 'src/app/shared/services/data/data.service';
 import { MatCard, MatCardHeader, MatCardTitle, MatCardSubtitle, MatCardContent } from '@angular/material/card';
 import { MatFormField, MatLabel } from '@angular/material/form-field';
 import { MatSelect, MatOption } from '@angular/material/select';
@@ -19,43 +16,34 @@ import { MatIcon } from '@angular/material/icon';
     selector: 'ffg-start-page',
     templateUrl: './start-page.component.html',
     styleUrls: ['./start-page.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatCard, MatCardHeader, MatCardTitle, MatCardSubtitle, MatCardContent, MatFormField, MatSelect, MatOption, MatInput, FormsModule, MatLabel, MatButton, MatIcon, DatePipe]
 })
 export class StartPageComponent implements OnInit
 {
     private router = inject(Router);
-    private ereignisse = inject(EreignisseService);
-    operating = inject(OperatingService);
-    stammdaten = inject(StammdatenService);
+    data = inject(DataService);
 
-    public newEreignis: IEreignis = null;
-    public selectedEreignisId: number = null;
-    public allEreignisse: Array<IEreignis> = [];
-    public allPersonen: Array<IPerson> = [];
+    public compareById = compareById;
+
+    public newEreignis: IEreignis = {
+        type: EreignisType.Uebung,
+        datetimeStart: new Date(),
+        datetimeEnd: null
+    };
 
     public async ngOnInit(): Promise<void>
     {
-        this.newEreignis = {
-            type: EreignisType.Uebung,
-            datetimeStart: new Date(),
-            datetimeEnd: null
-        };
-        this.allEreignisse = await (await this.ereignisse.getAll()).reverse();
-        this.selectedEreignisId = this.allEreignisse[0]?.id ?? null;
-
-        if (await this.operating.checkIfOpenEreignisExist())
+        if (await this.data.findOpenEreignisId() != null)
         {
             this.router.navigate(['operating']);
         }
     }
 
-    public async createEreignis(ereignis: IEreignis)
+    public async createEreignis()
     {
         this.newEreignis.datetimeStart = new Date(this.newEreignis.datetimeStart);
-        const id = await this.ereignisse.saveOrCreate(ereignis);
+        const id = await this.data.saveEreignis(this.newEreignis);
         console.log('Create Ereignis mit Id', id);
-
         this.router.navigate(['/operating']);
     }
 }

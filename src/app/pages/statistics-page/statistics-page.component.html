@@ -1,31 +1,31 @@
 <h1 class="page-title">Statistiken</h1>
-@for (stat of stats; track stat) {
+@for (stat of data.statistics(); track stat.year) {
   <mat-expansion-panel>
     <mat-expansion-panel-header>
-      <mat-panel-title>{{ stat?.year }}</mat-panel-title>
+      <mat-panel-title>{{ stat.year }}</mat-panel-title>
     </mat-expansion-panel-header>
     <div class="content">
       <h3>Gesamt für das Jahr</h3>
       <table>
         <tr>
           <th>Einsätze</th>
-          <td>{{ stat?.einsaetze }}</td>
+          <td>{{ stat.einsaetze }}</td>
         </tr>
         <tr>
           <th>Übungen</th>
-          <td>{{ stat?.uebungen }}</td>
+          <td>{{ stat.uebungen }}</td>
         </tr>
         <tr>
           <th>Füllungen</th>
-          <td>{{ stat?.fuellungen }}</td>
+          <td>{{ stat.fuellungen }}</td>
         </tr>
       </table>
       <h3>Füllungen per Feuerwehr</h3>
       <table>
-        @for (fw of stat?.feuerwehren; track fw) {
+        @for (fw of stat.feuerwehren; track fw.feuerwehrNummer) {
           <tr>
-            <th>{{ fw?.name }}</th>
-            <td>{{ fw?.fuellungen }}</td>
+            <th>{{ fw.name }}</th>
+            <td>{{ fw.fuellungen }}</td>
           </tr>
         }
       </table>

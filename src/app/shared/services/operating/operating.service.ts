@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { DOCUMENT, Injectable, computed, inject, signal } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
@@ -6,9 +6,7 @@ import { ConfirmFuellungComponent } from '../../dialogs/confirm-fuellung/confirm
 import { IEreignis } from '../../interfaces/i-ereignis';
 import { IFlasche } from '../../interfaces/i-flasche';
 import { IFuellung } from '../../interfaces/i-fuellung';
-import { DatabaseService } from '../database/database.service';
-import { EreignisseService } from '../ereignisse/ereignisse.service';
-import { StammdatenService } from '../stammdaten/stammdaten.service';
+import { DataService } from '../data/data.service';
 import { TimingService } from '../timing/timing.service';
 
 @Injectable({
@@ -16,31 +14,36 @@ import { TimingService } from '../timing/timing.service';
 })
 export class OperatingService
 {
-    stammdaten = inject(StammdatenService);
-    database = inject(DatabaseService);
-    timing = inject(TimingService);
-    dialog = inject(MatDialog);
+    private data = inject(DataService);
+    private timing = inject(TimingService);
+    private dialog = inject(MatDialog);
     private router = inject(Router);
-    private ereignisse = inject(EreignisseService);
     private snackBar = inject(MatSnackBar);
 
-    private minBarcodeZeichen = 5;
-    public barcodeInputBuffer = '';
-    public barcodeInputActive = true;
-    public confirmFuellungActive = true;
+    private readonly minBarcodeZeichen = 5;
+    private barcodeInputBuffer = '';
 
-    public ereignis: IEreignis = null;
-    public ereignisAnzahlFeuerwehren = 0;
-    public ereignisAnzahlMaengel = 0;
+    public readonly barcodeInputActive = signal(true);
+    public readonly confirmFuellungActive = signal(true);
+
+    /** Das aktuell laufende Ereignis */
+    public readonly ereignis = signal<IEreignis>(null);
+
+    public readonly ereignisAnzahlFeuerwehren = computed(() =>
+        new Set(this.ereignis()?.fuellungen?.map(fuellung => fuellung.flasche?.feuerwehr?.feuerwehrNummer)).size
+    );
+
+    // Mängel sind noch nicht umgesetzt
+    public readonly ereignisAnzahlMaengel = signal(0);
 
     public constructor()
     {
-        document.body.addEventListener('keydown', event => this.onScannerInputEnter(event));
+        inject(DOCUMENT).body.addEventListener('keydown', event => this.onScannerInputEnter(event));
     }
 
-    private onScannerInputEnter(event)
+    private onScannerInputEnter(event: KeyboardEvent)
     {
-        if (this.barcodeInputActive && this.ereignis)
+        if (this.barcodeInputActive() && this.ereignis())
         {
             // Number Input
             if (event.key !== 'Enter' && this.isDigit(event.key))
@@ -65,59 +68,35 @@ export class OperatingService
         }
     }
 
-    private isDigit = (val) => /^\d+$/.test(val);
+    private isDigit = (val: string) => /^\d+$/.test(val);
 
     public async tryStartOpenEreignis(): Promise<boolean>
     {
-        const id = await this.checkIfOpenEreignisExist();
+        const id = await this.data.findOpenEreignisId();
+        if (id == null) return false;
 
-        if (id)
-        {
-            await this.setEreignisById(id);
-            return true;
-        }
-
-        return false;
-    }
-
-    public async checkIfOpenEreignisExist(): Promise<number | false>
-    {
-        const ereignisse = await this.ereignisse.getAll();
-        const ereignis = ereignisse.find(item => item.datetimeEnd == null);
-
-        if (ereignis)
-        {
-            return ereignis.id;
-        }
-
-        return false;
-    }
-
-    public async setEreignisById(id: number): Promise<boolean>
-    {
-        return this.reloadEreignis(id);
-    }
-
-    public async reloadEreignis(id: number): Promise<boolean>
-    {
-        this.barcodeInputActive = true;
-        this.ereignis = await this.ereignisse.getSingle(id);
-        this.timing.setEreignisStartTime(this.ereignis.datetimeStart);
-        this.setEreignisAnzahlFeuerwehren();
-        this.setEreignisAnzahlMaengel();
+        await this.reloadEreignis(id);
         return true;
+    }
+
+    public async reloadEreignis(id: number): Promise<void>
+    {
+        this.barcodeInputActive.set(true);
+        const ereignis = await this.data.getEreignis(id);
+        this.ereignis.set(ereignis);
+        this.timing.ereignisStart.set(ereignis.datetimeStart);
     }
 
     public async addFuellungByBarcode(barcode: string)
     {
         try
         {
-            const flasche = this.stammdaten.getFlascheByBarcode(barcode);
+            const flasche = this.data.getFlascheByBarcode(barcode);
             await this.addFuellung(flasche);
         }
         catch (error)
         {
-            this.snackBar.open(error, null, { duration: 3000 });
+            this.snackBar.open(error.message, null, { duration: 3000 });
         }
     }
 
@@ -128,66 +107,44 @@ export class OperatingService
             flasche
         };
 
-        if (this.confirmFuellungActive)
+        if (this.confirmFuellungActive())
         {
             const dialog = this.dialog.open(ConfirmFuellungComponent, { width: '500px', data: fuellung });
-
             dialog.afterClosed().subscribe(confirmation =>
             {
-                if (confirmation)
-                {
-                    this.ereignis.fuellungen.unshift(fuellung);
-                    this.saveEreignis();
-                }
+                if (confirmation) this.updateFuellungen(fuellungen => [fuellung, ...fuellungen]);
             });
         }
         else
         {
-            this.ereignis.fuellungen.unshift(fuellung);
-            this.saveEreignis();
+            await this.updateFuellungen(fuellungen => [fuellung, ...fuellungen]);
         }
     }
 
-    public removeFuellung(fuellung: IFuellung)
+    public async removeFuellung(fuellung: IFuellung)
     {
-        const index = this.ereignis.fuellungen.findIndex((fl) => fl === fuellung);
-
-        if (index >= 0)
-        {
-            this.ereignis.fuellungen.splice(index, 1);
-            this.saveEreignis();
-            this.snackBar.open(`Füllung entfernt!`, null, { duration: 3000 });
-        }
-        else
+        if (!this.ereignis()?.fuellungen.includes(fuellung))
         {
             this.snackBar.open(`Füllung konnte nicht entfernt werden!`, null, { duration: 3000 });
+            return;
         }
+
+        await this.updateFuellungen(fuellungen => fuellungen.filter(item => item !== fuellung));
+        this.snackBar.open(`Füllung entfernt!`, null, { duration: 3000 });
     }
 
-    public setEreignisAnzahlFeuerwehren()
+    public async closeEreignis()
     {
-        const ids = [];
-        this.ereignis?.fuellungen.forEach((fuellung) => { if (ids.indexOf(fuellung?.flasche?.feuerwehr?.feuerwehrNummer) === -1) ids.push(fuellung?.flasche?.feuerwehr?.feuerwehrNummer); });
-        this.ereignisAnzahlFeuerwehren = ids.length;
-    }
-
-    public async setEreignisAnzahlMaengel()
-    {
-        // const maengel = await this.maengel.getAllByEreignisId(this.ereignis.id);
-        const maengel = [];
-        this.ereignisAnzahlMaengel = maengel.length;
-    }
-
-    public closeEreignis()
-    {
-        this.ereignis.datetimeEnd = new Date();
-        this.saveEreignis();
-        this.ereignis = null;
+        const ereignis = { ...this.ereignis(), datetimeEnd: new Date() };
+        this.ereignis.set(null);
+        this.timing.ereignisStart.set(null);
+        await this.data.saveEreignis(ereignis);
         this.router.navigate(['/']);
     }
 
-    public saveEreignis()
+    private async updateFuellungen(update: (fuellungen: Array<IFuellung>) => Array<IFuellung>)
     {
-        this.ereignisse.saveOrCreate(this.ereignis);
+        this.ereignis.update(ereignis => ({ ...ereignis, fuellungen: update(ereignis.fuellungen) }));
+        await this.data.saveEreignis(this.ereignis());
     }
 }

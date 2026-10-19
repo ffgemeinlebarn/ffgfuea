@@ -1,12 +1,9 @@
-import { Component, OnDestroy, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
-import { MatDialog } from '@angular/material/dialog';
+import { Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { IEreignis } from 'src/app/shared/interfaces/i-ereignis';
-import { IFuellung } from 'src/app/shared/interfaces/i-fuellung';
+import { DataService } from 'src/app/shared/services/data/data.service';
 import { DatabaseService } from 'src/app/shared/services/database/database.service';
-import { EreignisseService } from 'src/app/shared/services/ereignisse/ereignisse.service';
-import { OperatingService } from 'src/app/shared/services/operating/operating.service';
 import { SettingsService } from 'src/app/shared/services/settings/settings.service';
-import { StammdatenService } from 'src/app/shared/services/stammdaten/stammdaten.service';
 import { environment } from 'src/environments/environment';
 import { MatButton } from '@angular/material/button';
 import { JsonPipe } from '@angular/common';
@@ -20,84 +17,73 @@ import { MatInput } from '@angular/material/input';
     selector: 'ffg-settings-page',
     templateUrl: './settings-page.component.html',
     styleUrls: ['./settings-page.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatButton, MatCard, MatSlideToggle, FormsModule, MatFormField, MatInput, JsonPipe]
 })
 export class SettingsPageComponent implements OnInit, OnDestroy
 {
     settings = inject(SettingsService);
-    dialog = inject(MatDialog);
-    ereignisse = inject(EreignisseService);
-    operating = inject(OperatingService);
+    private data = inject(DataService);
     private database = inject(DatabaseService);
-    stammdaten = inject(StammdatenService);
+    private snackBar = inject(MatSnackBar);
 
-    public showTestmodusSetting = true;
+    public readonly showTestmodusSetting = signal(false);
+    public readonly exportedData = signal(null);
     public importData = '[]';
-    public exportedData = null;
     public version = environment.version;
 
     public async ngOnInit(): Promise<void>
     {
-        this.showTestmodusSetting = await this.operating.checkIfOpenEreignisExist() === false;
+        // Während eines laufenden Ereignisses darf nicht umgeschaltet werden
+        this.showTestmodusSetting.set(await this.data.findOpenEreignisId() == null);
     }
 
-    public async ngOnDestroy(): Promise<void>
+    public ngOnDestroy(): void
     {
+        // Nicht gespeicherte Änderungen verwerfen
         this.settings.loadAll();
     }
 
     public async save()
     {
         this.settings.saveAll();
-        await this.database.refresh();
-        await this.stammdaten.reload();
-        await this.ereignisse.loadList();
+        this.database.refresh();
+        await this.data.load();
     }
 
     public async import()
     {
         const arr = JSON.parse(this.importData);
 
-        arr.forEach(async (ereignis) =>
+        for (const ereignis of arr)
         {
             console.log('Importiere Ereignis', ereignis.type, ereignis.ort);
-
-            const newEreignis: IEreignis = {
-                ort: ereignis.ort,
-                type: ereignis.type,
-                datetimeStart: new Date(ereignis.datetimeStart),
-                datetimeEnd: new Date(ereignis.datetimeEnd)
-            };
-
-            newEreignis.id = await this.ereignisse.saveOrCreate(newEreignis);
-
-            ereignis.fuellungen.forEach((fuellung) =>
+            try
             {
-                const flasche = this.stammdaten.getFlascheByBarcode(fuellung.flaschenBarcode);
-                const newFuellung: IFuellung = {
-                    datetime: new Date(fuellung.datetime),
-                    flasche
+                const newEreignis: IEreignis = {
+                    ort: ereignis.ort,
+                    type: ereignis.type,
+                    datetimeStart: new Date(ereignis.datetimeStart),
+                    datetimeEnd: new Date(ereignis.datetimeEnd),
+                    fuellungen: ereignis.fuellungen.map(fuellung => ({
+                        datetime: new Date(fuellung.datetime),
+                        flasche: this.data.getFlascheByBarcode(fuellung.flaschenBarcode)
+                    }))
                 };
-
-                newEreignis.fuellungen.push(newFuellung);
-            });
-
-            await this.ereignisse.saveOrCreate(newEreignis);
-
-        });
+                await this.data.saveEreignis(newEreignis);
+            }
+            catch (error)
+            {
+                this.snackBar.open(`Import von ${ereignis.type} ${ereignis.ort ?? ''} fehlgeschlagen: ${error.message}`, null, { duration: 5000 });
+            }
+        }
     }
 
-    public async export()
+    public export()
     {
-        const feuerwehren = await this.stammdaten.feuerwehren;
-        const personen = await this.stammdaten.personen;
-        const ereignisse = await this.ereignisse.getAll();
-
-        this.exportedData = {
-            feuerwehren,
-            personen,
-            ereignisse
-        };
+        this.exportedData.set({
+            feuerwehren: this.data.feuerwehren(),
+            personen: this.data.personen(),
+            ereignisse: this.data.ereignisse()
+        });
     }
 }

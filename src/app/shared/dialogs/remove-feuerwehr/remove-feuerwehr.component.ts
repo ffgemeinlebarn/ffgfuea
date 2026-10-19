@@ -1,28 +1,24 @@
-
-import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { IFeuerwehr } from '../../interfaces/i-feuerwehr';
-import { StammdatenService } from '../../services/stammdaten/stammdaten.service';
+import { DataService } from '../../services/data/data.service';
 import { MatButton } from '@angular/material/button';
 
 @Component({
     selector: 'ffg-remove-feuerwehr',
     templateUrl: './remove-feuerwehr.component.html',
     styleUrls: ['./remove-feuerwehr.component.scss'],
-    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatButton]
 })
-export class RemoveFeuerwehrComponent implements OnInit
+export class RemoveFeuerwehrComponent
 {
-    dialog = inject<MatDialogRef<RemoveFeuerwehrComponent>>(MatDialogRef);
+    private dialog = inject<MatDialogRef<RemoveFeuerwehrComponent>>(MatDialogRef);
     feuerwehr = inject<IFeuerwehr>(MAT_DIALOG_DATA);
-    private stammdaten = inject(StammdatenService);
-
-    public ngOnInit(): void { }
+    private data = inject(DataService);
 
     public remove()
     {
-        this.stammdaten.removeFeuerwehr(this.feuerwehr).finally(() => this.dialog.close());
+        this.data.removeFeuerwehr(this.feuerwehr).finally(() => this.dialog.close());
     }
 
     public close(): void

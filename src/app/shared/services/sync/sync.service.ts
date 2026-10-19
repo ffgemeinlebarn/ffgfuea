@@ -1,116 +1,98 @@
-import { HttpClient } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { IFeuerwehr } from '../../interfaces/i-feuerwehr';
-import { DatabaseService } from '../database/database.service';
+import { DataService } from '../data/data.service';
 import { SettingsService } from '../settings/settings.service';
-import { StammdatenService } from '../stammdaten/stammdaten.service';
+import { SyncApi } from '../sync-api/sync-api';
 
 @Injectable({
     providedIn: 'root'
 })
 export class SyncService
 {
-    http = inject(HttpClient);
-    settings = inject(SettingsService);
-    private database = inject(DatabaseService);
-    stammdaten = inject(StammdatenService);
+    private api = inject(SyncApi);
+    private data = inject(DataService);
+    private settings = inject(SettingsService);
     private snackBar = inject(MatSnackBar);
 
-    public progressActive = false;
-    public progressMessage = 'Lade Daten aus MAT Datenbank';
+    public readonly progressActive = signal(false);
+    public readonly progressMessage = signal('Lade Daten aus MAT Datenbank');
 
-    public checkStatus(): Promise<boolean>
+    public async addFeuerwehr(feuerwehrNummer: number): Promise<void>
     {
-        return new Promise((resolve, reject) =>
-            this.http.get(`${this.settings.syncUrl}`)
-                .subscribe((response: any) =>
-                {
-                    if (response.lastEdit !== this.settings.syncLastEdit)
-                    {
-                        this.settings.writeSyncLastEdit(response.lastEdit);
-                        resolve(true);
-                    }
-                    else
-                    {
-                        resolve(false);
-                    }
-                }, (error) => reject(error)));
-
-    }
-
-    public addFeuerwehr(feuerwehrNummer: number)
-    {
-        return this.syncFeuerwehrWithFlaschen(feuerwehrNummer)
-            .then(() => this.stammdaten.loadFeuerwehren(), (errorMsg) => this.snackBar.open(errorMsg, null, { duration: 3000 }));
-    }
-
-    public async syncSavedFeuerwehren()
-    {
-        this.stammdaten.loadFeuerwehren().then(() =>
-            this.checkStatus().then(
-                async (shouldUpdate) =>
-                {
-                    if (shouldUpdate)
-                    {
-                        this.progressActive = true;
-                        const start = new Date();
-                        const startTime = start.getMinutes() * 60000 + start.getSeconds() * 1000 + start.getMilliseconds();
-
-                        console.log('Starte Synchronisierung');
-
-                        for (const feuerwehr of this.stammdaten.feuerwehren)
-                        {
-                            this.progressMessage = `Feuerwehr ${feuerwehr.name} (${feuerwehr.feuerwehrNummer})`;
-                            await this.syncFeuerwehrWithFlaschen(feuerwehr.feuerwehrNummer)
-                                .catch(error => this.snackBar.open(error, null, { duration: 3000 }));
-                        }
-
-                        this.stammdaten.reload();
-                        const end = new Date();
-                        const endTime = end.getMinutes() * 60000 + end.getSeconds() * 1000 + end.getMilliseconds();
-                        const dauer = endTime - startTime;
-                        console.log(`Synchronisierung beendet - ${this.stammdaten.feuerwehren.length} Feuerwehren in ${dauer}ms geladen`);
-                        this.progressActive = false;
-                    }
-                },
-                (error) => this.snackBar.open('Synchronisation nicht möglich - Service nicht erreichbar!', null, { duration: 3000 })
-            ));
-    }
-
-    public async syncFeuerwehrWithFlaschen(feuerwehrNummer: number): Promise<IFeuerwehr>
-    {
-        return new Promise((resolve, reject) =>
+        try
         {
-            this.http.get(`${this.settings.syncUrl}/sync/${feuerwehrNummer}`).subscribe((feuerwehr: IFeuerwehr) =>
-            {
-                if (feuerwehr)
-                {
-                    this.updateOrCreateFeuerwehr(feuerwehr).then(_ =>
-                    {
-                        console.log('syncFeuerwehrWithFlaschen - Finish', feuerwehrNummer);
-                        resolve(feuerwehr);
-                    });
-                }
-                else
-                {
-                    reject(`Die Feuerwehr mit der Nummer ${feuerwehrNummer} wurde nicht gefunden!`);
-                }
-            });
-        });
+            await this.syncFeuerwehr(feuerwehrNummer);
+        }
+        catch (error)
+        {
+            this.showError(error);
+        }
     }
 
-    public async updateOrCreateFeuerwehr(feuerwehr: IFeuerwehr)
+    /**
+     * Aktualisiert alle gespeicherten Feuerwehren, wenn sich der MAT Datensatz geändert hat
+     */
+    public async syncSavedFeuerwehren(): Promise<void>
     {
-        feuerwehr.flaschen.map((flasche) => flasche.feuerwehr = {
+        let lastEdit: string;
+        try
+        {
+            lastEdit = await this.api.getLastEdit();
+        }
+        catch
+        {
+            this.snackBar.open('Synchronisation nicht möglich - Service nicht erreichbar!', null, { duration: 3000 });
+            return;
+        }
+
+        if (lastEdit === this.settings.syncLastEdit()) return;
+
+        this.progressActive.set(true);
+        const start = performance.now();
+        let failed = false;
+
+        await this.data.loadFeuerwehren();
+        const feuerwehren = this.data.feuerwehren();
+
+        for (const feuerwehr of feuerwehren)
+        {
+            this.progressMessage.set(`Feuerwehr ${feuerwehr.name} (${feuerwehr.feuerwehrNummer})`);
+            try
+            {
+                await this.syncFeuerwehr(feuerwehr.feuerwehrNummer);
+            }
+            catch (error)
+            {
+                failed = true;
+                this.showError(error);
+            }
+        }
+
+        // Nur bei Erfolg merken, sonst wird beim nächsten Start erneut synchronisiert
+        if (!failed) this.settings.writeSyncLastEdit(lastEdit);
+
+        console.log(`Synchronisierung beendet - ${feuerwehren.length} Feuerwehren in ${Math.round(performance.now() - start)}ms geladen`);
+        this.progressActive.set(false);
+    }
+
+    private async syncFeuerwehr(feuerwehrNummer: number): Promise<void>
+    {
+        const feuerwehr = await this.api.getFeuerwehr(feuerwehrNummer);
+
+        if (!feuerwehr)
+            throw new Error(`Die Feuerwehr mit der Nummer ${feuerwehrNummer} wurde nicht gefunden!`);
+
+        feuerwehr.flaschen.forEach(flasche => flasche.feuerwehr = {
             feuerwehrNummer: feuerwehr.feuerwehrNummer,
             eigentuemerId: feuerwehr.eigentuemerId,
             name: feuerwehr.name
         });
 
-        return this.database.db.transaction('rw', this.database.db.feuerwehren, async () =>
-        {
-            await this.database.db.feuerwehren.put(feuerwehr);
-        });
+        await this.data.saveFeuerwehr(feuerwehr);
+    }
+
+    private showError(error: unknown)
+    {
+        this.snackBar.open(error instanceof Error ? error.message : String(error), null, { duration: 3000 });
     }
 }

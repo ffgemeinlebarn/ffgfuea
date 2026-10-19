@@ -2,7 +2,7 @@
 <p>Ereignis: {{ data?.type == EreignisType.Uebung ? 'Übung' : 'Einsatz' }}{{ data?.ort ? ' in '+ data?.ort : '' }}</p>
 <div class="content" mat-dialog-content>
   <mat-list>
-    @for (report of reports; track report) {
+    @for (report of reports; track report.name) {
       <mat-list-item matRipple>
         <span (click)="report.print = !report.print">{{ report.name }}</span>
         <mat-checkbox [(ngModel)]="report.print" noop></mat-checkbox>
@@ -18,7 +18,7 @@
 <div #printContent>
   <div class="print">
     <div class="print-content">
-      @for (report of reports; track report) {
+      @for (report of reports; track report.name) {
         <div class="report">
           @if (report.print) {
             <div class="inner-report">
@@ -38,16 +38,16 @@
                     </tr>
                     <tr>
                       <th>Beginn:</th>
-                      <td>{{ $safeNavigationMigration(data?.datetimeStart) | date: 'dd.MM.yyyy HH:mm' }} Uhr</td>
+                      <td>{{ data.datetimeStart | date: 'dd.MM.yyyy HH:mm' }} Uhr</td>
                     </tr>
                     <tr>
                       <th>Ende:</th>
-                      <td>{{ $safeNavigationMigration(data?.datetimeEnd) | date: 'dd.MM.yyyy HH:mm' }}{{ data?.datetimeEnd ? ' Uhr' : 'noch nicht beendet' }}</td>
+                      <td>{{ data.datetimeEnd | date: 'dd.MM.yyyy HH:mm' }}{{ data?.datetimeEnd ? ' Uhr' : 'noch nicht beendet' }}</td>
                     </tr>
                     <tr>
                       <th>Füllersonal:</th>
                       <td>
-                        @for (person of data?.personen; track person; let last = $last) {
+                        @for (person of data.personen; track person.id; let last = $last) {
                           <span>{{ person.vorname }} {{ person.nachname }}{{ last ? '' : ', ' }}</span>
                         }
                       </td>
@@ -56,7 +56,7 @@
                 </table>
               </div>
               <h2>Füllungen</h2>
-              @for (feuerwehr of report.data; track feuerwehr) {
+              @for (feuerwehr of report.data; track feuerwehr.feuerwehrNummer) {
                 <div class="fuellung">
                   <h3>{{ feuerwehr.name }}</h3>
                   <table>
