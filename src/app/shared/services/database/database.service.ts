@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import Dexie from 'dexie';
-import { environment } from 'src/environments/environment.development';
+import { environment } from 'src/environments/environment';
 import { IEreignis } from '../../interfaces/i-ereignis';
 import { IFeuerwehr } from '../../interfaces/i-feuerwehr';
 import { IMangel } from '../../interfaces/i-mangel';

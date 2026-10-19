@@ -7,7 +7,7 @@ import { EreignisseService } from 'src/app/shared/services/ereignisse/ereignisse
 import { OperatingService } from 'src/app/shared/services/operating/operating.service';
 import { SettingsService } from 'src/app/shared/services/settings/settings.service';
 import { StammdatenService } from 'src/app/shared/services/stammdaten/stammdaten.service';
-import { environment } from 'src/environments/environment.development';
+import { environment } from 'src/environments/environment';
 import { MatButton } from '@angular/material/button';
 import { JsonPipe } from '@angular/common';
 import { MatCard } from '@angular/material/card';
