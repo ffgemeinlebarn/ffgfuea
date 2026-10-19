@@ -6,7 +6,7 @@ import
 import { provideRouter } from '@angular/router';
 
 import { CdkColumnDef } from '@angular/cdk/table';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withXhr } from '@angular/common/http';
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule } from '@angular/material/dialog';
 import { BrowserModule, HammerModule } from '@angular/platform-browser';
@@ -18,7 +18,7 @@ import { SharedModule } from './shared/shared.module';
 export const appConfig: ApplicationConfig = {
     providers: [
         provideRouter(routes),
-        provideHttpClient(),
+        provideHttpClient(withXhr()),
         importProvidersFrom(SharedModule, BrowserModule, HammerModule, FormsModule, MatDialogModule, ServiceWorkerModule.register('ngsw-worker.js', {
             enabled: environment.production,
             registrationStrategy: 'registerWhenStable:30000'

@@ -1,5 +1,5 @@
 
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { IFeuerwehr } from '../../interfaces/i-feuerwehr';
 import { StammdatenService } from '../../services/stammdaten/stammdaten.service';
@@ -9,6 +9,7 @@ import { MatButton } from '@angular/material/button';
     selector: 'ffg-remove-feuerwehr',
     templateUrl: './remove-feuerwehr.component.html',
     styleUrls: ['./remove-feuerwehr.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatButton]
 })
 export class RemoveFeuerwehrComponent implements OnInit

@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
 import { IFeuerwehr } from '../../interfaces/i-feuerwehr';
 import { IFlasche } from '../../interfaces/i-flasche';
@@ -14,6 +14,7 @@ import { MatButton } from '@angular/material/button';
     selector: 'ffg-search-flasche',
     templateUrl: './search-flasche.component.html',
     styleUrls: ['./search-flasche.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatFormField, MatLabel, MatSelect, FormsModule, MatOption, MatButton]
 })
 export class SearchFlascheComponent implements OnInit

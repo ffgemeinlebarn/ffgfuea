@@ -1,4 +1,4 @@
-import { Component, ElementRef, OnInit, inject } from '@angular/core';
+import { Component, ElementRef, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { EreignisType } from '../../enums/ereignis-type';
 import { EreignisseService } from '../../services/ereignisse/ereignisse.service';
@@ -18,6 +18,7 @@ import { MatButton } from '@angular/material/button';
     providers: [
         { provide: Window, useValue: window }
     ],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatList, MatListItem, MatRipple, MatCheckbox, FormsModule, MatButton, DatePipe]
 })
 export class PrintReportsComponent implements OnInit

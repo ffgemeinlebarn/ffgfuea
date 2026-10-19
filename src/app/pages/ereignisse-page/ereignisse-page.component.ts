@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { EditEreignisComponent } from 'src/app/shared/dialogs/edit-ereignis/edit-ereignis.component';
 import { PrintReportsComponent } from 'src/app/shared/dialogs/print-reports/print-reports.component';
@@ -15,6 +15,7 @@ import { FuellungItemComponent } from '../../shared/components/fuellung-item/fue
     selector: 'ffg-ereignisse-page',
     templateUrl: './ereignisse-page.component.html',
     styleUrls: ['./ereignisse-page.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle, MatExpansionPanelDescription, MatButton, MatList, FuellungItemComponent, DatePipe]
 })
 export class EreignissePageComponent implements OnInit

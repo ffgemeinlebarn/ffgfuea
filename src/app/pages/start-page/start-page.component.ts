@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
 import { EreignisType } from 'src/app/shared/enums/ereignis-type';
 import { IEreignis } from 'src/app/shared/interfaces/i-ereignis';
@@ -19,6 +19,7 @@ import { MatIcon } from '@angular/material/icon';
     selector: 'ffg-start-page',
     templateUrl: './start-page.component.html',
     styleUrls: ['./start-page.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatCard, MatCardHeader, MatCardTitle, MatCardSubtitle, MatCardContent, MatFormField, MatSelect, MatOption, MatInput, FormsModule, MatLabel, MatButton, MatIcon, DatePipe]
 })
 export class StartPageComponent implements OnInit

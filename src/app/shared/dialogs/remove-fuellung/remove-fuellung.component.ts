@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { IFuellung } from '../../interfaces/i-fuellung';
 import { OperatingService } from '../../services/operating/operating.service';
@@ -11,6 +11,7 @@ import { DatePipe } from '@angular/common';
     selector: 'ffg-remove-fuellung',
     templateUrl: './remove-fuellung.component.html',
     styleUrls: ['./remove-fuellung.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatLine, MatButton, MatIcon, DatePipe]
 })
 export class RemoveFuellungComponent implements OnInit

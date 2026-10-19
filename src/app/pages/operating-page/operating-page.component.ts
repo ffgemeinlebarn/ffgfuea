@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { AddMangelComponent } from 'src/app/shared/dialogs/add-mangel/add-mangel.component';
@@ -26,6 +26,7 @@ export type InputType = 'scanner' | 'manual';
     selector: 'ffg-operating-page',
     templateUrl: './operating-page.component.html',
     styleUrls: ['./operating-page.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatGridList, MatGridTile, MatCard, MatRipple, MatIcon, MatCardTitle, MatList, FuellungItemComponent, MatCardActions, MatFabButton, NgClass, DatePipe]
 })
 export class OperatingPageComponent implements OnInit
