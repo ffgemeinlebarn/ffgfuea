@@ -3,7 +3,7 @@
   <button mat-raised-button (click)="save()">Speichern</button>
 </h1>
 
-@if (showTestmodusSetting()) {
+@if (noOpenEreignis()) {
   <mat-card>
     <h2>Test Modus</h2>
     <p>Um in Schulungen nicht mit den originalen Daten zu arbeiten und den Datenbestand nicht zu verunreinigen, kann
@@ -35,25 +35,71 @@
 </mat-card>
 
 <mat-card>
+  <h2>Export</h2>
+  <p>Lädt alle Feuerwehren samt Flaschen, das Füllpersonal und alle Einsätze & Übungen als JSON-Datei herunter.
+    Die Datei eignet sich zur Weiterverarbeitung und als Sicherung, die unten wieder importiert werden kann.
+    @if (database.testMode) {
+      <strong>Achtung: Der Testmodus ist aktiv, exportiert wird die Testdatenbank!</strong>
+    }
+  </p>
+  <button mat-raised-button [disabled]="busy()" (click)="export()">Export herunterladen</button>
+</mat-card>
+
+<mat-card>
   <h2>Import</h2>
-  <mat-form-field appearance="fill">
-    <textarea matInput
-      [(ngModel)]="importData"
-      cdkAutosizeMinRows="5"
-    cdkAutosizeMaxRows="50"></textarea>
-  </mat-form-field>
-  <br>
-    <button mat-raised-button (click)="import()">Daten-Import durchführen</button>
-  </mat-card>
+  <p>Importiert eine zuvor exportierte JSON-Datei{{ database.testMode ? ' in die Testdatenbank' : '' }}.</p>
 
-  <mat-card>
-    <h2>Export</h2>
-    <samp>{{ exportedData() | json }}</samp>
-    <br>
-      <button mat-raised-button (click)="export()">Daten-Export durchführen</button>
-    </mat-card>
+  @if (noOpenEreignis()) {
+    <input #fileInput type="file" accept=".json,application/json" hidden
+      (change)="selectFile(fileInput.files[0]); fileInput.value = ''">
+    <button mat-stroked-button [disabled]="busy()" (click)="fileInput.click()">Datei auswählen</button>
+  } @else {
+    <p><strong>Während eines laufenden Einsatzes oder einer Übung ist kein Import möglich.</strong></p>
+  }
 
-    <mat-card>
-      <h2>Versionshinweis</h2>
-      <p>{{ version }}</p>
-    </mat-card>
+  @if (importProblems().length > 0) {
+    <div class="problems">
+      <p><strong>{{ importFileName() }} kann nicht importiert werden:</strong></p>
+      <ul>
+        @for (problem of importProblems().slice(0, 10); track $index) {
+          <li>{{ problem }}</li>
+        }
+        @if (importProblems().length > 10) {
+          <li>… und {{ importProblems().length - 10 }} weitere Probleme</li>
+        }
+      </ul>
+    </div>
+  }
+
+  @if (importBackup(); as backup) {
+    <div class="summary">
+      <p><strong>{{ importFileName() }}</strong></p>
+      <ul>
+        @if (backup.version === legacyVersion) {
+          <li>Altes Import-Format, enthält nur Einsätze & Übungen</li>
+        } @else if (backup.exportedAt) {
+          <li>Exportiert am {{ backup.exportedAt | date: 'dd.MM.yyyy HH:mm' }}{{ backup.appVersion ? ' mit Version ' + backup.appVersion : '' }}{{ backup.testMode ? ' aus der Testdatenbank' : '' }}</li>
+        }
+        <li>{{ backup.feuerwehren.length }} Feuerwehren mit {{ importSummary().flaschen }} Flaschen</li>
+        <li>{{ backup.personen.length }} Personen</li>
+        <li>{{ backup.ereignisse.length }} Einsätze & Übungen mit {{ importSummary().fuellungen }} Füllungen
+          @if (importSummary().from) {
+            ({{ importSummary().from | date: 'dd.MM.yyyy' }} bis {{ importSummary().to | date: 'dd.MM.yyyy' }})
+          }
+        </li>
+      </ul>
+    </div>
+
+    <mat-radio-group [(ngModel)]="importMode">
+      <mat-radio-button value="merge">Zusammenführen: nur Feuerwehren, Personen und Ereignisse hinzufügen, die noch nicht vorhanden sind</mat-radio-button>
+      <mat-radio-button value="replace" [disabled]="backup.version === legacyVersion">Ersetzen: alle vorhandenen Daten löschen und den Export wiederherstellen</mat-radio-button>
+    </mat-radio-group>
+
+    <button mat-raised-button [disabled]="busy()" (click)="import()">Import durchführen</button>
+  }
+</mat-card>
+
+<mat-card>
+  <h2>Versionshinweis</h2>
+  <p>{{ version }}</p>
+</mat-card>

@@ -20,16 +20,25 @@ mat-card {
 
 mat-form-field {
     width: 100%;
-    font-family: monospace;
 }
 
-samp {
-    font-family: monospace;
-    background-color: #f4f4f4;
-    border: 2px #ddd solid;
-    padding: 1.4em;
-    line-height: 1;
+.summary,
+.problems {
     align-self: stretch;
-    margin-bottom: 0.6em;
+    margin: 1em 0;
+    padding: 0 1.4em;
+    border: 2px #ddd solid;
     border-radius: 0.4em;
+    background-color: #f4f4f4;
+}
+
+.problems {
+    border-color: #e57373;
+    background-color: #ffebee;
+}
+
+mat-radio-group {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1em;
 }

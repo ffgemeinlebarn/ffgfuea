@@ -1,0 +1,13 @@
+<h2 mat-dialog-title>Daten ersetzen</h2>
+
+<div mat-dialog-content>
+    <p><strong>Sollen wirklich alle vorhandenen Daten ersetzt werden?</strong></p>
+    <p>{{ vorhanden.ereignisse }} Einsätze & Übungen, {{ vorhanden.personen }} Personen und {{ vorhanden.feuerwehren }} Feuerwehren
+        der {{ vorhanden.testMode ? 'Testdatenbank' : 'Datenbank' }} werden gelöscht und durch den Inhalt der Datei ersetzt.
+        Werden diese Daten noch gebraucht, vorher einen Export herunterladen!</p>
+</div>
+
+<div class="actions" mat-dialog-actions>
+    <button mat-button (click)="close()">Abbrechen</button>
+    <button mat-raised-button color="warn" (click)="confirm()">Ersetzen</button>
+</div>

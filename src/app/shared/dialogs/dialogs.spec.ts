@@ -6,6 +6,7 @@ import { createEreignis, createFeuerwehr, createFuellung } from 'src/app/testing
 import { provideDialog } from 'src/app/testing/dialog';
 import { AddMangelComponent } from './add-mangel/add-mangel.component';
 import { ConfirmEreignisAbschlussComponent } from './confirm-ereignis-abschluss/confirm-ereignis-abschluss.component';
+import { ConfirmImportComponent } from './confirm-import/confirm-import.component';
 import { ConfirmFuellungComponent } from './confirm-fuellung/confirm-fuellung.component';
 import { EditEreignisComponent } from './edit-ereignis/edit-ereignis.component';
 import { EditPersonComponent } from './edit-person/edit-person.component';
@@ -22,6 +23,7 @@ describe('Dialoge', () =>
         [AddMangelComponent, createEreignis(), 'Mangel hinzufügen'],
         [ConfirmEreignisAbschlussComponent, null, 'Ereignis abschließen'],
         [ConfirmFuellungComponent, fuellung, 'Barcode: 11111'],
+        [ConfirmImportComponent, { feuerwehren: 2, personen: 3, ereignisse: 40, testMode: true }, '40 Einsätze & Übungen, 3 Personen und 2 Feuerwehren der Testdatenbank'],
         [EditEreignisComponent, createEreignis({ ort: 'Tulln' }), 'Übung in Tulln'],
         [EditPersonComponent, { vorname: 'Max', nachname: 'Muster' }, 'Max Muster'],
         [RemoveFeuerwehrComponent, feuerwehr, 'Soll die Feuerwehr FF 1 wirklich entfernt werden?'],

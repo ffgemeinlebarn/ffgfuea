@@ -15,6 +15,8 @@ export class DatabaseService
     private settings = inject(SettingsService);
 
     public db: Database = null;
+    /** Ob die geöffnete Datenbank die Testdatenbank ist (unabhängig von noch nicht gespeicherten Einstellungen) */
+    public testMode = false;
 
     constructor()
     {
@@ -24,7 +26,8 @@ export class DatabaseService
     public refresh()
     {
         this.db?.close();
-        const name = environment.database.name + (this.settings.testMode() ? '_test' : '');
+        this.testMode = this.settings.testMode();
+        const name = environment.database.name + (this.testMode ? '_test' : '');
         this.db = new Database(name);
     }
 }
