@@ -31,7 +31,8 @@
         .step {
             width: 300px;
             height: auto;
-            // padding: 3em 2em;
+            padding: 3em 2em;
+            box-sizing: content-box;
 
             mat-card-content {
                 margin-top: 20px;

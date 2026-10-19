@@ -1,12 +1,11 @@
-<mat-list-item>
-    <h3 matLine>{{ fuellung().flasche.feuerwehr?.name }} - Nr. {{ fuellung().flasche.karteiNr }}</h3>
-    <p matLine>
+<div class="left">
+    <h3>{{ fuellung().flasche.feuerwehr?.name }} - Nr. {{ fuellung().flasche.karteiNr }}</h3>
+    <p>
         <span>{{ fuellung().flasche.typenBezeichnung }}</span>
         <span> | </span>
         <span>Barcode: {{ fuellung().flasche.barcode }}</span>
     </p>
-    <mat-chip-listbox>
-        <mat-chip color="primary">{{ fuellung().datetime | date: 'HH:mm:ss' }} Uhr</mat-chip>
-    </mat-chip-listbox>
-    <mat-divider />
-</mat-list-item>
+</div>
+<mat-chip-set>
+    <mat-chip>{{ fuellung().datetime | date: 'HH:mm:ss' }} Uhr</mat-chip>
+</mat-chip-set>
