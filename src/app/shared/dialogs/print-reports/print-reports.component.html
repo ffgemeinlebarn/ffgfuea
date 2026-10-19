@@ -69,7 +69,7 @@
                       </tr>
                     </thead>
                     <tbody>
-                      @for (fuellung of feuerwehr.fuellungen; track fuellung) {
+                      @for (fuellung of feuerwehr.fuellungen; track $index) {
                         <tr>
                           <td>
                             {{ fuellung.datetime | date: 'dd.MM.yyyy' }}<br />

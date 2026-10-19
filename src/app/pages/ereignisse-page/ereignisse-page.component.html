@@ -50,7 +50,7 @@
         <div class="fuellungen">
             <h2>Füllungen</h2>
             <mat-list>
-                @for (fuellung of ereignis?.fuellungen; track fuellung) {
+                @for (fuellung of ereignis.fuellungen; track $index) {
                 <ffg-fuellung-item [fuellung]="fuellung"></ffg-fuellung-item>
                 }
             </mat-list>
