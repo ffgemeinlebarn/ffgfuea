@@ -108,9 +108,9 @@ export class SyncService
             name: feuerwehr.name
         });
 
-        // return this.database.db.transaction('rw', this.database.db.feuerwehren, async () =>
-        // {
-        //     await this.database.db.feuerwehren.put(feuerwehr);
-        // });
+        return this.database.db.transaction('rw', this.database.db.feuerwehren, async () =>
+        {
+            await this.database.db.feuerwehren.put(feuerwehr);
+        });
     }
 }
