@@ -1,4 +1,4 @@
-import { DOCUMENT, Injectable, computed, inject, signal } from '@angular/core';
+import { DOCUMENT, DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
@@ -38,7 +38,10 @@ export class OperatingService
 
     public constructor()
     {
-        inject(DOCUMENT).body.addEventListener('keydown', event => this.onScannerInputEnter(event));
+        const body = inject(DOCUMENT).body;
+        const listener = (event: KeyboardEvent) => this.onScannerInputEnter(event);
+        body.addEventListener('keydown', listener);
+        inject(DestroyRef).onDestroy(() => body.removeEventListener('keydown', listener));
     }
 
     private onScannerInputEnter(event: KeyboardEvent)
