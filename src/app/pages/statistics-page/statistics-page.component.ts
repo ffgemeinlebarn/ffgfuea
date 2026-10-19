@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { EreignisType } from 'src/app/shared/enums/ereignis-type';
 import { EreignisseService } from 'src/app/shared/services/ereignisse/ereignisse.service';
 import { OperatingService } from 'src/app/shared/services/operating/operating.service';
@@ -9,6 +9,7 @@ import { MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle } fr
     selector: 'ffg-statistics-page',
     templateUrl: './statistics-page.component.html',
     styleUrls: ['./statistics-page.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle]
 })
 export class StatisticsPageComponent implements OnInit

@@ -27,7 +27,7 @@ import { PrintReportsComponent } from './dialogs/print-reports/print-reports.com
 import { EditEreignisComponent } from './dialogs/edit-ereignis/edit-ereignis.component';
 import { AddMangelComponent } from './dialogs/add-mangel/add-mangel.component';
 import { EditPersonComponent } from './dialogs/edit-person/edit-person.component';
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi, withXhr } from '@angular/common/http';
 import { ConfirmFuellungComponent } from './dialogs/confirm-fuellung/confirm-fuellung.component';
 import { ConfirmEreignisAbschlussComponent } from './dialogs/confirm-ereignis-abschluss/confirm-ereignis-abschluss.component';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -93,5 +93,5 @@ import { RemoveFeuerwehrComponent } from './dialogs/remove-feuerwehr/remove-feue
         ConfirmFuellungComponent,
         ConfirmEreignisAbschlussComponent,
         RemoveFuellungComponent,
-        RemoveFeuerwehrComponent], providers: [provideHttpClient(withInterceptorsFromDi())] })
+        RemoveFeuerwehrComponent], providers: [provideHttpClient(withXhr(), withInterceptorsFromDi())] })
 export class SharedModule { }

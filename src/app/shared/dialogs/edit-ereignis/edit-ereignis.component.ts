@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { EreignisType } from '../../enums/ereignis-type';
 import { IEreignis } from '../../interfaces/i-ereignis';
@@ -15,6 +15,7 @@ import { MatButton } from '@angular/material/button';
     selector: 'ffg-edit-ereignis',
     templateUrl: './edit-ereignis.component.html',
     styleUrls: ['./edit-ereignis.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatFormField, MatLabel, MatSelect, FormsModule, MatOption, MatInput, MatButton]
 })
 export class EditEreignisComponent

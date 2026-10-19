@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { EditEreignisComponent } from './edit-ereignis.component';
 import { SharedModule } from '../../shared.module';
-import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
+import { provideHttpClient, withInterceptorsFromDi, withXhr } from '@angular/common/http';
 
 describe('EditEreignisComponent', () =>
 {
@@ -13,7 +13,7 @@ describe('EditEreignisComponent', () =>
     {
         await TestBed.configureTestingModule({
     imports: [SharedModule, EditEreignisComponent],
-    providers: [provideHttpClient(withInterceptorsFromDi()), provideHttpClientTesting()]
+    providers: [provideHttpClient(withXhr(), withInterceptorsFromDi()), provideHttpClientTesting()]
 })
             .compileComponents();
     });

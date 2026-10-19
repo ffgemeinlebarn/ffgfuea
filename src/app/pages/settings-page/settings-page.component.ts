@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit, inject } from '@angular/core';
+import { Component, OnDestroy, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialog } from '@angular/material/dialog';
 import { IEreignis } from 'src/app/shared/interfaces/i-ereignis';
 import { IFuellung } from 'src/app/shared/interfaces/i-fuellung';
@@ -7,7 +7,7 @@ import { EreignisseService } from 'src/app/shared/services/ereignisse/ereignisse
 import { OperatingService } from 'src/app/shared/services/operating/operating.service';
 import { SettingsService } from 'src/app/shared/services/settings/settings.service';
 import { StammdatenService } from 'src/app/shared/services/stammdaten/stammdaten.service';
-import { environment } from 'src/environments/environment.development';
+import { environment } from 'src/environments/environment';
 import { MatButton } from '@angular/material/button';
 import { JsonPipe } from '@angular/common';
 import { MatCard } from '@angular/material/card';
@@ -20,6 +20,7 @@ import { MatInput } from '@angular/material/input';
     selector: 'ffg-settings-page',
     templateUrl: './settings-page.component.html',
     styleUrls: ['./settings-page.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatButton, MatCard, MatSlideToggle, FormsModule, MatFormField, MatInput, JsonPipe]
 })
 export class SettingsPageComponent implements OnInit, OnDestroy

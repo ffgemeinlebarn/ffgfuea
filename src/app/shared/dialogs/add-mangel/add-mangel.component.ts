@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectionStrategy } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { IEreignis } from '../../interfaces/i-ereignis';
 import { IFeuerwehr } from '../../interfaces/i-feuerwehr';
@@ -18,6 +18,7 @@ import { MatButton } from '@angular/material/button';
     selector: 'ffg-add-mangel',
     templateUrl: './add-mangel.component.html',
     styleUrls: ['./add-mangel.component.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
     imports: [MatFormField, MatLabel, MatSelect, FormsModule, MatOption, MatInput, MatButton]
 })
 export class AddMangelComponent implements OnInit

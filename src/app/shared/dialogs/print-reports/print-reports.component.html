@@ -38,11 +38,11 @@
                     </tr>
                     <tr>
                       <th>Beginn:</th>
-                      <td>{{ data?.datetimeStart | date: 'dd.MM.yyyy HH:mm' }} Uhr</td>
+                      <td>{{ $safeNavigationMigration(data?.datetimeStart) | date: 'dd.MM.yyyy HH:mm' }} Uhr</td>
                     </tr>
                     <tr>
                       <th>Ende:</th>
-                      <td>{{ data?.datetimeEnd | date: 'dd.MM.yyyy HH:mm' }}{{ data?.datetimeEnd ? ' Uhr' : 'noch nicht beendet' }}</td>
+                      <td>{{ $safeNavigationMigration(data?.datetimeEnd) | date: 'dd.MM.yyyy HH:mm' }}{{ data?.datetimeEnd ? ' Uhr' : 'noch nicht beendet' }}</td>
                     </tr>
                     <tr>
                       <th>Füllersonal:</th>
