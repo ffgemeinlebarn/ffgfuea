@@ -5,9 +5,7 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
-    "test": "ng test",
-    "lint": "ng lint",
-    "e2e": "ng e2e"
+    "test": "ng test"
   },
   "private": true,
   "dependencies": {
@@ -34,17 +32,12 @@
     "@angular/compiler-cli": "~21.2.25",
     "@types/jasmine": "^5.1.4",
     "@types/node": "^20.12.7",
-    "codelyzer": "^6.0.2",
     "jasmine-core": "^5.1.2",
-    "jasmine-spec-reporter": "^7.0.0",
     "karma": "^6.4.3",
     "karma-chrome-launcher": "^3.2.0",
     "karma-coverage": "^2.2.1",
     "karma-jasmine": "^5.1.0",
     "karma-jasmine-html-reporter": "^2.1.0",
-    "protractor": "~7.0.0",
-    "ts-node": "^10.9.2",
-    "tslint": "~6.1.0",
     "typescript": "~5.9.3"
   }
 }
