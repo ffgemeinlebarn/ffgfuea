@@ -88,7 +88,7 @@
             <mat-card-title>Zuletzt gefüllte Flaschen</mat-card-title>
             <mat-list class="fuellungen">
               @for (fuellung of operating.ereignis?.fuellungen; track fuellung) {
-                <ffg-fuellung-item mat-ripple [fuellung]="fuellung" (press)="openFuellungContext(fuellung)"></ffg-fuellung-item>
+                <ffg-fuellung-item mat-ripple [fuellung]="fuellung" (click)="openFuellungContext(fuellung)"></ffg-fuellung-item>
               }
             </mat-list>
           </div>
