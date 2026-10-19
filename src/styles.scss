@@ -11,7 +11,13 @@ $ffgfuea-theme: mat.m2-define-light-theme((
     primary: $ffgfuea-primary,
     accent: $ffgfuea-accent,
     warn: $ffgfuea-warn,
-  )
+  ),
+  // Größen wie bei der Legacy-Typografie der früheren Versionen
+  typography: mat.m2-define-typography-config(
+    $body-1: mat.m2-define-typography-level(14px, 20px, 400),
+    $button: mat.m2-define-typography-level(14px, 14px, 500)
+  ),
+  density: 0
 ));
 
 $ffgfuea-primary-color: mat.get-theme-color($ffgfuea-theme, primary, default);
@@ -23,7 +29,8 @@ $ffgfuea-primary-color-darker: mat.get-theme-color($ffgfuea-theme, primary, 600)
 }
 
 @include mat.elevation-classes();
-@include mat.app-background(); 
+@include mat.app-background();
+@include mat.typography-hierarchy($ffgfuea-theme);
 
 html,
 body {
@@ -41,7 +48,14 @@ body {
 }
 
 mat-card {
-    padding: 1.5em;
+    padding: 16px;
+}
+
+// Icons in Buttons wie bei den Legacy-Buttons in voller Größe
+.mat-mdc-button-base.mat-mdc-button-base > .mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
 }
 
 button[mat-button],
