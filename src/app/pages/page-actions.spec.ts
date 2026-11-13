@@ -43,7 +43,7 @@ describe('Seiten-Aktionen', () =>
     });
 
     const openedWith = (component: unknown) => expect(open).toHaveBeenCalledWith(component, expect.anything());
-    const openedData = () => open.mock.lastCall[1].data;
+    const openedData = () => open.mock.lastCall![1].data;
 
     it('Startseite legt ein neues Ereignis an und wechselt in den Betrieb', async () =>
     {
@@ -153,7 +153,7 @@ describe('Seiten-Aktionen', () =>
         it('entfernt Füllpersonal', async () =>
         {
             const id = await data.savePerson({ vorname: 'Max', nachname: 'Muster' });
-            await page.removePerson(data.personen().find(p => p.id === id));
+            await page.removePerson(data.personen().find(p => p.id === id)!);
             await vi.waitFor(() => expect(data.personen()).toEqual([]));
         });
 

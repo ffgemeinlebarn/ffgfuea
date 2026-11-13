@@ -14,7 +14,7 @@ export class DatabaseService
 {
     private settings = inject(SettingsService);
 
-    public db: Database = null;
+    public db!: Database;
     /** Ob die geöffnete Datenbank die Testdatenbank ist (unabhängig von noch nicht gespeicherten Einstellungen) */
     public testMode = false;
 
@@ -34,10 +34,10 @@ export class DatabaseService
 
 class Database extends Dexie
 {
-    public feuerwehren: Table<IFeuerwehr, number>;
-    public maengel: Table<IMangel, number>;
-    public personen: Table<IPerson, number>;
-    public ereignisse: Table<IEreignis, number>;
+    public feuerwehren!: Table<IFeuerwehr, number>;
+    public maengel!: Table<IMangel, number>;
+    public personen!: Table<IPerson, number>;
+    public ereignisse!: Table<IEreignis, number>;
 
     constructor(name: string)
     {

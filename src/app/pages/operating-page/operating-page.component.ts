@@ -58,17 +58,21 @@ export class OperatingPageComponent implements OnInit
     public openEditEreignis()
     {
         const ereignis = this.operating.ereignis();
+        if (ereignis?.id == null) return;
+        const id = ereignis.id;
         this.dialog.open(EditEreignisComponent, { width: '500px', data: structuredClone(ereignis) })
             .afterClosed()
-            .subscribe(() => this.operating.reloadEreignis(ereignis.id));
+            .subscribe(() => this.operating.reloadEreignis(id));
     }
 
     public openAddMangel()
     {
         const ereignis = this.operating.ereignis();
+        if (ereignis?.id == null) return;
+        const id = ereignis.id;
         this.dialog.open(AddMangelComponent, { width: '500px', data: ereignis })
             .afterClosed()
-            .subscribe(() => this.operating.reloadEreignis(ereignis.id));
+            .subscribe(() => this.operating.reloadEreignis(id));
     }
 
     public openFuellungContext(fuellung: IFuellung)

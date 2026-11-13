@@ -29,12 +29,13 @@ export class VerwaltungPageComponent
     data = inject(DataService);
 
     public displayedColumns: string[] = ['karteiNr', 'geraeteNr', 'flaschennummer', 'barcode', 'typenBezeichnung', 'typenInformation', 'lastEdit'];
-    public feuerwehrNummerToSync = null;
+    public feuerwehrNummerToSync: number | null = null;
     public readonly vorname = signal('');
     public readonly nachname = signal('');
 
-    public addFeuerwehrToSync(feuerwehrNummer: number)
+    public addFeuerwehrToSync(feuerwehrNummer: number | null)
     {
+        if (feuerwehrNummer == null) return;
         this.sync.addFeuerwehr(feuerwehrNummer);
     }
 

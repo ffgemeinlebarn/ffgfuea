@@ -2,7 +2,9 @@ import { Injectable, inject, signal } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { DataService } from '../data/data.service';
 import { SettingsService } from '../settings/settings.service';
+import { IFeuerwehrRef } from '../../interfaces/i-feuerwehr';
 import { SyncApi } from '../sync-api/sync-api';
+import { errorMessage } from '../../utils/error-message';
 
 @Injectable({
     providedIn: 'root'
@@ -41,7 +43,7 @@ export class SyncService
         }
         catch
         {
-            this.snackBar.open('Synchronisation nicht möglich - Service nicht erreichbar!', null, { duration: 3000 });
+            this.snackBar.open('Synchronisation nicht möglich - Service nicht erreichbar!', undefined, { duration: 3000 });
             return;
         }
 
@@ -82,17 +84,21 @@ export class SyncService
         if (!feuerwehr)
             throw new Error(`Die Feuerwehr mit der Nummer ${feuerwehrNummer} wurde nicht gefunden!`);
 
-        feuerwehr.flaschen.forEach(flasche => flasche.feuerwehr = {
+        const { flaschen, ...rest } = feuerwehr;
+        const ref: IFeuerwehrRef = {
             feuerwehrNummer: feuerwehr.feuerwehrNummer,
             eigentuemerId: feuerwehr.eigentuemerId,
             name: feuerwehr.name
-        });
+        };
 
-        await this.data.saveFeuerwehr(feuerwehr);
+        await this.data.saveFeuerwehr({
+            ...rest,
+            flaschen: (flaschen ?? []).map(flasche => ({ ...flasche, feuerwehr: ref }))
+        });
     }
 
     private showError(error: unknown)
     {
-        this.snackBar.open(error instanceof Error ? error.message : String(error), null, { duration: 3000 });
+        this.snackBar.open(errorMessage(error), undefined, { duration: 3000 });
     }
 }

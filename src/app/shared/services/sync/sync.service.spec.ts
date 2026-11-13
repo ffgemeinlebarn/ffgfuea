@@ -57,7 +57,7 @@ describe('SyncService', () =>
         await service.addFeuerwehr(9);
 
         expect(data.feuerwehren()).toEqual([]);
-        expect(snackBar).toHaveBeenCalledWith('Die Feuerwehr mit der Nummer 9 wurde nicht gefunden!', null, { duration: 3000 });
+        expect(snackBar).toHaveBeenCalledWith('Die Feuerwehr mit der Nummer 9 wurde nicht gefunden!', undefined, { duration: 3000 });
     });
 
     it('synchronisiert nicht, wenn sich der MAT Datensatz nicht geändert hat', async () =>
@@ -99,6 +99,6 @@ describe('SyncService', () =>
 
         await service.syncSavedFeuerwehren();
 
-        expect(snackBar).toHaveBeenCalledWith('Synchronisation nicht möglich - Service nicht erreichbar!', null, { duration: 3000 });
+        expect(snackBar).toHaveBeenCalledWith('Synchronisation nicht möglich - Service nicht erreichbar!', undefined, { duration: 3000 });
     });
 });

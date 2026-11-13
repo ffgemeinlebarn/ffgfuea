@@ -51,7 +51,7 @@
 
   @if (noOpenEreignis()) {
     <input #fileInput type="file" accept=".json,application/json" hidden
-      (change)="selectFile(fileInput.files[0]); fileInput.value = ''">
+      (change)="selectFile(fileInput.files?.[0]); fileInput.value = ''">
     <button mat-stroked-button [disabled]="busy()" (click)="fileInput.click()">Datei auswählen</button>
   } @else {
     <p><strong>Während eines laufenden Einsatzes oder einer Übung ist kein Import möglich.</strong></p>
@@ -71,7 +71,8 @@
     </div>
   }
 
-  @if (importBackup(); as backup) {
+  @if (importSummary(); as summary) {
+    @let backup = summary.backup;
     <div class="summary">
       <p><strong>{{ importFileName() }}</strong></p>
       <ul>
@@ -80,11 +81,11 @@
         } @else if (backup.exportedAt) {
           <li>Exportiert am {{ backup.exportedAt | date: 'dd.MM.yyyy HH:mm' }}{{ backup.appVersion ? ' mit Version ' + backup.appVersion : '' }}{{ backup.testMode ? ' aus der Testdatenbank' : '' }}</li>
         }
-        <li>{{ backup.feuerwehren.length }} Feuerwehren mit {{ importSummary().flaschen }} Flaschen</li>
+        <li>{{ backup.feuerwehren.length }} Feuerwehren mit {{ summary.flaschen }} Flaschen</li>
         <li>{{ backup.personen.length }} Personen</li>
-        <li>{{ backup.ereignisse.length }} Einsätze & Übungen mit {{ importSummary().fuellungen }} Füllungen
-          @if (importSummary().from) {
-            ({{ importSummary().from | date: 'dd.MM.yyyy' }} bis {{ importSummary().to | date: 'dd.MM.yyyy' }})
+        <li>{{ backup.ereignisse.length }} Einsätze & Übungen mit {{ summary.fuellungen }} Füllungen
+          @if (summary.from && summary.to) {
+            ({{ summary.from | date: 'dd.MM.yyyy' }} bis {{ summary.to | date: 'dd.MM.yyyy' }})
           }
         </li>
       </ul>

@@ -4,12 +4,14 @@ import { IPerson } from './i-person';
 
 export interface IEreignis
 {
+    /** Erst nach dem ersten Speichern vergeben */
     id?: number;
     type: EreignisType;
-    datetimeStart?: Date;
-    datetimeEnd?: Date;
+    datetimeStart: Date;
+    /** null, solange das Ereignis läuft */
+    datetimeEnd: Date | null;
     ort?: string;
 
-    personen?: Array<IPerson>;
-    fuellungen?: Array<IFuellung>;
+    personen: Array<IPerson>;
+    fuellungen: Array<IFuellung>;
 }

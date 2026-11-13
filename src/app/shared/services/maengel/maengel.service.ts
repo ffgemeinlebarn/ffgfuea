@@ -28,7 +28,7 @@ export class MaengelService
         });
     }
 
-    public async getSingle(id: number): Promise<IMangel>
+    public async getSingle(id: number): Promise<IMangel | undefined>
     {
         console.log('[DB] [Mangel] Get Single', id);
         return await this.database.db.maengel?.get(id);

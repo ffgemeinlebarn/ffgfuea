@@ -1,5 +1,6 @@
 import { EreignisType } from '../../enums/ereignis-type';
 import { createEreignis, createFeuerwehr, createFuellung } from 'src/app/testing/test-data';
+import { IFlasche } from '../../interfaces/i-flasche';
 import { buildStatistics } from './statistics';
 
 describe('buildStatistics', () =>
@@ -37,7 +38,7 @@ describe('buildStatistics', () =>
     it('ignoriert Füllungen ohne Feuerwehr in der Aufschlüsselung', () =>
     {
         const stats = buildStatistics([
-            createEreignis({ fuellungen: [createFuellung({ barcode: '1' })] })
+            createEreignis({ fuellungen: [createFuellung({ barcode: '1' } as IFlasche)] })
         ]);
 
         expect(stats[0].fuellungen).toBe(1);

@@ -8,6 +8,7 @@ import { BackupService, ImportMode } from 'src/app/shared/services/backup/backup
 import { DataService } from 'src/app/shared/services/data/data.service';
 import { DatabaseService } from 'src/app/shared/services/database/database.service';
 import { SettingsService } from 'src/app/shared/services/settings/settings.service';
+import { errorMessage } from 'src/app/shared/utils/error-message';
 import { environment } from 'src/environments/environment';
 import { MatButton } from '@angular/material/button';
 import { DatePipe } from '@angular/common';
@@ -37,8 +38,8 @@ export class SettingsPageComponent implements OnInit, OnDestroy
     /** Testmodus und Import nur, wenn kein Ereignis läuft */
     public readonly noOpenEreignis = signal(false);
     public readonly busy = signal(false);
-    public readonly importFileName = signal<string>(null);
-    public readonly importBackup = signal<IBackup>(null);
+    public readonly importFileName = signal<string | null>(null);
+    public readonly importBackup = signal<IBackup | null>(null);
     public readonly importProblems = signal<Array<string>>([]);
     public readonly importMode = signal<ImportMode>('merge');
     public readonly importSummary = computed(() => summarize(this.importBackup()));
@@ -74,7 +75,7 @@ export class SettingsPageComponent implements OnInit, OnDestroy
         }
         catch (error)
         {
-            this.snackBar.open(`Export fehlgeschlagen: ${error.message}`, null, { duration: 5000 });
+            this.snackBar.open(`Export fehlgeschlagen: ${errorMessage(error)}`, undefined, { duration: 5000 });
         }
         finally
         {
@@ -97,12 +98,14 @@ export class SettingsPageComponent implements OnInit, OnDestroy
         }
         catch (error)
         {
-            this.importProblems.set(error instanceof BackupError ? error.problems : [error.message]);
+            this.importProblems.set(error instanceof BackupError ? error.problems : [errorMessage(error)]);
         }
     }
 
     public async import()
     {
+        const backup = this.importBackup();
+        if (!backup) return;
         const mode = this.importMode();
 
         if (mode === 'replace')
@@ -120,14 +123,14 @@ export class SettingsPageComponent implements OnInit, OnDestroy
         this.busy.set(true);
         try
         {
-            const result = await this.backup.import(this.importBackup(), mode);
+            const result = await this.backup.import(backup, mode);
             const skipped = result.skipped > 0 ? `, ${result.skipped} bereits vorhanden` : '';
-            this.snackBar.open(`Import abgeschlossen: ${result.ereignisse} Ereignisse, ${result.personen} Personen und ${result.feuerwehren} Feuerwehren übernommen${skipped}`, null, { duration: 5000 });
+            this.snackBar.open(`Import abgeschlossen: ${result.ereignisse} Ereignisse, ${result.personen} Personen und ${result.feuerwehren} Feuerwehren übernommen${skipped}`, undefined, { duration: 5000 });
             this.selectFile(undefined);
         }
         catch (error)
         {
-            this.snackBar.open(`Import fehlgeschlagen: ${error.message}`, null, { duration: 5000 });
+            this.snackBar.open(`Import fehlgeschlagen: ${errorMessage(error)}`, undefined, { duration: 5000 });
         }
         finally
         {
@@ -153,6 +156,7 @@ function summarize(backup: IBackup | null)
     // Kein Math.min(...starts), das sprengt bei vielen Ereignissen den Stack
     const starts = backup.ereignisse.map(ereignis => ereignis.datetimeStart.getTime());
     return {
+        backup,
         flaschen: backup.feuerwehren.reduce((sum, feuerwehr) => sum + feuerwehr.flaschen.length, 0),
         fuellungen: backup.ereignisse.reduce((sum, ereignis) => sum + ereignis.fuellungen.length, 0),
         from: starts.length ? new Date(starts.reduce((a, b) => Math.min(a, b))) : null,

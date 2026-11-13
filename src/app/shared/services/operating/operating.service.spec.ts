@@ -40,7 +40,7 @@ describe('OperatingService', () =>
 
     it('lädt das offene Ereignis und startet die Laufzeit', () =>
     {
-        expect(service.ereignis().id).toBe(ereignisId);
+        expect(service.ereignis()!.id).toBe(ereignisId);
         expect(TestBed.inject(TimingService).ereignisStart()).toEqual(createEreignis().datetimeStart);
     });
 
@@ -56,7 +56,7 @@ describe('OperatingService', () =>
         await service.addFuellung(data.getFlascheByBarcode('11111'));
         await service.addFuellung(data.getFlascheByBarcode('22221'));
 
-        expect(service.ereignis().fuellungen.map(f => f.flasche.barcode)).toEqual(['22221', '11111']);
+        expect(service.ereignis()!.fuellungen.map(f => f.flasche.barcode)).toEqual(['22221', '11111']);
         expect((await savedFuellungen()).length).toBe(2);
         expect(service.ereignisAnzahlFeuerwehren()).toBe(2);
     });
@@ -65,7 +65,7 @@ describe('OperatingService', () =>
     {
         dialogResult = false;
         await service.addFuellung(data.getFlascheByBarcode('11111'));
-        expect(service.ereignis().fuellungen).toEqual([]);
+        expect(service.ereignis()!.fuellungen).toEqual([]);
 
         dialogResult = true;
         await service.addFuellung(data.getFlascheByBarcode('11111'));
@@ -79,9 +79,9 @@ describe('OperatingService', () =>
         await service.addFuellung(data.getFlascheByBarcode('11111'));
         await service.addFuellung(data.getFlascheByBarcode('11112'));
 
-        await service.removeFuellung(service.ereignis().fuellungen[0]);
+        await service.removeFuellung(service.ereignis()!.fuellungen[0]);
 
-        expect(service.ereignis().fuellungen.map(f => f.flasche.barcode)).toEqual(['11111']);
+        expect(service.ereignis()!.fuellungen.map(f => f.flasche.barcode)).toEqual(['11111']);
         expect((await savedFuellungen()).length).toBe(1);
     });
 
@@ -92,8 +92,8 @@ describe('OperatingService', () =>
         it('erfasst gescannte Barcodes', async () =>
         {
             pressKeys('1', '1', '1', '1', '2', 'Enter');
-            await vi.waitFor(() => expect(service.ereignis().fuellungen.length).toBe(1));
-            expect(service.ereignis().fuellungen[0].flasche.barcode).toBe('11112');
+            await vi.waitFor(() => expect(service.ereignis()!.fuellungen.length).toBe(1));
+            expect(service.ereignis()!.fuellungen[0].flasche.barcode).toBe('11112');
         });
 
         it('ignoriert zu kurze Eingaben und Eingaben mit anderen Zeichen', async () =>
@@ -101,7 +101,7 @@ describe('OperatingService', () =>
             pressKeys('1', '1', '1', '1', 'Enter');
             pressKeys('1', '1', 'a', '1', '1', '1', 'Enter');
             await new Promise(resolve => setTimeout(resolve, 50));
-            expect(service.ereignis().fuellungen).toEqual([]);
+            expect(service.ereignis()!.fuellungen).toEqual([]);
         });
 
         it('ist deaktivierbar', async () =>
@@ -109,7 +109,7 @@ describe('OperatingService', () =>
             service.barcodeInputActive.set(false);
             pressKeys('1', '1', '1', '1', '1', 'Enter');
             await new Promise(resolve => setTimeout(resolve, 50));
-            expect(service.ereignis().fuellungen).toEqual([]);
+            expect(service.ereignis()!.fuellungen).toEqual([]);
         });
     });
 

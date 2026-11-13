@@ -7,6 +7,7 @@ import { IEreignis } from '../../interfaces/i-ereignis';
 import { IFlasche } from '../../interfaces/i-flasche';
 import { IFuellung } from '../../interfaces/i-fuellung';
 import { DataService } from '../data/data.service';
+import { errorMessage } from '../../utils/error-message';
 import { TimingService } from '../timing/timing.service';
 
 @Injectable({
@@ -27,7 +28,7 @@ export class OperatingService
     public readonly confirmFuellungActive = signal(true);
 
     /** Das aktuell laufende Ereignis */
-    public readonly ereignis = signal<IEreignis>(null);
+    public readonly ereignis = signal<IEreignis | null>(null);
 
     public readonly ereignisAnzahlFeuerwehren = computed(() =>
         new Set(this.ereignis()?.fuellungen?.map(fuellung => fuellung.flasche?.feuerwehr?.feuerwehrNummer)).size
@@ -57,7 +58,7 @@ export class OperatingService
             // Enter
             if (event.key === 'Enter' && this.barcodeInputBuffer.length >= this.minBarcodeZeichen)
             {
-                this.snackBar.open(`Barcodeeingabe erkannt: ${this.barcodeInputBuffer}`, null, { duration: 1000 });
+                this.snackBar.open(`Barcodeeingabe erkannt: ${this.barcodeInputBuffer}`, undefined, { duration: 1000 });
 
                 this.addFuellungByBarcode(this.barcodeInputBuffer);
                 this.barcodeInputBuffer = '';
@@ -99,7 +100,7 @@ export class OperatingService
         }
         catch (error)
         {
-            this.snackBar.open(error.message, null, { duration: 3000 });
+            this.snackBar.open(errorMessage(error), undefined, { duration: 3000 });
         }
     }
 
@@ -128,26 +129,32 @@ export class OperatingService
     {
         if (!this.ereignis()?.fuellungen.includes(fuellung))
         {
-            this.snackBar.open(`Füllung konnte nicht entfernt werden!`, null, { duration: 3000 });
+            this.snackBar.open(`Füllung konnte nicht entfernt werden!`, undefined, { duration: 3000 });
             return;
         }
 
         await this.updateFuellungen(fuellungen => fuellungen.filter(item => item !== fuellung));
-        this.snackBar.open(`Füllung entfernt!`, null, { duration: 3000 });
+        this.snackBar.open(`Füllung entfernt!`, undefined, { duration: 3000 });
     }
 
     public async closeEreignis()
     {
-        const ereignis = { ...this.ereignis(), datetimeEnd: new Date() };
+        const ereignis = this.ereignis();
+        if (!ereignis) return;
+
         this.ereignis.set(null);
         this.timing.ereignisStart.set(null);
-        await this.data.saveEreignis(ereignis);
+        await this.data.saveEreignis({ ...ereignis, datetimeEnd: new Date() });
         this.router.navigate(['/']);
     }
 
     private async updateFuellungen(update: (fuellungen: Array<IFuellung>) => Array<IFuellung>)
     {
-        this.ereignis.update(ereignis => ({ ...ereignis, fuellungen: update(ereignis.fuellungen) }));
-        await this.data.saveEreignis(this.ereignis());
+        const ereignis = this.ereignis();
+        if (!ereignis) return;
+
+        const updated = { ...ereignis, fuellungen: update(ereignis.fuellungen) };
+        this.ereignis.set(updated);
+        await this.data.saveEreignis(updated);
     }
 }

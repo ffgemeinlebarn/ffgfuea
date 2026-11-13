@@ -1,9 +1,8 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
-import { IFeuerwehr } from '../../interfaces/i-feuerwehr';
 import { SettingsService } from '../settings/settings.service';
-import { SyncApi } from './sync-api';
+import { IMatFeuerwehr, SyncApi } from './sync-api';
 
 @Injectable()
 export class HttpSyncApi extends SyncApi
@@ -17,8 +16,8 @@ export class HttpSyncApi extends SyncApi
         return response.lastEdit;
     }
 
-    public getFeuerwehr(feuerwehrNummer: number): Promise<IFeuerwehr | null>
+    public getFeuerwehr(feuerwehrNummer: number): Promise<IMatFeuerwehr | null>
     {
-        return firstValueFrom(this.http.get<IFeuerwehr>(`${this.settings.syncUrl()}/sync/${feuerwehrNummer}`));
+        return firstValueFrom(this.http.get<IMatFeuerwehr>(`${this.settings.syncUrl()}/sync/${feuerwehrNummer}`));
     }
 }

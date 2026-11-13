@@ -6,6 +6,7 @@ import { IPerson } from '../../interfaces/i-person';
 import { DataService } from '../data/data.service';
 import { DatabaseService } from '../database/database.service';
 import { SettingsService } from '../settings/settings.service';
+import { errorMessage } from '../../utils/error-message';
 import { BACKUP_FORMAT, BACKUP_VERSION, BackupError, IBackup, LEGACY_VERSION, parseBackup } from './backup-format';
 
 const TABLES = ['feuerwehren', 'personen', 'ereignisse'];
@@ -55,7 +56,7 @@ export class BackupService
 
     public fileName(backup: IBackup): string
     {
-        const timestamp = formatDate(backup.exportedAt, 'yyyy-MM-dd_HH-mm', 'en-US');
+        const timestamp = formatDate(backup.exportedAt ?? new Date(), 'yyyy-MM-dd_HH-mm', 'en-US');
         return `ffgfuea-export${backup.testMode ? '-test' : ''}_${timestamp}.json`;
     }
 
@@ -159,23 +160,25 @@ export class BackupService
     private fromLegacy(items: Array<unknown>): unknown
     {
         const problems: Array<string> = [];
-        const ereignisse = items.map((item, i) => ({
-            ...(item as object),
-            fuellungen: Array.isArray(item?.['fuellungen'])
-                ? item['fuellungen'].map((fuellung, j) =>
+        const ereignisse = items.map((value, i) =>
+        {
+            const item = (value ?? {}) as Record<string, unknown>;
+            if (!Array.isArray(item['fuellungen'])) return item;
+
+            const fuellungen = item['fuellungen'].map((fuellung, j) =>
+            {
+                try
                 {
-                    try
-                    {
-                        return { datetime: fuellung?.datetime, flasche: this.data.getFlascheByBarcode(String(fuellung?.flaschenBarcode)) };
-                    }
-                    catch (error)
-                    {
-                        problems.push(`Ereignis ${i + 1}, Füllung ${j + 1}: ${error.message}`);
-                        return null;
-                    }
-                })
-                : item?.['fuellungen']
-        }));
+                    return { datetime: fuellung?.datetime, flasche: this.data.getFlascheByBarcode(String(fuellung?.flaschenBarcode)) };
+                }
+                catch (error)
+                {
+                    problems.push(`Ereignis ${i + 1}, Füllung ${j + 1}: ${errorMessage(error)}`);
+                    return null;
+                }
+            });
+            return { ...item, fuellungen };
+        });
 
         if (problems.length > 0)
             throw new BackupError(problems);

@@ -105,8 +105,8 @@ describe('BackupService', () =>
         const max = data.personen().find(person => person.vorname === 'Max');
         const imported = data.ereignisse().find(ereignis => ereignis.ort === 'Tulln');
         expect(data.ereignisse()).toHaveLength(2);
-        expect(imported.personen).toEqual([max]);
-        expect(max.id).not.toBe(backup.personen[0].id);
+        expect(imported?.personen).toEqual([max]);
+        expect(max?.id).not.toBe(backup.personen[0].id);
     });
 
     it('setzt nach dem Import von Feuerwehren die MAT Synchronisierung zurück', async () =>

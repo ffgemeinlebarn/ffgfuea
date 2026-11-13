@@ -90,19 +90,20 @@ export function parseBackup(value: unknown): IBackup
     if (problems.length > 0)
         throw new BackupError(problems);
 
+    // Ohne Probleme ist jeder Datensatz gültig
     return {
         format: BACKUP_FORMAT,
         version: value['version'],
         appVersion: typeof value['appVersion'] === 'string' ? value['appVersion'] : null,
         exportedAt: typeof value['exportedAt'] === 'string' ? value['exportedAt'] : null,
         testMode: value['testMode'] === true,
-        feuerwehren,
-        personen,
-        ereignisse
+        feuerwehren: feuerwehren as Array<IFeuerwehr>,
+        personen: personen as Array<IPerson>,
+        ereignisse: ereignisse as Array<IEreignis>
     };
 }
 
-function parseFeuerwehr(item: unknown, label: string, problems: Array<string>): IFeuerwehr
+function parseFeuerwehr(item: unknown, label: string, problems: Array<string>): IFeuerwehr | undefined
 {
     if (!isObject(item) || !Number.isFinite(item['feuerwehrNummer']))
     {
@@ -113,10 +114,10 @@ function parseFeuerwehr(item: unknown, label: string, problems: Array<string>): 
     if (item['flaschen'] != null && !Array.isArray(item['flaschen']))
         problems.push(`${label}: "flaschen" ist keine Liste.`);
 
-    return { ...item, flaschen: (item['flaschen'] ?? []) as Array<IFlasche> };
+    return { ...item, flaschen: (item['flaschen'] ?? []) as Array<IFlasche> } as IFeuerwehr;
 }
 
-function parsePerson(item: unknown, label: string, problems: Array<string>): IPerson
+function parsePerson(item: unknown, label: string, problems: Array<string>): IPerson | undefined
 {
     if (!isObject(item) || typeof item['vorname'] !== 'string' || typeof item['nachname'] !== 'string')
     {
@@ -130,7 +131,7 @@ function parsePerson(item: unknown, label: string, problems: Array<string>): IPe
     return item as unknown as IPerson;
 }
 
-function parseEreignis(item: unknown, label: string, problems: Array<string>): IEreignis
+function parseEreignis(item: unknown, label: string, problems: Array<string>): IEreignis | undefined
 {
     if (!isObject(item))
     {
@@ -159,19 +160,19 @@ function parseEreignis(item: unknown, label: string, problems: Array<string>): I
         problems.push(`${label}: "fuellungen" ist keine Liste.`);
 
     const fuellungen = (Array.isArray(item['fuellungen']) ? item['fuellungen'] : [])
-        .map((fuellung, i) => parseFuellung(fuellung, `${label}, Füllung ${i + 1}`, problems));
+        .map((fuellung, i) => parseFuellung(fuellung, `${label}, Füllung ${i + 1}`, problems)) as Array<IFuellung>;
 
     return {
         ...item,
         type: item['type'] as EreignisType,
-        datetimeStart,
+        datetimeStart: datetimeStart as Date,
         datetimeEnd,
         personen: Array.isArray(item['personen']) ? item['personen'] : [],
         fuellungen
     };
 }
 
-function parseFuellung(item: unknown, label: string, problems: Array<string>): IFuellung
+function parseFuellung(item: unknown, label: string, problems: Array<string>): IFuellung | undefined
 {
     const datetime = isObject(item) ? parseDate(item['datetime']) : null;
 
@@ -181,7 +182,7 @@ function parseFuellung(item: unknown, label: string, problems: Array<string>): I
     if (!isObject(item) || !isObject(item['flasche']))
         problems.push(`${label}: Flasche fehlt.`);
 
-    return isObject(item) ? { ...item, datetime, flasche: item['flasche'] } : undefined;
+    return isObject(item) ? { ...item, datetime: datetime as Date, flasche: item['flasche'] as IFlasche } : undefined;
 }
 
 function parseDate(value: unknown): Date | null

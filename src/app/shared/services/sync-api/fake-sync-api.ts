@@ -1,6 +1,5 @@
 import { Injectable } from '@angular/core';
-import { IFeuerwehr } from '../../interfaces/i-feuerwehr';
-import { SyncApi } from './sync-api';
+import { IMatFeuerwehr, SyncApi } from './sync-api';
 
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -17,7 +16,7 @@ export class FakeSyncApi extends SyncApi
         return new Date().toISOString();
     }
 
-    public async getFeuerwehr(feuerwehrNummer: number): Promise<IFeuerwehr | null>
+    public async getFeuerwehr(feuerwehrNummer: number): Promise<IMatFeuerwehr | null>
     {
         await delay(500);
         feuerwehrNummer = Number(feuerwehrNummer);

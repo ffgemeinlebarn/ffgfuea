@@ -28,7 +28,9 @@ export class StartPageComponent implements OnInit
     public newEreignis: IEreignis = {
         type: EreignisType.Uebung,
         datetimeStart: new Date(),
-        datetimeEnd: null
+        datetimeEnd: null,
+        personen: [],
+        fuellungen: []
     };
 
     public async ngOnInit(): Promise<void>

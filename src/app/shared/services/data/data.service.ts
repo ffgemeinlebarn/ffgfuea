@@ -6,7 +6,7 @@ import { IPerson } from '../../interfaces/i-person';
 import { DatabaseService } from '../database/database.service';
 import { buildStatistics } from './statistics';
 
-export function compareById(a: { id?: number }, b: { id?: number }): boolean
+export function compareById(a: { id?: number } | null, b: { id?: number } | null): boolean
 {
     return a && b ? a.id === b.id : a === b;
 }
@@ -90,6 +90,7 @@ export class DataService
 
     public async removePerson(person: IPerson): Promise<void>
     {
+        if (person.id == null) return;
         await this.database.db.personen.delete(person.id);
         await this.loadPersonen();
     }
@@ -100,17 +101,19 @@ export class DataService
     public async loadEreignisse(): Promise<void>
     {
         const ereignisse = await this.database.db.ereignisse.toArray();
-        this.ereignisse.set(ereignisse.sort((a, b) => b.datetimeStart.getTime() - a.datetimeStart.getTime() || b.id - a.id));
+        this.ereignisse.set(ereignisse.sort((a, b) => b.datetimeStart.getTime() - a.datetimeStart.getTime() || (b.id ?? 0) - (a.id ?? 0)));
     }
 
-    public getEreignis(id: number): Promise<IEreignis>
+    public async getEreignis(id: number): Promise<IEreignis>
     {
-        return this.database.db.ereignisse.get(id);
+        const ereignis = await this.database.db.ereignisse.get(id);
+        if (!ereignis) throw new Error(`Das Ereignis mit der Id ${id} wurde nicht gefunden!`);
+        return ereignis;
     }
 
     public async saveEreignis(ereignis: IEreignis): Promise<number>
     {
-        if (ereignis.fuellungen == null) ereignis.fuellungen = [];
+        ereignis.fuellungen ??= [];
         const id = await this.database.db.ereignisse.put(ereignis);
         await this.loadEreignisse();
         return id;

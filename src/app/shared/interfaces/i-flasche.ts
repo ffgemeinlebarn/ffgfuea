@@ -1,6 +1,7 @@
-import { IFeuerwehr } from './i-feuerwehr';
+import { IFeuerwehrRef } from './i-feuerwehr';
 
-export interface IFlasche
+/** Flasche, wie sie der MAT Sync-Service liefert */
+export interface IMatFlasche
 {
     geraeteNr?: number;
     karteiNr?: number;
@@ -14,6 +15,9 @@ export interface IFlasche
     typenInfo2?: string;
     typenInfo3?: string;
     lastEdit?: Date | string;
+}
 
-    feuerwehr?: IFeuerwehr;
+export interface IFlasche extends IMatFlasche
+{
+    feuerwehr: IFeuerwehrRef;
 }

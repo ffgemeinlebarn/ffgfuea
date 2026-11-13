@@ -2,7 +2,7 @@ import { Component, DOCUMENT, ElementRef, inject, viewChild } from '@angular/cor
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { EreignisType } from '../../enums/ereignis-type';
 import { IEreignis } from '../../interfaces/i-ereignis';
-import { IFeuerwehr } from '../../interfaces/i-feuerwehr';
+import { IFeuerwehrRef } from '../../interfaces/i-feuerwehr';
 import { IFuellung } from '../../interfaces/i-fuellung';
 import { MatList, MatListItem } from '@angular/material/list';
 import { DatePipe } from '@angular/common';
@@ -11,7 +11,7 @@ import { MatCheckbox } from '@angular/material/checkbox';
 import { FormsModule } from '@angular/forms';
 import { MatButton } from '@angular/material/button';
 
-interface IFeuerwehrFuellungen extends IFeuerwehr
+interface IFeuerwehrFuellungen extends IFeuerwehrRef
 {
     fuellungen: Array<IFuellung>;
 }
@@ -49,11 +49,13 @@ export class PrintReportsComponent
         for (const fuellung of this.data.fuellungen)
         {
             const feuerwehr = fuellung.flasche.feuerwehr;
-            if (!fuellungenPerFeuerwehr.has(feuerwehr.feuerwehrNummer))
+            let entry = fuellungenPerFeuerwehr.get(feuerwehr.feuerwehrNummer);
+            if (!entry)
             {
-                fuellungenPerFeuerwehr.set(feuerwehr.feuerwehrNummer, { ...feuerwehr, fuellungen: [] });
+                entry = { ...feuerwehr, fuellungen: [] };
+                fuellungenPerFeuerwehr.set(feuerwehr.feuerwehrNummer, entry);
             }
-            fuellungenPerFeuerwehr.get(feuerwehr.feuerwehrNummer).fuellungen.push(fuellung);
+            entry.fuellungen.push(fuellung);
         }
 
         const feuerwehren = [...fuellungenPerFeuerwehr.values()];
@@ -77,7 +79,7 @@ export class PrintReportsComponent
     public print()
     {
         this.document.body.innerHTML = this.printElement().nativeElement.innerHTML;
-        this.document.defaultView.print();
-        this.document.defaultView.location.reload();
+        this.document.defaultView?.print();
+        this.document.defaultView?.location.reload();
     }
 }

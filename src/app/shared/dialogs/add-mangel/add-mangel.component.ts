@@ -27,10 +27,10 @@ export class AddMangelComponent
 
     public compareById = compareById;
     public mangelTypes: Array<MangelType> = inject(MaengelService).mangelTyps;
-    public selectedFeuerwehr: IFeuerwehr;
-    public selectedFlasche: IFlasche;
-    public selectedPerson: IPerson;
-    public selectedMangelType: MangelType;
+    public selectedFeuerwehr?: IFeuerwehr;
+    public selectedFlasche?: IFlasche;
+    public selectedPerson?: IPerson;
+    public selectedMangelType?: MangelType;
     public selectedMangelNote = '';
 
     public feuerwehrChanged()

@@ -28,7 +28,7 @@ export class SettingsService
     {
         localStorage.setItem('testMode', String(this.testMode()));
         localStorage.setItem('syncUrl', this.syncUrl());
-        this.snackBar.open('Die Einstellungen wurden gespeichert!', null, { duration: 1000 });
+        this.snackBar.open('Die Einstellungen wurden gespeichert!', undefined, { duration: 1000 });
     }
 
     public writeSyncLastEdit(lastEdit: string)
