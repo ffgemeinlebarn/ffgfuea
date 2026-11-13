@@ -17,5 +17,4 @@ paths = [
   '''(^|/)\.angular/''',
   '''(^|/)reports/''',
   '''(^|/)coverage/''',
-  '''(^|/)\.lighthouseci/''',
 ]

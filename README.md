@@ -33,7 +33,6 @@ Alternativ in GitHub unter *Actions → Build & Deploy → Run workflow* von `ma
 | CodeQL (SAST, Suite `security-extended`) für App und Workflows | `npm run sast:codeql` | `codeql.yml` → **Analyze (javascript-typescript)**, **Analyze (actions)** | Push auf `main`, jeder PR, montags |
 | Secrets im Code und in der Git-Historie (gitleaks) | `npm run secrets:scan` | `secrets.yml` → **gitleaks** | Push auf `main`, jeder PR |
 | Bekannte Schwachstellen in Abhängigkeiten (OSV-Scanner) | – (siehe unten) | `osv-scanner.yml` → **Scan PR / osv-scan** bzw. **Scan / osv-scan** | PR bzw. Push auf `main` und montags |
-| Lighthouse (Performance, Accessibility, Best Practices, SEO) + PWA-Basics | `npm run lighthouse` | `lighthouse.yml` → **Lighthouse CI** | jeder PR |
 | OpenSSF Scorecard (Supply-Chain-Praktiken) | – | `scorecard.yml` → **Scorecard analysis** | Push auf `main`, montags |
 | Updates von npm-Paketen und Actions | – | Dependabot (`.github/dependabot.yml`) | montags |
 
@@ -44,7 +43,6 @@ Alle Actions sind per Commit-SHA gepinnt (Kommentar mit Version dahinter), Depen
 - `npm run sast:codeql` lädt beim ersten Aufruf das gepinnte CodeQL-Bundle (~550 MB, Prüfsumme wird kontrolliert) nach `~/.cache/ffgfuea/codeql` (änderbar über `FFGFUEA_CACHE_DIR` bzw. `CODEQL_CACHE_DIR`), analysiert App und Workflows und schreibt `reports/codeql.sarif` (plus je Sprache `reports/codeql-<sprache>.sarif`). Gibt es Funde der Stufe *error* oder *warning*, listet das Skript sie auf und endet mit Exit-Code 1. Bei wenig Arbeitsspeicher: `CODEQL_RAM=2048 CODEQL_THREADS=2 npm run sast:codeql`.
 - `npm run secrets:scan` lädt das gepinnte gitleaks nach `~/.cache/ffgfuea/gitleaks` und prüft die gesamte Git-Historie (alle Refs) und das Arbeitsverzeichnis. Gefundene Secrets werden nur geschwärzt ausgegeben. `bash scripts/gitleaks.sh --staged` prüft nur die gestagten Änderungen (für einen Pre-Commit-Hook), `--history` bzw. `--dir` nur einen Teil.
 - `npm run check:licenses` prüft die Lizenzen aller installierten Pakete gegen `license-check.json`.
-- `npm run lighthouse` baut die App und lässt Lighthouse dreimal gegen den statisch ausgelieferten Build laufen (Desktop-Profil). Reports: `reports/lighthouse/*.report.html`. Findet Lighthouse kein Chrome: `CHROME_PATH=/usr/bin/chromium npm run lighthouse`.
 - `reports/` ist in `.gitignore`.
 
 ### Ergebnisse lesen
@@ -52,8 +50,6 @@ Alle Actions sind per Commit-SHA gepinnt (Kommentar mit Version dahinter), Depen
 - **CodeQL / OSV-Scanner / Scorecard:** GitHub → *Security → Code scanning*. Jeder Alert zeigt Regel, Fundstelle und bei CodeQL den Datenfluss (*Show paths*). Lokal: Ausgabe von `npm run sast:codeql` oder `reports/codeql.sarif` z. B. mit der VS-Code-Erweiterung *SARIF Viewer* öffnen.
 - **gitleaks:** Ausgabe im Log des Checks **gitleaks** (Datei, Zeile, Regel, Commit; das Secret selbst ist geschwärzt).
 - **npm audit / Lizenzen:** Log des Checks **Test & Build**.
-- **Lighthouse:** Artifact *lighthouse-reports* am Workflow-Lauf herunterladen und die HTML-Reports öffnen. Accessibility unter 0.9, ein fehlendes `lang`, Titel oder Viewport sowie fehlende PWA-Basics lassen den Check fehlschlagen; Performance, Best Practices und SEO warnen nur.
-- **PWA:** Lighthouse 12 hat die PWA-Kategorie (und die Audits `installable-manifest`, `service-worker`) entfernt. Stattdessen prüft `npm run check:pwa` im Build, dass das Manifest installierbar ist (Name, `start_url`, `display`, PNG-Icons 192 und 512) und der Service Worker (`ngsw-worker.js`, `ngsw.json`) gebaut wurde.
 
 ### Fehlalarme und bewusste Ausnahmen
 
@@ -73,7 +69,6 @@ Jede Ausnahme bekommt eine Begründung – im Code-Kommentar, in der Konfigurati
   Der PR-Check schlägt nur bei Schwachstellen fehl, die der PR neu einführt; der Lauf auf `main` meldet alle bekannten als Alerts, ohne fehlzuschlagen.
 - **npm audit:** Geprüft werden nur Produktionsabhängigkeiten ab *high*. Lässt sich ein Fund nicht sofort beheben, `overrides` in `package.json` prüfen oder das Paket aktualisieren.
 - **Lizenzen:** Neue Lizenz zur `allowed`-Liste in `license-check.json` hinzufügen, wenn sie für eine ausgelieferte Web-App unproblematisch ist; sonst eine Ausnahme je Paket unter `exceptions` mit `reason`. Entwicklungsabhängigkeiten werden nicht ausgeliefert und erzeugen nur Warnungen.
-- **Lighthouse:** Schwellwerte stehen in `lighthouserc.json`. Erst das Problem beheben; Schwellwerte nur mit Begründung im PR senken.
 
 ### CodeQL-Lizenz und LICENSE-Datei
 
@@ -97,7 +92,6 @@ Diese Einstellungen kann nur ein Admin der Organisation bzw. des Repos setzen:
      - `Analyze (actions)`
      - `gitleaks`
      - `Scan PR / osv-scan`
-     - `Lighthouse CI`
    - *Require code scanning results*: Tool **CodeQL**, Schwelle *Security alerts: High or higher*, *Alerts: Errors*.
    - Die Checks erscheinen in der Auswahl erst, nachdem die Workflows einmal gelaufen sind.
 4. Optional: *Environments → production* auf *Deployment branches and tags*: `main` und Tags `v*` beschränken und ggf. *Required reviewers* setzen.
