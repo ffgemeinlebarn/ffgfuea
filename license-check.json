@@ -1,0 +1,22 @@
+{
+    "$comment": "Configuration for scripts/check-licenses.mjs (npm run check:licenses). Production dependencies end up in the deployed app and must match 'allowed' or have an exception. Development dependencies are never shipped and only produce warnings. Every exception needs a reason.",
+    "allowed": [
+        "MIT",
+        "MIT-0",
+        "ISC",
+        "BSD-2-Clause",
+        "BSD-3-Clause",
+        "Apache-2.0",
+        "0BSD",
+        "CC0-1.0",
+        "Unlicense",
+        "BlueOak-1.0.0",
+        "Zlib"
+    ],
+    "exceptions": {
+        "rgbcolor@1.0.1": {
+            "license": "MIT",
+            "reason": "package.json declares \"MIT OR SEE LICENSE IN FEEL-FREE.md\", which is not a valid SPDX expression. LICENSE.md in the package is the MIT license text. Pulled in by jspdf -> canvg (optional dependency of jsPDF)."
+        }
+    }
+}

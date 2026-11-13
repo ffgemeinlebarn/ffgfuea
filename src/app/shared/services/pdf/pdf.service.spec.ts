@@ -59,7 +59,13 @@ describe('PDF-Berichte', () =>
             const text = seitenText(doc)[0];
             expect(text).toContain('(Gesamtbericht)');
             expect(text).toContain('(2026-007)');
-            expect(text).toContain('(01.05.2026 18:30 Uhr)');
+            // Datum normal, Uhrzeit fett als eigenes Textstück
+            expect(text).toContain('(01.05.2026 )');
+            expect(text).toContain('(18:30 Uhr)');
+            expect(text).toContain('(Übernommen von Feuerwehr FF 1)');
+            // Unterschriftsfelder ohne Name und Datum
+            expect(text).not.toContain('(Name)');
+            expect(text).not.toContain('(Datum)');
             expect(text).toContain('(Max Muster)');
             expect(text).toContain('(FF 1)');
             expect(text).toContain('(FF 2)');
@@ -111,7 +117,9 @@ describe('PDF-Berichte', () =>
             expect(text).toContain('(Bericht für die Feuerwehr FF 1)');
             expect(text).toContain('(Summe: 3 Füllungen)');
             expect(text).toContain('(Füllpersonal)');
-            expect(text).toContain('(Übernommen von Feuerwehr FF 1)');
+            // Die Feuerwehr unterschreibt nur am Gesamtbericht
+            expect(text).not.toContain('(Übernommen von Feuerwehr FF 1)');
+            expect(text).not.toContain('(Name)');
             expect(text).toContain('(Seite 1 von 1)');
         });
 
@@ -123,7 +131,7 @@ describe('PDF-Berichte', () =>
             expect(doc.getNumberOfPages()).toBeGreaterThan(1);
             for (let i = 1; i <= doc.getNumberOfPages(); i++)
                 expect(format(doc, i)).toEqual({ breite: A4.kurz, hoehe: A4.lang });
-            expect(seitenText(doc).at(-1)).toContain('(Übernommen von Feuerwehr FF 1)');
+            expect(seitenText(doc).at(-1)).toContain('(Füllpersonal)');
         });
     });
 

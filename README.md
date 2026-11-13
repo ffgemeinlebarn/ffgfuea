@@ -1,5 +1,9 @@
 # FFGFÜA
 
+[![Build & Deploy](https://github.com/ffgemeinlebarn/ffgfuea/actions/workflows/multistage.yml/badge.svg)](https://github.com/ffgemeinlebarn/ffgfuea/actions/workflows/multistage.yml)
+[![CodeQL](https://github.com/ffgemeinlebarn/ffgfuea/actions/workflows/codeql.yml/badge.svg)](https://github.com/ffgemeinlebarn/ffgfuea/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/ffgemeinlebarn/ffgfuea/badge)](https://scorecard.dev/viewer/?uri=github.com/ffgemeinlebarn/ffgfuea)
+
 FF Gemeinlebarn Füllapplikation
 
 ## Entwicklung
@@ -7,6 +11,24 @@ FF Gemeinlebarn Füllapplikation
 - `npm start` – Entwicklungsserver. Verwendet Beispieldaten statt des lokalen MAT Sync-Services (`fakeSyncApi` in `src/environments/environment.development.ts`).
 - `npm test` – Unit-Tests mit Vitest
 - `npm run build` – Produktions-Build nach `dist/ffgfuea/browser`
+- `npm run e2e` – E2E-Tests mit Playwright, siehe unten
+
+## E2E-Tests
+
+Die End-to-End-Tests in `e2e/` (`*.e2e.ts`) laufen mit [Playwright](https://playwright.dev) in Chromium gegen den Entwicklungsserver mit der FakeSyncApi: Eine synchronisierte Feuerwehr Nr. N hat 12 Flaschen mit den Barcodes `N01` bis `N12`. Jeder Test startet mit einem neuen Browser-Kontext und damit einer leeren Datenbank. Gemeinsame Schritte (Feuerwehr synchronisieren, Personal anlegen, Ereignis starten, Barcode scannen, auf die Synchronisierung beim Start warten, Ordnerauswahl im Origin Private File System) liegen in `e2e/fixtures.ts`.
+
+```bash
+npx playwright install chromium   # einmalig, CI: --with-deps
+npm run e2e                       # alle Tests, startet `ng serve --port 4300` (läuft er schon, wird er verwendet)
+npm run e2e:ui                    # interaktiver UI-Modus
+npx playwright show-report        # HTML-Bericht der letzten Ausführung
+```
+
+- `PW_CHROMIUM_PATH=/usr/bin/chromium npm run e2e` verwendet ein vorhandenes Chromium statt des von Playwright installierten.
+- `PW_WORKERS=4 npm run e2e` ändert die Anzahl paralleler Browser (Standard 2).
+- Bei Fehlern liegen Trace, Screenshot und Video in `test-results/` (`npx playwright show-trace <trace.zip>`).
+
+In GitHub Actions laufen die Tests bei jedem Pull Request und bei Pushes auf `main` und `refactoring` (`.github/workflows/e2e.yml`); der HTML-Bericht und bei Fehlern die Traces werden als Artefakte hochgeladen.
 
 ## Release
 
@@ -16,6 +38,81 @@ Pull Requests und Pushes auf `main` werden von GitHub Actions getestet und gebau
 2. Tag pushen, z. B. `git tag v1.4.0 && git push origin v1.4.0`
 
 Alternativ in GitHub unter *Actions → Build & Deploy → Run workflow* von `main` manuell starten. Die Option „Clean slate“ löscht vorher alle Dateien am Server (z. B. beim ersten Deploy, um alte Builds zu entfernen).
+
+## Qualität & Sicherheit
+
+### Was läuft wo
+
+| Prüfung | Lokal | CI (Workflow → Check) | Wann in CI |
+| --- | --- | --- | --- |
+| Unit-Tests & Build | `npm test`, `npm run build` | `multistage.yml` → **Test & Build** | Push auf `main`, `v*`-Tags, jeder PR |
+| npm audit (nur Produktionsabhängigkeiten, ab *high*) | `npm audit --omit=dev --audit-level=high` | Schritt in **Test & Build** | wie oben |
+| Lizenzen der Abhängigkeiten | `npm run check:licenses` | Schritt in **Test & Build** | wie oben |
+| CodeQL (SAST, Suite `security-extended`) für App und Workflows | `npm run sast:codeql` | `codeql.yml` → **Analyze (javascript-typescript)**, **Analyze (actions)** | Push auf `main`, jeder PR, montags |
+| Secrets im Code und in der Git-Historie (gitleaks) | `npm run secrets:scan` | `secrets.yml` → **gitleaks** | Push auf `main`, jeder PR |
+| Bekannte Schwachstellen in Abhängigkeiten (OSV-Scanner) | – (siehe unten) | `osv-scanner.yml` → **Scan PR / osv-scan** bzw. **Scan / osv-scan** | PR bzw. Push auf `main` und montags |
+| OpenSSF Scorecard (Supply-Chain-Praktiken) | – | `scorecard.yml` → **Scorecard analysis** | Push auf `main`, montags |
+| Updates von npm-Paketen und Actions | – | Dependabot (`.github/dependabot.yml`) | montags |
+
+Alle Actions sind per Commit-SHA gepinnt (Kommentar mit Version dahinter), Dependabot hält sie aktuell. Workflows haben nur die nötigen Rechte (`permissions`), neue Pushes auf einen PR brechen ältere Läufe ab.
+
+### Lokale Befehle
+
+- `npm run sast:codeql` lädt beim ersten Aufruf das gepinnte CodeQL-Bundle (~550 MB, Prüfsumme wird kontrolliert) nach `~/.cache/ffgfuea/codeql` (änderbar über `FFGFUEA_CACHE_DIR` bzw. `CODEQL_CACHE_DIR`), analysiert App und Workflows und schreibt `reports/codeql.sarif` (plus je Sprache `reports/codeql-<sprache>.sarif`). Gibt es Funde der Stufe *error* oder *warning*, listet das Skript sie auf und endet mit Exit-Code 1. Bei wenig Arbeitsspeicher: `CODEQL_RAM=2048 CODEQL_THREADS=2 npm run sast:codeql`.
+- `npm run secrets:scan` lädt das gepinnte gitleaks nach `~/.cache/ffgfuea/gitleaks` und prüft die gesamte Git-Historie (alle Refs) und das Arbeitsverzeichnis. Gefundene Secrets werden nur geschwärzt ausgegeben. `bash scripts/gitleaks.sh --staged` prüft nur die gestagten Änderungen (für einen Pre-Commit-Hook), `--history` bzw. `--dir` nur einen Teil.
+- `npm run check:licenses` prüft die Lizenzen aller installierten Pakete gegen `license-check.json`.
+- `reports/` ist in `.gitignore`.
+
+### Ergebnisse lesen
+
+- **CodeQL / OSV-Scanner / Scorecard:** GitHub → *Security → Code scanning*. Jeder Alert zeigt Regel, Fundstelle und bei CodeQL den Datenfluss (*Show paths*). Lokal: Ausgabe von `npm run sast:codeql` oder `reports/codeql.sarif` z. B. mit der VS-Code-Erweiterung *SARIF Viewer* öffnen.
+- **gitleaks:** Ausgabe im Log des Checks **gitleaks** (Datei, Zeile, Regel, Commit; das Secret selbst ist geschwärzt).
+- **npm audit / Lizenzen:** Log des Checks **Test & Build**.
+
+### Fehlalarme und bewusste Ausnahmen
+
+Jede Ausnahme bekommt eine Begründung – im Code-Kommentar, in der Konfiguration oder beim Schließen des Alerts.
+
+- **CodeQL:** Echte Probleme im Code beheben. Fehlalarme in GitHub unter *Security → Code scanning* mit *Dismiss alert* („False positive“ oder „Won’t fix“) und Kommentar schließen; der Alert bleibt dann auch bei späteren Läufen geschlossen. Ganze Pfade lassen sich in `.github/codeql/codeql-config.yml` (`paths-ignore`) ausnehmen – dort sind bewusst nur `node_modules`, Build-Ausgaben und Testcode (`*.spec.ts`, `src/test-setup.ts`, `src/app/testing/`) ausgenommen: Testcode läuft nur in Vitest und wird nie ausgeliefert, Alerts dort sind nicht ausnutzbar.
+- **gitleaks:** Ein echtes Secret, das committet wurde, gilt als kompromittiert: **sofort widerrufen bzw. rotieren**, erst danach aufräumen (die Historie wird nicht umgeschrieben). Fehlalarme mit `gitleaks:allow` als Kommentar in der betroffenen Zeile markieren oder in `.gitleaks.toml` eine `[[allowlists]]`-Regel (möglichst eng, mit `description`) ergänzen.
+- **OSV-Scanner:** Am besten das Paket aktualisieren (Dependabot). Ist eine Schwachstelle nachweislich nicht ausnutzbar, eine `osv-scanner.toml` im Repo-Root anlegen:
+
+  ```toml
+  [[IgnoredVulns]]
+  id = "GHSA-xxxx-xxxx-xxxx"
+  ignoreUntil = 2027-01-31
+  reason = "Nur im Dev-Server von Vite, nicht im ausgelieferten Build"
+  ```
+
+  Der PR-Check schlägt nur bei Schwachstellen fehl, die der PR neu einführt; der Lauf auf `main` meldet alle bekannten als Alerts, ohne fehlzuschlagen.
+- **npm audit:** Geprüft werden nur Produktionsabhängigkeiten ab *high*. Lässt sich ein Fund nicht sofort beheben, `overrides` in `package.json` prüfen oder das Paket aktualisieren.
+- **Lizenzen:** Neue Lizenz zur `allowed`-Liste in `license-check.json` hinzufügen, wenn sie für eine ausgelieferte Web-App unproblematisch ist; sonst eine Ausnahme je Paket unter `exceptions` mit `reason`. Entwicklungsabhängigkeiten werden nicht ausgeliefert und erzeugen nur Warnungen.
+
+### CodeQL-Lizenz und LICENSE-Datei
+
+Die CodeQL CLI darf ohne kommerzielle Lizenz nur für Open-Source-Codebasen genutzt werden, also für öffentlich auf GitHub gehosteten Code unter einer von der OSI anerkannten Lizenz (CodeQL Terms and Conditions). Das Repository ist öffentlich, **enthält aber derzeit keine `LICENSE`-Datei** – ohne Lizenz ist der Code rechtlich nicht „Open Source“. Damit die lokale Nutzung (`npm run sast:codeql`) eindeutig erlaubt ist, sollte eine OSI-Lizenz (z. B. MIT) ergänzt werden. Code scanning mit CodeQL in GitHub Actions ist für öffentliche Repositories unabhängig davon kostenlos.
+
+### Manuelle Einstellungen in GitHub
+
+Diese Einstellungen kann nur ein Admin der Organisation bzw. des Repos setzen:
+
+1. *Settings → Advanced Security* (bzw. *Code security*):
+   - **Secret scanning** und **Push protection** aktivieren.
+   - **Dependabot alerts** und **Dependabot security updates** aktivieren (*Dependabot version updates* kommen aus `.github/dependabot.yml`).
+   - **Private vulnerability reporting** aktivieren (für `SECURITY.md`).
+   - **Code scanning**: kein *Default setup* aktivieren, der Workflow `codeql.yml` ist das *Advanced setup* (beides gleichzeitig ist nicht möglich).
+2. *Settings → Actions → General*: *Workflow permissions* auf **Read repository contents and packages permissions** stellen; *Allow GitHub Actions to create and approve pull requests* aus.
+3. *Settings → Rules → Rulesets* → neues Branch-Ruleset für `main` (Default branch):
+   - *Restrict deletions*, *Block force pushes*, *Require a pull request before merging*.
+   - *Require status checks to pass* mit genau diesen Checks:
+     - `Test & Build`
+     - `Analyze (javascript-typescript)`
+     - `Analyze (actions)`
+     - `gitleaks`
+     - `Scan PR / osv-scan`
+   - *Require code scanning results*: Tool **CodeQL**, Schwelle *Security alerts: High or higher*, *Alerts: Errors*.
+   - Die Checks erscheinen in der Auswahl erst, nachdem die Workflows einmal gelaufen sind.
+4. Optional: *Environments → production* auf *Deployment branches and tags*: `main` und Tags `v*` beschränken und ggf. *Required reviewers* setzen.
 
 ## Flaschen
 

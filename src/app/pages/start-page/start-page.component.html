@@ -23,7 +23,7 @@
       </mat-card-header>
       <mat-card-content>
         <mat-form-field>
-          <input matInput type="datetime-local" [ngModel]="newEreignis.datetimeStart | date:'yyyy-MM-ddTHH:mm'" (ngModelChange)="newEreignis.datetimeStart = $event">
+          <input matInput type="datetime-local" aria-label="Beginn des Ereignisses" [ngModel]="newEreignis.datetimeStart | date:'yyyy-MM-ddTHH:mm'" (ngModelChange)="newEreignis.datetimeStart = $event">
         </mat-form-field>
       </mat-card-content>
     </mat-card>
@@ -52,7 +52,7 @@
       </mat-card-header>
       <mat-card-content>
         <mat-form-field>
-          <input matInput [(ngModel)]="newEreignis.ort">
+          <input matInput aria-label="Ort" [(ngModel)]="newEreignis.ort">
         </mat-form-field>
       </mat-card-content>
     </mat-card>
