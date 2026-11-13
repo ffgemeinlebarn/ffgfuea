@@ -7,22 +7,48 @@
 // Development dependencies (never shipped): violations are only reported as warnings.
 //
 // SPDX expressions are evaluated: "A OR B" passes if one side is allowed,
-// "A AND B" only if both are. Guessed licenses ("MIT*") always need an exception.
-import { readFileSync } from 'node:fs';
+// "A AND B" only if both are. Anything that is not a valid expression needs an exception.
+//
+// The package list comes from package-lock.json (which also marks dev-only packages),
+// the license from the lockfile or, if missing there, from the installed package.json.
+// No extra dependency is needed for this.
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import * as checker from 'license-checker-rseidelsohn';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const config = JSON.parse(readFileSync(join(root, 'license-check.json'), 'utf8'));
 const allowed = new Set(config.allowed);
 const exceptions = new Map(Object.entries(config.exceptions ?? {}));
 
-function scan(options) {
-    return new Promise((resolve, reject) => {
-        checker.init({ start: root, excludePrivatePackages: true, ...options }, (err, packages) =>
-            err ? reject(err) : resolve(packages));
-    });
+function licenseOf(path, entry) {
+    if (entry.license) return entry.license;
+    const manifest = join(root, path, 'package.json');
+    if (!existsSync(manifest)) return 'UNKNOWN';
+    const pkg = JSON.parse(readFileSync(manifest, 'utf8'));
+    if (typeof pkg.license === 'string') return pkg.license;
+    if (pkg.license?.type) return pkg.license.type;
+    // Old format: "licenses": [{ "type": "MIT" }, ...]
+    if (Array.isArray(pkg.licenses)) return pkg.licenses.map((l) => l.type ?? l).join(' OR ');
+    return 'UNKNOWN';
+}
+
+/** All packages of the lockfile, split into production and development (dev: true) */
+function scan() {
+    const lock = JSON.parse(readFileSync(join(root, 'package-lock.json'), 'utf8'));
+    const production = {};
+    const development = {};
+    for (const [path, entry] of Object.entries(lock.packages ?? {})) {
+        // '' is the project itself; links point to workspace folders
+        if (!path || entry.link) continue;
+        // Optional platform-specific binaries (e.g. fsevents on macOS) are often not installed
+        if (entry.optional && !existsSync(join(root, path))) continue;
+        const name = entry.name ?? path.slice(path.lastIndexOf('node_modules/') + 'node_modules/'.length);
+        const id = `${name}@${entry.version}`;
+        const info = { licenses: licenseOf(path, entry), repository: entry.resolved ?? '' };
+        (entry.dev ? development : production)[id] = info;
+    }
+    return { production, development };
 }
 
 // Minimal SPDX expression evaluator (OR, AND, parentheses, WITH exceptions ignored).
@@ -74,8 +100,7 @@ function evaluate(packages) {
             usedExceptions.add(exceptionKey);
             continue;
         }
-        const guessed = license.endsWith('*');
-        if (guessed || !isAllowed(license)) {
+        if (!isAllowed(license)) {
             violations.push({ id, license, repository: info.repository ?? '' });
         }
     }
@@ -89,8 +114,9 @@ function print(title, { violations, total }) {
     }
 }
 
-const production = evaluate(await scan({ production: true }));
-const development = evaluate(await scan({ development: true }));
+const packages = scan();
+const production = evaluate(packages.production);
+const development = evaluate(packages.development);
 
 print('Production dependencies', production);
 print('Development dependencies (warning only)', development);
