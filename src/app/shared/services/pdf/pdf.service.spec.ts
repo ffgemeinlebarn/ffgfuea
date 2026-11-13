@@ -127,6 +127,91 @@ describe('PDF-Berichte', () =>
         });
     });
 
+    describe('Sammel-PDF', () =>
+    {
+        /** Ausrichtung jeder Seite wie bei pdfinfo -f 1 -l n: q = Querformat, h = Hochformat */
+        function ausrichtungen(doc: jsPDF): string
+        {
+            return Array.from({ length: doc.getNumberOfPages() }, (_, i) =>
+            {
+                const { breite, hoehe } = format(doc, i + 1);
+                expect([breite, hoehe].sort()).toEqual([A4.kurz, A4.lang]);
+                return breite > hoehe ? 'q' : 'h';
+            }).join('');
+        }
+
+        it('hängt Berichte mit eigener Ausrichtung an ein Dokument an', () =>
+        {
+            const ereignis = ereignisMit([2, 1]);
+            const [g1, g2] = groupFuellungenByFeuerwehr(ereignis.fuellungen);
+
+            let doc = renderFeuerwehrbericht(ereignis, g1, erstellt);
+            doc = renderGesamtbericht(ereignis, erstellt, doc);
+            const ergebnis = renderFeuerwehrbericht(ereignis, g2, erstellt, doc);
+
+            expect(ergebnis).toBe(doc);
+            expect(doc.getNumberOfPages()).toBe(3);
+            expect(ausrichtungen(doc)).toBe('hqh');
+            const texte = seitenText(doc);
+            expect(texte[0]).toContain('(Bericht für die Feuerwehr FF 1)');
+            expect(texte[1]).toContain('(Gesamtbericht)');
+            expect(texte[2]).toContain('(Bericht für die Feuerwehr FF 2)');
+            // Jeder Bericht zählt seine Seiten selbst
+            texte.forEach(text => expect(text).toContain('(Seite 1 von 1)'));
+        });
+
+        it('bleibt bei Seitenumbrüchen in der Ausrichtung des jeweiligen Berichts und nummeriert pro Bericht', () =>
+        {
+            const ereignis = ereignisMit([80, 60]);
+            const [g1] = groupFuellungenByFeuerwehr(ereignis.fuellungen);
+
+            const doc = renderFeuerwehrbericht(ereignis, g1, erstellt, renderGesamtbericht(ereignis, erstellt));
+
+            const einzelnGesamt = renderGesamtbericht(ereignis, erstellt).getNumberOfPages();
+            const einzelnFf1 = renderFeuerwehrbericht(ereignis, g1, erstellt).getNumberOfPages();
+            expect(einzelnGesamt).toBeGreaterThan(1);
+            expect(einzelnFf1).toBeGreaterThan(1);
+            expect(doc.getNumberOfPages()).toBe(einzelnGesamt + einzelnFf1);
+            expect(ausrichtungen(doc)).toBe('q'.repeat(einzelnGesamt) + 'h'.repeat(einzelnFf1));
+
+            const texte = seitenText(doc);
+            expect(texte[einzelnGesamt - 1]).toContain(`(Seite ${einzelnGesamt} von ${einzelnGesamt})`);
+            expect(texte[einzelnGesamt]).toContain(`(Seite 1 von ${einzelnFf1})`);
+            expect(texte[einzelnGesamt]).toContain('(Füllbericht 2026-007 · Bericht für die Feuerwehr FF 1)');
+            expect(texte.at(-1)).toContain(`(Seite ${einzelnFf1} von ${einzelnFf1})`);
+        });
+
+        it('erzeugt die ausgewählten Berichte als ein PDF in der Reihenfolge der Auswahl', async () =>
+        {
+            const service = TestBed.inject(PdfService);
+            const ereignis = ereignisMit([2, 1]);
+            const fortschritt = vi.fn();
+
+            const pdf = await service.createSammelPdf(ereignis, undefined, erstellt, fortschritt);
+
+            expect(pdf.type).toBe('application/pdf');
+            const inhalt = await pdf.text();
+            expect(inhalt).toMatch(/^%PDF-1\.\d/);
+            expect(inhalt).toMatch(/\/Count 3\b/);
+            expect(await mediaBoxen(pdf)).toEqual(['842x595', '595x842', '595x842']);
+            // Titel im PDF-Viewer (das ü ist nicht UTF-8-kodiert)
+            expect(inhalt).toMatch(/\/Title \(F.llbericht 2026-007 Berichte\)/);
+            expect(fortschritt).toHaveBeenCalledTimes(3);
+
+            const [gesamt, ff1] = service.alleBerichte(ereignis);
+            const auswahl = await service.createSammelPdf(ereignis, [ff1, gesamt], erstellt);
+            expect(await mediaBoxen(auswahl)).toEqual(['595x842', '842x595']);
+
+            const nurGesamt = await service.createSammelPdf(ereignis, [gesamt], erstellt);
+            expect(await nurGesamt.text()).toMatch(/\/Title \(F.llbericht 2026-007 Gesamtbericht\)/);
+        });
+
+        it('verlangt mindestens einen Bericht', async () =>
+        {
+            await expect(TestBed.inject(PdfService).createSammelPdf(ereignisMit([1]), [])).rejects.toThrow('Kein Bericht ausgewählt');
+        });
+    });
+
     describe('PdfService', () =>
     {
         const ereignis = createEreignis({
