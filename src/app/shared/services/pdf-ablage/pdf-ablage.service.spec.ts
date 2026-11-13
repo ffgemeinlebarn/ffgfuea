@@ -229,6 +229,27 @@ describe('PdfAblageService', () =>
             expect([...ordner.ordner.keys()]).toEqual(['Testmodus']);
             expect(ordner.pfad('Testmodus', ...ereignisOrdner)?.dateien.size).toBe(3);
             expect(ergebnis?.pfad).toBe('Berichte/Testmodus/2026/2026-007_Einsatz_Grossweikersdorf');
+            expect(service.zielPfad(ereignis)).toBe(ergebnis?.pfad);
+        });
+
+        it('kennt den Zielpfad schon vor dem Speichern', async () =>
+        {
+            const service = await createService(ordner);
+
+            expect(service.zielPfad(ereignis)).toBe('Berichte/2026/2026-007_Einsatz_Grossweikersdorf');
+
+            await service.ordnerEntfernen();
+            expect(service.zielPfad(ereignis)).toBeNull();
+        });
+
+        it('meldet den Fortschritt nach jedem Bericht', async () =>
+        {
+            const service = await createService(ordner);
+            const fortschritt = vi.fn();
+
+            await service.speichern(ereignis, undefined, { fortschritt });
+
+            expect(fortschritt).toHaveBeenCalledTimes(3);
         });
     });
 

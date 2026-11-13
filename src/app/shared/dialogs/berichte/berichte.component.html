@@ -1,0 +1,100 @@
+<h2 mat-dialog-title>Berichte</h2>
+
+<mat-dialog-content>
+  <dl class="ereignis">
+    <div>
+      <dt>Nummer</dt>
+      <dd>{{ (data | ereignisNummer) || '–' }}</dd>
+    </div>
+    <div>
+      <dt>Art</dt>
+      <dd>{{ typ }}</dd>
+    </div>
+    <div>
+      <dt>Ort</dt>
+      <dd>{{ data.ort || '–' }}</dd>
+    </div>
+    <div>
+      <dt>Beginn</dt>
+      <dd>{{ data.datetimeStart | date: 'dd.MM.yyyy HH:mm' }} Uhr</dd>
+    </div>
+  </dl>
+
+  <mat-divider />
+
+  <div class="auswahl-kopf">
+    <mat-checkbox
+      class="alle"
+      [checked]="allSelected()"
+      [indeterminate]="!allSelected() && !noneSelected()"
+      [disabled]="busy()"
+      (change)="selectAll($event.checked)">
+      Alle
+    </mat-checkbox>
+    <span class="anzahl">{{ selectedReports().length }} von {{ reports.length }} ausgewählt</span>
+    <button mat-button class="vorauswahl" [matMenuTriggerFor]="vorauswahlMenu" [disabled]="busy()">
+      Schnellauswahl
+      <mat-icon iconPositionEnd>arrow_drop_down</mat-icon>
+    </button>
+    <mat-menu #vorauswahlMenu="matMenu" xPosition="before">
+      <button mat-menu-item class="vorauswahl-alle" (click)="vorauswahl('alle')">Alle Berichte</button>
+      <button mat-menu-item class="vorauswahl-gesamt" (click)="vorauswahl('gesamt')">Nur Gesamtbericht</button>
+      <button mat-menu-item class="vorauswahl-feuerwehren" (click)="vorauswahl('feuerwehren')" [disabled]="!feuerwehrberichte.length">
+        Alle Feuerwehrberichte
+      </button>
+    </mat-menu>
+  </div>
+
+  <ul class="reports">
+    @for (report of reports; track report.id; let first = $first) {
+      @if ($index === 1) {
+        <li class="gruppe" aria-hidden="true">Feuerwehrberichte</li>
+      }
+      <li [class.gesamt]="first" [class.feuerwehr]="!first">
+        <mat-checkbox [checked]="isSelected(report)" [disabled]="busy()" (change)="toggle(report, $event.checked)">
+          <span class="name">{{ report.name }}</span>
+          <span class="beschreibung">{{ report.beschreibung }}</span>
+        </mat-checkbox>
+        <span class="ausrichtung">{{ report.ausrichtung }}</span>
+      </li>
+    }
+    @if (!feuerwehrberichte.length) {
+      <li class="leer">Noch keine Füllungen, daher keine Feuerwehrberichte</li>
+    }
+  </ul>
+
+  <div class="ablage">
+    <mat-icon>{{ zielPfad() ? 'folder' : 'download' }}</mat-icon>
+    @if (zielPfad(); as pfad) {
+      <span>Jedes erzeugte PDF wird abgelegt in <strong class="pfad">{{ pfad }}</strong></span>
+    } @else {
+      <span>Kein Ablageordner gewählt: <em>Als PDF speichern</em> lädt die PDFs herunter</span>
+    }
+  </div>
+
+  @if (status(); as text) {
+    <div class="status" role="status">
+      <span>{{ text }}</span>
+      <mat-progress-bar mode="determinate" [value]="fortschritt()" />
+    </div>
+  }
+
+  @if (druckLink(); as url) {
+    <p class="druck-link">
+      Der Browser hat das Drucken blockiert.
+      <a mat-stroked-button [href]="url" target="_blank" rel="noopener">PDF öffnen</a>
+    </p>
+  }
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="close()" [disabled]="busy()">Schließen</button>
+  <button mat-stroked-button class="pdf" (click)="savePdf()" [disabled]="noneSelected() || busy()">
+    <mat-icon>picture_as_pdf</mat-icon>
+    Als PDF speichern
+  </button>
+  <button mat-flat-button color="primary" class="drucken" (click)="print()" [disabled]="noneSelected() || busy()" cdkFocusInitial>
+    <mat-icon>print</mat-icon>
+    Drucken
+  </button>
+</mat-dialog-actions>

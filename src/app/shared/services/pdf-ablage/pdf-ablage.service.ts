@@ -4,7 +4,7 @@ import { downloadBlob } from '../../utils/download';
 import { errorMessage } from '../../utils/error-message';
 import { DatabaseService } from '../database/database.service';
 import { ereignisPfad } from '../pdf/pdf-dateinamen';
-import { IBerichtAuswahl, IPdfDatei, PdfService } from '../pdf/pdf.service';
+import { IBerichtAuswahl, IPdfDatei, PdfFortschritt, PdfService } from '../pdf/pdf.service';
 import { getDirectoryPicker, IBerechtigungOptionen, IOrdnerHandle } from './file-system-access';
 import { OrdnerStore } from './ordner-store';
 
@@ -37,6 +37,8 @@ export interface IAblageOptionen
     /** Ohne verwendbaren Ordner herunterladen (Standard) oder gar nicht speichern */
     download?: boolean;
     erstellt?: Date;
+    /** Nach jedem erzeugten Bericht */
+    fortschritt?: PdfFortschritt;
 }
 
 /**
@@ -143,12 +145,12 @@ export class PdfAblageService
         const ziel = optionen.ziel ?? await this.zielErmitteln();
         if (!ziel.ordner && optionen.download === false) return null;
 
-        const dateien = await this.pdf.createBerichte(ereignis, auswahl, optionen.erstellt);
+        const dateien = await this.pdf.createBerichte(ereignis, auswahl, optionen.erstellt, optionen.fortschritt);
         const namen = dateien.map(datei => datei.dateiname);
 
         if (ziel.ordner)
         {
-            const pfad = [...(this.database.testMode ? [TESTMODUS_ORDNER] : []), ...ereignisPfad(ereignis)];
+            const pfad = this.unterordner(ereignis);
             await this.schreiben(ziel.ordner, pfad, dateien);
             return { art: 'ordner', pfad: [ziel.ordner.name, ...pfad].join('/'), dateien: namen };
         }
@@ -156,6 +158,21 @@ export class PdfAblageService
         const praefix = this.database.testMode ? `${TESTMODUS_ORDNER}_` : '';
         await this.herunterladen(dateien, praefix);
         return { art: 'download', pfad: '', dateien: namen.map(name => praefix + name), hinweis: ziel.hinweis };
+    }
+
+    /**
+     * Pfad, unter dem die PDFs des Ereignisses im gewählten Ordner landen, z.B. "Berichte/2026/2026-007_Uebung_Gemeinlebarn".
+     * null ohne gewählten Ordner (die PDFs werden dann heruntergeladen).
+     */
+    public zielPfad(ereignis: IEreignis): string | null
+    {
+        const ordner = this.ordner();
+        return ordner ? [ordner.name, ...this.unterordner(ereignis)].join('/') : null;
+    }
+
+    private unterordner(ereignis: IEreignis): Array<string>
+    {
+        return [...(this.database.testMode ? [TESTMODUS_ORDNER] : []), ...ereignisPfad(ereignis)];
     }
 
     /** Meldung für den Benutzer, z.B. "3 PDFs gespeichert in Berichte/2026/2026-007_Uebung" */

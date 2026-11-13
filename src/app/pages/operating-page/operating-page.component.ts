@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { AddMangelComponent } from 'src/app/shared/dialogs/add-mangel/add-mangel.component';
 import { ConfirmEreignisAbschlussComponent, EreignisAbschluss } from 'src/app/shared/dialogs/confirm-ereignis-abschluss/confirm-ereignis-abschluss.component';
 import { EditEreignisComponent } from 'src/app/shared/dialogs/edit-ereignis/edit-ereignis.component';
-import { PrintReportsComponent } from 'src/app/shared/dialogs/print-reports/print-reports.component';
+import { BerichteComponent } from 'src/app/shared/dialogs/berichte/berichte.component';
 import { RemoveFuellungComponent } from 'src/app/shared/dialogs/remove-fuellung/remove-fuellung.component';
 import { SearchFlascheComponent } from 'src/app/shared/dialogs/search-flasche/search-flasche.component';
 import { IFuellung } from 'src/app/shared/interfaces/i-fuellung';
@@ -88,9 +88,9 @@ export class OperatingPageComponent implements OnInit
         this.dialogs.open(RemoveFuellungComponent, fuellung);
     }
 
-    public openPrintReportings()
+    public openBerichte()
     {
-        this.dialogs.open(PrintReportsComponent, this.operating.ereignis());
+        this.dialogs.open(BerichteComponent, this.operating.ereignis());
     }
 
     public async confirmCloseEreignis()
@@ -104,14 +104,13 @@ export class OperatingPageComponent implements OnInit
             ? await this.ablage.zielErmitteln()
             : null;
 
-        // Erst speichern, das Drucken lädt die Seite danach neu
         const ereignis = await this.operating.closeEreignis();
         await this.router.navigate(['/']);
         if (!ereignis || !drucken) return;
 
-        // Auch die PDFs vor dem Druckdialog ablegen
+        // Alle Berichte ablegen, bevor der Berichte-Dialog zum Drucken öffnet
         if (ziel) await this.pdfAblegen(ereignis, ziel);
-        this.dialogs.open(PrintReportsComponent, ereignis);
+        this.dialogs.open(BerichteComponent, ereignis);
     }
 
     private async pdfAblegen(ereignis: IEreignis, ziel: IAblageZiel)

@@ -1,0 +1,153 @@
+:host
+{
+    display: block;
+    --berichte-grau: rgba(0, 0, 0, 0.6);
+}
+
+.ereignis
+{
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    gap: 12px 24px;
+    margin: 0 0 12px;
+
+    dt
+    {
+        font-size: 12px;
+        color: var(--berichte-grau);
+    }
+
+    dd
+    {
+        margin: 0;
+        font-weight: 500;
+        overflow-wrap: anywhere;
+    }
+}
+
+.auswahl-kopf
+{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0 4px;
+
+    .alle
+    {
+        font-weight: 500;
+    }
+
+    .anzahl
+    {
+        margin-right: auto;
+        font-size: 12px;
+        color: var(--berichte-grau);
+    }
+}
+
+.reports
+{
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0 16px;
+
+    li
+    {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 2px 0;
+    }
+
+    mat-checkbox
+    {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .gruppe
+    {
+        margin-top: 8px;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--berichte-grau);
+    }
+
+    .feuerwehr
+    {
+        padding-left: 16px;
+    }
+
+    .leer
+    {
+        padding: 8px 0 0;
+        font-size: 12px;
+        font-style: italic;
+        color: var(--berichte-grau);
+    }
+}
+
+.name,
+.beschreibung
+{
+    display: block;
+    overflow-wrap: anywhere;
+}
+
+.beschreibung,
+.ausrichtung
+{
+    font-size: 12px;
+    color: var(--berichte-grau);
+}
+
+.ausrichtung
+{
+    flex: none;
+}
+
+.ablage
+{
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 16px 0 4px;
+    font-size: 12px;
+    color: var(--berichte-grau);
+
+    mat-icon
+    {
+        flex: none;
+        font-size: 18px;
+        width: 18px;
+        height: 18px;
+    }
+
+    .pfad
+    {
+        overflow-wrap: anywhere;
+        color: rgba(0, 0, 0, 0.87);
+    }
+}
+
+.status
+{
+    display: grid;
+    gap: 4px;
+    margin-top: 12px;
+    font-size: 12px;
+}
+
+.druck-link
+{
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 12px 0 0;
+}
+
+mat-dialog-actions
+{
+    gap: 8px;
+}

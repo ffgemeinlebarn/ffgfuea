@@ -23,11 +23,14 @@ Flaschen kommen aus der MAT Synchronisierung oder werden unter *Verwaltung* je F
 
 Die Synchronisierung ersetzt die MAT Flaschen einer Feuerwehr und behält ihre manuellen Flaschen. Liefert MAT eine Flasche mit dem Barcode einer manuellen Flasche – egal bei welcher Feuerwehr – gewinnt MAT: Die manuelle Flasche wird entfernt und darüber informiert. Bereits erfasste Füllungen bleiben unverändert.
 
-## Berichte als PDF
+## Berichte
 
-Im Druckdialog (*Als PDF speichern*, nur die ausgewählten Berichte) und unter *Ereignisse* (*PDFs speichern*, alle Berichte) lassen sich die Berichte als PDF speichern: der Gesamtbericht im A4-Querformat und ein Bericht pro Feuerwehr im A4-Hochformat. Die PDFs werden mit jsPDF erzeugt (echter Text, Kopfzeilen der Tabelle auf jeder Seite, Fußzeile mit Ereignisnummer und „Seite x von y“). jsPDF wird erst beim ersten Speichern nachgeladen.
+Der Dialog *Berichte* (Kachel im Füllbetrieb, Button unter *Ereignisse*, nach „Abschließen & Berichte drucken“) zeigt das Ereignis und bietet den Gesamtbericht (A4-Querformat) und einen Bericht pro Feuerwehr (A4-Hochformat) zur Auswahl an, mit Schnellauswahl *Alle Berichte*, *Nur Gesamtbericht* und *Alle Feuerwehrberichte*. Alle Berichte werden mit jsPDF als PDF erzeugt (echter Text, Kopfzeilen der Tabelle auf jeder Seite, Fußzeile mit Ereignisnummer und „Seite x von y“ pro Bericht). jsPDF wird erst beim ersten Bericht nachgeladen.
 
-Den Zielordner wählt man einmal unter *Einstellungen → PDF-Ablage*. Darin werden die PDFs nach Jahr und Ereignisnummer abgelegt, vorhandene Dateien werden überschrieben:
+- **Drucken** erzeugt ein einziges PDF mit allen ausgewählten Berichten (Seiten in Hoch- und Querformat gemischt) und öffnet dafür den Druckdialog des Browsers über einen versteckten iframe. Klappt das nicht, wird das PDF in einem neuen Tab geöffnet; blockiert der Browser auch das, bietet der Dialog einen Link *PDF öffnen* an.
+- **Als PDF speichern** speichert jeden ausgewählten Bericht als eigenes PDF.
+
+Ist unter *Einstellungen → PDF-Ablage* ein Ordner gewählt, wird jeder Bericht, der gedruckt oder gespeichert wird, dort als eigenes PDF abgelegt. Darin werden die PDFs nach Jahr und Ereignisnummer abgelegt, vorhandene Dateien werden überschrieben:
 
 ```
 <Ordner>/
@@ -40,9 +43,9 @@ Den Zielordner wählt man einmal unter *Einstellungen → PDF-Ablage*. Darin wer
 
 Ordner- und Dateinamen enthalten keine Umlaute (ä → ae, ß → ss) und keine Sonderzeichen. Im Testmodus landen die PDFs im Unterordner `Testmodus`.
 
-Ist *Beim Abschließen & Drucken automatisch als PDF ablegen* eingeschaltet (Standard) und ein Ordner gewählt, legt „Abschließen & Berichte drucken“ alle Berichte vor dem Druckdialog im Ordner ab.
+Ist *Beim Abschließen & Drucken alle Berichte ablegen* eingeschaltet (Standard) und ein Ordner gewählt, legt „Abschließen & Berichte drucken“ alle Berichte im Ordner ab, bevor sich der Dialog *Berichte* öffnet.
 
-Die Ordnerauswahl nutzt die File System Access API und funktioniert nur in **Chrome und Edge am PC**. Der Ordner wird in einer eigenen IndexedDB (`ffgfuea_dateiablage`) gespeichert, die Schreibberechtigung fragt der Browser bei Bedarf beim Speichern ab. Ohne gewählten Ordner, ohne Berechtigung oder in anderen Browsern werden die PDFs einzeln heruntergeladen – mit denselben Dateinamen, damit sie nach Ereignisnummer sortiert bleiben.
+Die Ordnerauswahl nutzt die File System Access API und funktioniert nur in **Chrome und Edge am PC**. Der Ordner wird in einer eigenen IndexedDB (`ffgfuea_dateiablage`) gespeichert, die Schreibberechtigung fragt der Browser bei Bedarf gleich nach dem Klick ab, noch bevor die PDFs erzeugt werden. Ohne gewählten Ordner, ohne Berechtigung oder in anderen Browsern lädt *Als PDF speichern* die PDFs einzeln herunter – mit denselben Dateinamen, damit sie nach Ereignisnummer sortiert bleiben. *Drucken* druckt in diesem Fall nur.
 
 ### Altberichte (Übergangslösung)
 

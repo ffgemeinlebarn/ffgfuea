@@ -36,9 +36,9 @@
 
 <mat-card class="pdf-ablage">
   <h2>PDF-Ablage</h2>
-  <p>Die Berichte lassen sich im Druckdialog und unter <em>Ereignisse</em> als PDF speichern. Die PDFs werden nach Jahr
-    und Ereignisnummer sortiert abgelegt, z.B. <code>2026/2026-007_Einsatz_Tulln/2026-007_Gesamtbericht.pdf</code>.
-    Vorhandene Dateien werden dabei überschrieben.
+  <p>Ist ein Ordner gewählt, wird jeder Bericht, der im Dialog <em>Berichte</em> gedruckt oder als PDF gespeichert wird,
+    dort als eigenes PDF abgelegt. Die PDFs werden nach Jahr und Ereignisnummer sortiert, z.B.
+    <code>2026/2026-007_Einsatz_Tulln/2026-007_Gesamtbericht.pdf</code>. Vorhandene Dateien werden dabei überschrieben.
     @if (database.testMode) {
       Im Testmodus landen die PDFs im Unterordner <code>Testmodus</code>.
     }
@@ -49,7 +49,7 @@
       @if (ablage.ordnerName(); as name) {
         <strong>{{ name }}</strong>
       } @else {
-        <strong>keiner ausgewählt</strong> – die PDFs werden einzeln heruntergeladen
+        <strong>keiner ausgewählt</strong> – gespeicherte PDFs werden einzeln heruntergeladen
       }
     </p>
     <div class="ordner-aktionen">
@@ -66,9 +66,10 @@
   }
 
   <mat-slide-toggle class="pdf-auto-ablage" [(ngModel)]="settings.pdfAutoAblage">
-    Beim Abschließen & Drucken automatisch als PDF ablegen
+    Beim Abschließen & Drucken alle Berichte ablegen
   </mat-slide-toggle>
-  <p class="hinweis">Nur mit ausgewähltem Ordner: Vor dem Druckdialog werden alle Berichte im Ordner abgelegt.</p>
+  <p class="hinweis">Nur mit ausgewähltem Ordner: Vor dem Öffnen des Dialogs <em>Berichte</em> werden alle Berichte des
+    abgeschlossenen Ereignisses im Ordner abgelegt, auch wenn danach nur ein Teil gedruckt wird.</p>
 </mat-card>
 
 <ffg-altberichte-card></ffg-altberichte-card>

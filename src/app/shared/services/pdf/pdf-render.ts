@@ -1,5 +1,6 @@
 // Erzeugt die Berichte als Vektor-PDF mit jsPDF. Wird nur über import() aus dem PdfService geladen,
-// damit jsPDF nicht im initialen Bundle landet.
+// damit jsPDF nicht im initialen Bundle landet. Jeder Bericht kann ein eigenes Dokument bekommen oder an ein
+// bestehendes angehängt werden (Sammel-PDF zum Drucken mit Seiten in Hoch- und Querformat).
 import { jsPDF } from 'jspdf';
 import { autoTable, CellDef, CellHookData, RowInput, Styles, UserOptions, __createTable } from 'jspdf-autotable';
 import { IEreignis } from '../../interfaces/i-ereignis';
@@ -21,7 +22,7 @@ const LINIE = 0.3;
 const LINIE_FEIN = 0.15;
 
 const SPALTEN = ['Nr.', 'Zeit', 'Karteinr.', 'Barcode', 'Flaschennr.', 'Type'];
-/** Breiten der Spalten Nr. bis Flaschennr. in mm wie in den gedruckten Berichten, Type bekommt den Rest der A4-Seite */
+/** Breiten der Spalten Nr. bis Flaschennr. in mm, Type bekommt den Rest der A4-Seite */
 const SPALTEN_BREITEN: Record<Ausrichtung, Array<number>> = {
     landscape: [10, 26, 20, 40, 40],
     portrait: [9, 24, 17, 32, 32]
@@ -39,10 +40,13 @@ interface ISeite
     inhaltBreite: number;
 }
 
-/** Gesamtbericht im A4-Querformat: alle Füllungen gruppiert nach Feuerwehr, mit Summen und Unterschriftsfeldern */
-export function renderGesamtbericht(ereignis: IEreignis, erstellt: Date): jsPDF
+/**
+ * Gesamtbericht im A4-Querformat: alle Füllungen gruppiert nach Feuerwehr, mit Summen und Unterschriftsfeldern.
+ * Mit ziel wird der Bericht auf neuen Seiten an dieses Dokument angehängt.
+ */
+export function renderGesamtbericht(ereignis: IEreignis, erstellt: Date, ziel?: jsPDF): jsPDF
 {
-    const doc = createDocument('landscape', GESAMTBERICHT_TITEL, ereignis);
+    const { doc, ersteSeite } = beginneBericht(ziel, 'landscape', GESAMTBERICHT_TITEL, ereignis);
     const seite = seiteVon(doc);
     let y = drawKopf(doc, ereignis, GESAMTBERICHT_TITEL, erstellt);
 
@@ -105,7 +109,7 @@ export function renderGesamtbericht(ereignis: IEreignis, erstellt: Date): jsPDF
     y += 6;
     if (y + abschlussHoehe > seite.hoehe - RAND.bottom)
     {
-        doc.addPage();
+        doc.addPage('a4', 'landscape');
         y = RAND.top;
     }
     const startSeite = doc.getCurrentPageInfo().pageNumber;
@@ -115,15 +119,15 @@ export function renderGesamtbericht(ereignis: IEreignis, erstellt: Date): jsPDF
     drawUnterschrift(doc, RAND.left + spaltenBreite + 15, y, spaltenBreite, 'Füllpersonal');
     doc.setPage(endeSeite);
 
-    drawFusszeilen(doc, ereignis, GESAMTBERICHT_TITEL);
+    drawFusszeilen(doc, ereignis, GESAMTBERICHT_TITEL, ersteSeite);
     return doc;
 }
 
-/** Bericht für eine einzelne Feuerwehr im A4-Hochformat */
-export function renderFeuerwehrbericht(ereignis: IEreignis, gruppe: IFeuerwehrFuellungen, erstellt: Date): jsPDF
+/** Bericht für eine einzelne Feuerwehr im A4-Hochformat, mit ziel an dieses Dokument angehängt */
+export function renderFeuerwehrbericht(ereignis: IEreignis, gruppe: IFeuerwehrFuellungen, erstellt: Date, ziel?: jsPDF): jsPDF
 {
     const titel = feuerwehrberichtTitel(gruppe.feuerwehr.name);
-    const doc = createDocument('portrait', titel, ereignis);
+    const { doc, ersteSeite } = beginneBericht(ziel, 'portrait', titel, ereignis);
     const y = drawKopf(doc, ereignis, titel, erstellt);
 
     autoTable(doc, {
@@ -140,22 +144,44 @@ export function renderFeuerwehrbericht(ereignis: IEreignis, gruppe: IFeuerwehrFu
         didDrawCell: data => drawUnterschriftZelle(data)
     });
 
-    drawFusszeilen(doc, ereignis, titel);
+    drawFusszeilen(doc, ereignis, titel, ersteSeite);
     return doc;
 }
 
-function createDocument(ausrichtung: Ausrichtung, titel: string, ereignis: IEreignis): jsPDF
+/** Titel des Sammel-PDFs mit mehreren Berichten */
+export const SAMMEL_TITEL = 'Berichte';
+
+/**
+ * Setzt die Dokumenteigenschaften (Titel im PDF-Viewer) passend zu den enthaltenen Berichten,
+ * z.B. "Füllbericht 2026-007 Gesamtbericht" oder bei mehreren "Füllbericht 2026-007 Berichte"
+ */
+export function setTitel(doc: jsPDF, ereignis: IEreignis, titel: string): void
 {
-    const doc = new jsPDF({ orientation: ausrichtung, unit: 'mm', format: 'a4', compress: true });
-    const nummer = formatEreignisNummer(ereignis);
     doc.setProperties({
-        title: [BERICHT_KOPF, nummer, titel].filter(teil => !!teil).join(' '),
+        title: [BERICHT_KOPF, formatEreignisNummer(ereignis), titel].filter(teil => !!teil).join(' '),
         subject: ereignisBezeichnung(ereignis),
         creator: 'FFGFÜA'
     });
+}
+
+/**
+ * Neues Dokument oder neue Seite im bestehenden Dokument im gewünschten Format.
+ * Seiten, die jspdf-autotable danach anhängt, übernehmen dieses Format.
+ */
+function beginneBericht(ziel: jsPDF | undefined, ausrichtung: Ausrichtung, titel: string, ereignis: IEreignis): { doc: jsPDF; ersteSeite: number }
+{
+    if (ziel)
+    {
+        ziel.addPage('a4', ausrichtung);
+        ziel.setFont(SCHRIFT, 'normal');
+        return { doc: ziel, ersteSeite: ziel.getNumberOfPages() };
+    }
+
+    const doc = new jsPDF({ orientation: ausrichtung, unit: 'mm', format: 'a4', compress: true });
+    setTitel(doc, ereignis, titel);
     doc.setLanguage('de-AT');
     doc.setFont(SCHRIFT, 'normal');
-    return doc;
+    return { doc, ersteSeite: 1 };
 }
 
 function seiteVon(doc: jsPDF): ISeite
@@ -164,7 +190,7 @@ function seiteVon(doc: jsPDF): ISeite
     return { breite, hoehe: doc.internal.pageSize.getHeight(), inhaltBreite: breite - RAND.left - RAND.right };
 }
 
-/** Kopf mit Titel und den Daten des Ereignisses wie ffg-report-header, liefert die y-Position danach */
+/** Kopf mit Titel und den Daten des Ereignisses, liefert die y-Position danach */
 function drawKopf(doc: jsPDF, ereignis: IEreignis, titel: string, erstellt: Date): number
 {
     const seite = seiteVon(doc);
@@ -242,17 +268,19 @@ function drawKopf(doc: jsPDF, ereignis: IEreignis, titel: string, erstellt: Date
     return y + 6;
 }
 
-function drawFusszeilen(doc: jsPDF, ereignis: IEreignis, titel: string): void
+/** Fußzeilen der Seiten ab ersteSeite, die Seitenzahlen zählen nur innerhalb des Berichts */
+function drawFusszeilen(doc: jsPDF, ereignis: IEreignis, titel: string, ersteSeite: number): void
 {
-    const seite = seiteVon(doc);
-    const seiten = doc.getNumberOfPages();
+    const letzteSeite = doc.getNumberOfPages();
+    const seiten = letzteSeite - ersteSeite + 1;
     const nummer = formatEreignisNummer(ereignis);
     const links = [nummer ? `${BERICHT_KOPF} ${nummer}` : BERICHT_KOPF, titel].join(' · ');
-    const y = seite.hoehe - 8;
 
     for (let i = 1; i <= seiten; i++)
     {
-        doc.setPage(i);
+        doc.setPage(ersteSeite + i - 1);
+        const seite = seiteVon(doc);
+        const y = seite.hoehe - 8;
         linie(doc, RAND.left, y - 4, seite.breite - RAND.right, y - 4, LINIE_FEIN, 153);
         doc.setFont(SCHRIFT, 'normal');
         doc.setFontSize(7.5);
@@ -263,7 +291,7 @@ function drawFusszeilen(doc: jsPDF, ereignis: IEreignis, titel: string): void
     doc.setTextColor(0);
 }
 
-/** Unterschriftsfeld mit Linien für Name, Unterschrift und Datum wie ffg-unterschrift */
+/** Unterschriftsfeld mit Linien für Name, Unterschrift und Datum */
 function drawUnterschrift(doc: jsPDF, x: number, y: number, breite: number, label: string): void
 {
     doc.setFont(SCHRIFT, 'bold');
