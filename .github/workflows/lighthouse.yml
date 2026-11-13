@@ -1,0 +1,56 @@
+name: Lighthouse
+
+# Lighthouse CI gegen den Produktions-Build (statisch ausgeliefert, siehe lighthouserc.json).
+# Accessibility < 0.9 und fehlende PWA-Basics lassen den Lauf fehlschlagen, die übrigen
+# Kategorien warnen nur. Die HTML-Reports liegen als Artifact "lighthouse-reports" am Lauf.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  lighthouse:
+    name: Lighthouse CI
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Use Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Build
+        run: npx ng build
+
+      - name: Check PWA essentials
+        run: npm run check:pwa
+
+      # Nutzt das auf ubuntu-latest vorinstallierte Google Chrome
+      - name: Run Lighthouse CI
+        run: npx lhci autorun
+
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: lighthouse-reports
+          path: reports/lighthouse/
+          if-no-files-found: ignore
+          retention-days: 14

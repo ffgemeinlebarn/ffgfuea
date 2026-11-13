@@ -8,7 +8,9 @@
     "test": "ng test",
     "sast:codeql": "bash scripts/codeql.sh",
     "secrets:scan": "bash scripts/gitleaks.sh",
-    "check:licenses": "node scripts/check-licenses.mjs"
+    "check:licenses": "node scripts/check-licenses.mjs",
+    "check:pwa": "node scripts/check-pwa.mjs",
+    "lighthouse": "ng build && node scripts/check-pwa.mjs && lhci autorun"
   },
   "private": true,
   "dependencies": {
@@ -33,6 +35,7 @@
     "@angular/build": "~22.2.3",
     "@angular/cli": "~22.2.3",
     "@angular/compiler-cli": "~22.2.3",
+    "@lhci/cli": "0.15.1",
     "@types/node": "^26.6.5",
     "fake-indexeddb": "^6.2.6",
     "istanbul-lib-instrument": "^6.0.3",
