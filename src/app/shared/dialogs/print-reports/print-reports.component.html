@@ -40,12 +40,26 @@
       </li>
     }
   </ul>
+
+  <p class="ablage">
+    @if (ablage.ordnerName(); as ordner) {
+      PDFs werden im Ordner „{{ ordner }}“ abgelegt
+    } @else {
+      PDFs werden heruntergeladen
+    }
+  </p>
+  @if (saving()) {
+    <mat-progress-bar mode="indeterminate" />
+  }
 </mat-dialog-content>
 
 <mat-dialog-actions>
   <span class="auswahl">{{ selectedReports().length }} von {{ reports.length }} ausgewählt</span>
   <button mat-button (click)="close()">Abbrechen</button>
-  <button mat-flat-button color="primary" (click)="print()" [disabled]="noneSelected()" cdkFocusInitial>Drucken</button>
+  <button mat-stroked-button class="pdf" (click)="savePdf()" [disabled]="noneSelected() || saving()">
+    {{ saving() ? 'Speichert …' : 'Als PDF speichern' }}
+  </button>
+  <button mat-flat-button color="primary" (click)="print()" [disabled]="noneSelected() || saving()" cdkFocusInitial>Drucken</button>
 </mat-dialog-actions>
 
 <!-- Druckinhalt: wird nie im Dialog angezeigt, sondern beim Drucken in den body kopiert -->

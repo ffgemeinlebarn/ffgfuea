@@ -34,6 +34,43 @@
   <p>Stand des MAT Sync Datensatzes: {{ settings.syncLastEdit() }}</p>
 </mat-card>
 
+<mat-card class="pdf-ablage">
+  <h2>PDF-Ablage</h2>
+  <p>Die Berichte lassen sich im Druckdialog und unter <em>Ereignisse</em> als PDF speichern. Die PDFs werden nach Jahr
+    und Ereignisnummer sortiert abgelegt, z.B. <code>2026/2026-007_Einsatz_Tulln/2026-007_Gesamtbericht.pdf</code>.
+    Vorhandene Dateien werden dabei überschrieben.
+    @if (database.testMode) {
+      Im Testmodus landen die PDFs im Unterordner <code>Testmodus</code>.
+    }
+  </p>
+
+  @if (ablage.unterstuetzt) {
+    <p class="ordner">Ordner:
+      @if (ablage.ordnerName(); as name) {
+        <strong>{{ name }}</strong>
+      } @else {
+        <strong>keiner ausgewählt</strong> – die PDFs werden einzeln heruntergeladen
+      }
+    </p>
+    <div class="ordner-aktionen">
+      <button mat-stroked-button class="ordner-waehlen" (click)="ordnerWaehlen()">
+        {{ ablage.ordnerName() ? 'Ordner ändern' : 'Ordner auswählen' }}
+      </button>
+      @if (ablage.ordnerName()) {
+        <button mat-button class="ordner-entfernen" (click)="ordnerEntfernen()">Ordner entfernen</button>
+      }
+    </div>
+  } @else {
+    <p><strong>Dieser Browser unterstützt keine Ordnerauswahl (nur Chrome und Edge am PC), die PDFs werden einzeln
+      heruntergeladen.</strong></p>
+  }
+
+  <mat-slide-toggle class="pdf-auto-ablage" [(ngModel)]="settings.pdfAutoAblage">
+    Beim Abschließen & Drucken automatisch als PDF ablegen
+  </mat-slide-toggle>
+  <p class="hinweis">Nur mit ausgewähltem Ordner: Vor dem Druckdialog werden alle Berichte im Ordner abgelegt.</p>
+</mat-card>
+
 <mat-card>
   <h2>Export</h2>
   <p>Lädt alle Feuerwehren samt Flaschen, das Füllpersonal und alle Einsätze & Übungen als JSON-Datei herunter.

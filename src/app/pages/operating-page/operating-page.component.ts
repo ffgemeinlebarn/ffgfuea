@@ -11,6 +11,10 @@ import { BarcodeScannerService } from '../../shared/services/barcode-scanner/bar
 import { DialogService } from '../../shared/services/dialog/dialog.service';
 import { OperatingService } from '../../shared/services/operating/operating.service';
 import { TimingService } from '../../shared/services/timing/timing.service';
+import { IEreignis } from 'src/app/shared/interfaces/i-ereignis';
+import { NotificationDuration, NotificationService } from '../../shared/services/notification/notification.service';
+import { IAblageZiel, PdfAblageService } from '../../shared/services/pdf-ablage/pdf-ablage.service';
+import { SettingsService } from '../../shared/services/settings/settings.service';
 import { DatePipe } from '@angular/common';
 import { MatGridList, MatGridTile } from '@angular/material/grid-list';
 import { MatCard, MatCardTitle, MatCardActions } from '@angular/material/card';
@@ -31,6 +35,9 @@ export class OperatingPageComponent implements OnInit
 {
     private router = inject(Router);
     private dialogs = inject(DialogService);
+    private notification = inject(NotificationService);
+    private settings = inject(SettingsService);
+    private ablage = inject(PdfAblageService);
     timing = inject(TimingService);
     scanner = inject(BarcodeScannerService);
     operating = inject(OperatingService);
@@ -90,12 +97,40 @@ export class OperatingPageComponent implements OnInit
     {
         const abschluss = await this.dialogs.open<EreignisAbschluss>(ConfirmEreignisAbschlussComponent);
         if (!abschluss) return;
+        const drucken = abschluss === 'abschliessenUndDrucken';
+
+        // Automatische PDF-Ablage: Die Berechtigung für den Ordner kann nur gleich nach dem Klick angefragt werden
+        const ziel = drucken && this.settings.pdfAutoAblage() && this.ablage.ordner()
+            ? await this.ablage.zielErmitteln()
+            : null;
 
         // Erst speichern, das Drucken lädt die Seite danach neu
         const ereignis = await this.operating.closeEreignis();
         await this.router.navigate(['/']);
+        if (!ereignis || !drucken) return;
 
-        if (ereignis && abschluss === 'abschliessenUndDrucken')
-            this.dialogs.open(PrintReportsComponent, ereignis);
+        // Auch die PDFs vor dem Druckdialog ablegen
+        if (ziel) await this.pdfAblegen(ereignis, ziel);
+        this.dialogs.open(PrintReportsComponent, ereignis);
+    }
+
+    private async pdfAblegen(ereignis: IEreignis, ziel: IAblageZiel)
+    {
+        if (!ziel.ordner)
+        {
+            this.notification.show(`PDFs wurden nicht abgelegt: ${ziel.hinweis}`, NotificationDuration.long);
+            return;
+        }
+
+        this.notification.show('Berichte werden als PDF abgelegt …');
+        try
+        {
+            const ergebnis = await this.ablage.speichern(ereignis, undefined, { ziel, download: false });
+            if (ergebnis) this.notification.show(this.ablage.meldung(ergebnis), NotificationDuration.long);
+        }
+        catch (error)
+        {
+            this.notification.showError(error, 'PDFs konnten nicht abgelegt werden', NotificationDuration.long);
+        }
     }
 }

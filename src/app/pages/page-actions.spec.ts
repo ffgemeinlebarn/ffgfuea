@@ -13,6 +13,10 @@ import { RemoveFlascheComponent } from '../shared/dialogs/remove-flasche/remove-
 import { EreignisType } from '../shared/enums/ereignis-type';
 import { BarcodeScannerService } from '../shared/services/barcode-scanner/barcode-scanner.service';
 import { DataService } from '../shared/services/data/data.service';
+import { NotificationService } from '../shared/services/notification/notification.service';
+import { PdfAblageService } from '../shared/services/pdf-ablage/pdf-ablage.service';
+import { SettingsService } from '../shared/services/settings/settings.service';
+import { FakeDirectoryHandle } from 'src/app/testing/file-system';
 import { OperatingService } from '../shared/services/operating/operating.service';
 import { SyncApi } from '../shared/services/sync-api/sync-api';
 import { SyncService } from '../shared/services/sync/sync.service';
@@ -119,6 +123,95 @@ describe('Seiten-Aktionen', () =>
             expect((await data.getEreignis(id)).datetimeEnd).toBeInstanceOf(Date);
         });
 
+        describe('automatische PDF-Ablage beim Abschließen & Drucken', () =>
+        {
+            let ablage: PdfAblageService;
+            let zielErmitteln: ReturnType<typeof vi.spyOn>;
+            let speichern: ReturnType<typeof vi.spyOn>;
+            let show: ReturnType<typeof vi.spyOn>;
+            const ordner = new FakeDirectoryHandle('Berichte').asHandle();
+
+            beforeEach(() =>
+            {
+                ablage = TestBed.inject(PdfAblageService);
+                ablage.ordner.set(ordner);
+                zielErmitteln = vi.spyOn(ablage, 'zielErmitteln').mockResolvedValue({ ordner });
+                speichern = vi.spyOn(ablage, 'speichern').mockResolvedValue({ art: 'ordner', pfad: 'Berichte/2026/2026-001_Uebung_Gemeinlebarn', dateien: ['a.pdf', 'b.pdf'] });
+                show = vi.spyOn(TestBed.inject(NotificationService), 'show').mockImplementation(() => undefined);
+                dialogResult = 'abschliessenUndDrucken';
+            });
+
+            const printDialogOrder = () => open.mock.invocationCallOrder[open.mock.calls.findIndex(([c]) => c === PrintReportsComponent)];
+
+            it('legt alle Berichte vor dem Druckdialog ab', async () =>
+            {
+                const closeEreignis = vi.spyOn(operating, 'closeEreignis');
+
+                await page.confirmCloseEreignis();
+
+                // Berechtigung vor dem Speichern des Ereignisses, PDFs vor dem Druckdialog
+                expect(zielErmitteln.mock.invocationCallOrder[0]).toBeLessThan(closeEreignis.mock.invocationCallOrder[0]);
+                expect(speichern).toHaveBeenCalledWith(expect.objectContaining({ id, datetimeEnd: expect.any(Date) }), undefined, { ziel: { ordner }, download: false });
+                expect(speichern.mock.invocationCallOrder[0]).toBeLessThan(printDialogOrder());
+                openedWith(PrintReportsComponent);
+                expect(show).toHaveBeenLastCalledWith('2 PDFs gespeichert in Berichte/2026/2026-001_Uebung_Gemeinlebarn', expect.any(Number));
+            });
+
+            it('legt nichts ab, wenn die automatische Ablage ausgeschaltet ist', async () =>
+            {
+                TestBed.inject(SettingsService).pdfAutoAblage.set(false);
+
+                await page.confirmCloseEreignis();
+
+                expect(zielErmitteln).not.toHaveBeenCalled();
+                expect(speichern).not.toHaveBeenCalled();
+                openedWith(PrintReportsComponent);
+            });
+
+            it('legt ohne gewählten Ordner nichts ab', async () =>
+            {
+                ablage.ordner.set(null);
+
+                await page.confirmCloseEreignis();
+
+                expect(zielErmitteln).not.toHaveBeenCalled();
+                expect(speichern).not.toHaveBeenCalled();
+                openedWith(PrintReportsComponent);
+            });
+
+            it('legt beim Abschließen ohne Drucken nichts ab', async () =>
+            {
+                dialogResult = 'abschliessen';
+
+                await page.confirmCloseEreignis();
+
+                expect(zielErmitteln).not.toHaveBeenCalled();
+                expect(speichern).not.toHaveBeenCalled();
+            });
+
+            it('weist auf eine fehlende Berechtigung hin und druckt trotzdem', async () =>
+            {
+                zielErmitteln.mockResolvedValue({ ordner: null, hinweis: 'Keine Schreibberechtigung für den Ordner „Berichte“' });
+
+                await page.confirmCloseEreignis();
+
+                expect(speichern).not.toHaveBeenCalled();
+                expect(show).toHaveBeenCalledWith('PDFs wurden nicht abgelegt: Keine Schreibberechtigung für den Ordner „Berichte“', expect.any(Number));
+                openedWith(PrintReportsComponent);
+            });
+
+            it('öffnet den Druckdialog auch, wenn das Ablegen fehlschlägt', async () =>
+            {
+                const showError = vi.spyOn(TestBed.inject(NotificationService), 'showError').mockImplementation(() => undefined);
+                speichern.mockRejectedValue(new Error('Datenträger voll'));
+
+                await page.confirmCloseEreignis();
+
+                expect(showError).toHaveBeenCalledWith(expect.any(Error), 'PDFs konnten nicht abgelegt werden', expect.any(Number));
+                openedWith(PrintReportsComponent);
+            });
+        });
+
         it('schaltet Scanner und Bestätigung um', () =>
         {
             page.toggleScannerInput();
@@ -145,6 +238,28 @@ describe('Seiten-Aktionen', () =>
         openedWith(EditEreignisComponent);
         expect(openedData()).toEqual(ereignis);
         expect(openedData()).not.toBe(ereignis);
+    });
+
+    it('Ereignisse-Seite speichert alle Berichte eines Ereignisses als PDF', async () =>
+    {
+        const ablage = TestBed.inject(PdfAblageService);
+        let fertig!: () => void;
+        const speichern = vi.spyOn(ablage, 'speichern').mockImplementation(() =>
+            new Promise(resolve => fertig = () => resolve({ art: 'download', pfad: '', dateien: ['a.pdf'] })));
+        const show = vi.spyOn(TestBed.inject(NotificationService), 'show').mockImplementation(() => undefined);
+        const page = TestBed.createComponent(EreignissePageComponent).componentInstance;
+        const ereignis = createEreignis({ id: 7 });
+
+        const gespeichert = page.savePdfs(ereignis);
+        expect(page.saving()).toBe(ereignis);
+        await page.savePdfs(createEreignis({ id: 8 }));
+        fertig();
+        await gespeichert;
+
+        expect(speichern).toHaveBeenCalledTimes(1);
+        expect(speichern).toHaveBeenCalledWith(ereignis);
+        expect(page.saving()).toBeNull();
+        expect(show).toHaveBeenCalledWith('1 PDF heruntergeladen', expect.any(Number));
     });
 
     describe('Verwaltung', () =>

@@ -42,3 +42,14 @@ mat-radio-group {
     flex-direction: column;
     margin-bottom: 1em;
 }
+
+.ordner-aktionen {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1em;
+}
+
+.hinweis {
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.6);
+}
