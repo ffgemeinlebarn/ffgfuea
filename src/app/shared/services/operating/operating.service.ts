@@ -113,14 +113,17 @@ export class OperatingService
         this.notification.show('Füllung entfernt!');
     }
 
-    public async closeEreignis(): Promise<void>
+    /** Schließt das laufende Ereignis ab und liefert es abgeschlossen zurück */
+    public async closeEreignis(): Promise<IEreignis | null>
     {
         const ereignis = this.ereignis();
-        if (!ereignis) return;
+        if (!ereignis) return null;
 
+        const closed = { ...ereignis, datetimeEnd: new Date() };
         this.ereignis.set(null);
         this.timing.ereignisStart.set(null);
-        await this.data.saveEreignis({ ...ereignis, datetimeEnd: new Date() });
+        await this.data.saveEreignis(closed);
+        return closed;
     }
 
     private async updateFuellungen(update: (fuellungen: Array<IFuellung>) => Array<IFuellung>)

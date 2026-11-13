@@ -89,20 +89,32 @@ describe('Seiten-Aktionen', () =>
 
         it('schließt das Ereignis nur nach Bestätigung ab', async () =>
         {
-            const closeEreignis = vi.spyOn(operating, 'closeEreignis').mockResolvedValue();
+            const closeEreignis = vi.spyOn(operating, 'closeEreignis');
 
-            dialogResult = false;
-            page.confirmCloseEreignis();
+            dialogResult = undefined;
+            await page.confirmCloseEreignis();
             openedWith(ConfirmEreignisAbschlussComponent);
-            await new Promise(resolve => setTimeout(resolve));
             expect(closeEreignis).not.toHaveBeenCalled();
-
             expect(navigate).not.toHaveBeenCalled();
 
-            dialogResult = true;
+            dialogResult = 'abschliessen';
             await page.confirmCloseEreignis();
             expect(closeEreignis).toHaveBeenCalled();
             expect(navigate).toHaveBeenCalledWith(['/']);
+            expect(open).not.toHaveBeenCalledWith(PrintReportsComponent, expect.anything());
+        });
+
+        it('öffnet nach "Abschließen & Drucken" die Berichte des abgeschlossenen Ereignisses', async () =>
+        {
+            dialogResult = 'abschliessenUndDrucken';
+
+            await page.confirmCloseEreignis();
+
+            expect(operating.ereignis()).toBeNull();
+            expect(navigate).toHaveBeenCalledWith(['/']);
+            openedWith(PrintReportsComponent);
+            expect(openedData()).toMatchObject({ id, datetimeEnd: expect.any(Date) });
+            expect((await data.getEreignis(id)).datetimeEnd).toBeInstanceOf(Date);
         });
 
         it('schaltet Scanner und Bestätigung um', () =>
