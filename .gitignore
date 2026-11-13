@@ -38,7 +38,6 @@ speed-measure-plugin*.json
 /connect.lock
 /coverage
 /reports
-/.lighthouseci
 /libpeerconnection.log
 npm-debug.log
 yarn-error.log
