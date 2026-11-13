@@ -3,7 +3,8 @@ import Dexie, { Table } from 'dexie';
 import { environment } from 'src/environments/environment';
 import { IEreignis } from '../../interfaces/i-ereignis';
 import { assignEreignisNummern } from '../../models/ereignis-nummer/ereignis-nummer';
-import { IFeuerwehr } from '../../interfaces/i-feuerwehr';
+import { IFeuerwehr, toFeuerwehrRef } from '../../interfaces/i-feuerwehr';
+import { IFlasche } from '../../interfaces/i-flasche';
 import { IMangel } from '../../interfaces/i-mangel';
 import { IPerson } from '../../interfaces/i-person';
 import { SettingsService } from '../settings/settings.service';
@@ -71,5 +72,25 @@ export class Database extends Dexie
             assignEreignisNummern(all);
             await ereignisse.bulkPut(all);
         });
+        // v1.2.0 hat beim Drucken die Füllungen an die Feuerwehr der Flaschen gehängt und diese Zirkelbezüge
+        // mitgespeichert (Füllung → Flasche → Feuerwehr → Füllungen). Der Export als JSON scheitert daran.
+        this.version(3).stores({}).upgrade(async transaction =>
+        {
+            await transaction.table<IEreignis, number>('ereignisse').toCollection().modify(ereignis =>
+            {
+                (ereignis.fuellungen ?? []).forEach(fuellung => bereinigeFeuerwehrRef(fuellung.flasche));
+            });
+            await transaction.table<IFeuerwehr, number>('feuerwehren').toCollection().modify(feuerwehr =>
+            {
+                (feuerwehr.flaschen ?? []).forEach(bereinigeFeuerwehrRef);
+            });
+        });
     }
+}
+
+/** Reduziert die Feuerwehr an einer Flasche auf die Referenzfelder */
+function bereinigeFeuerwehrRef(flasche: IFlasche | undefined)
+{
+    if (flasche?.feuerwehr != null)
+        flasche.feuerwehr = toFeuerwehrRef(flasche.feuerwehr);
 }
