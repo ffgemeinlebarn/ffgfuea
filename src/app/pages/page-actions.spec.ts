@@ -7,7 +7,7 @@ import { ConfirmEreignisAbschlussComponent } from '../shared/dialogs/confirm-ere
 import { EditEreignisComponent } from '../shared/dialogs/edit-ereignis/edit-ereignis.component';
 import { EditFlascheComponent } from '../shared/dialogs/edit-flasche/edit-flasche.component';
 import { EditPersonComponent } from '../shared/dialogs/edit-person/edit-person.component';
-import { PrintReportsComponent } from '../shared/dialogs/print-reports/print-reports.component';
+import { BerichteComponent } from '../shared/dialogs/berichte/berichte.component';
 import { RemoveFeuerwehrComponent } from '../shared/dialogs/remove-feuerwehr/remove-feuerwehr.component';
 import { RemoveFlascheComponent } from '../shared/dialogs/remove-flasche/remove-flasche.component';
 import { EreignisType } from '../shared/enums/ereignis-type';
@@ -107,7 +107,7 @@ describe('Seiten-Aktionen', () =>
             await page.confirmCloseEreignis();
             expect(closeEreignis).toHaveBeenCalled();
             expect(navigate).toHaveBeenCalledWith(['/']);
-            expect(open).not.toHaveBeenCalledWith(PrintReportsComponent, expect.anything());
+            expect(open).not.toHaveBeenCalledWith(BerichteComponent, expect.anything());
         });
 
         it('öffnet nach "Abschließen & Drucken" die Berichte des abgeschlossenen Ereignisses', async () =>
@@ -118,7 +118,7 @@ describe('Seiten-Aktionen', () =>
 
             expect(operating.ereignis()).toBeNull();
             expect(navigate).toHaveBeenCalledWith(['/']);
-            openedWith(PrintReportsComponent);
+            openedWith(BerichteComponent);
             expect(openedData()).toMatchObject({ id, datetimeEnd: expect.any(Date) });
             expect((await data.getEreignis(id)).datetimeEnd).toBeInstanceOf(Date);
         });
@@ -141,20 +141,39 @@ describe('Seiten-Aktionen', () =>
                 dialogResult = 'abschliessenUndDrucken';
             });
 
-            const printDialogOrder = () => open.mock.invocationCallOrder[open.mock.calls.findIndex(([c]) => c === PrintReportsComponent)];
+            const berichteDialogOrder = () => open.mock.invocationCallOrder[open.mock.calls.findIndex(([c]) => c === BerichteComponent)];
 
-            it('legt alle Berichte vor dem Druckdialog ab', async () =>
+            it('legt alle Berichte ab, bevor der Berichte-Dialog öffnet', async () =>
             {
                 const closeEreignis = vi.spyOn(operating, 'closeEreignis');
 
                 await page.confirmCloseEreignis();
 
-                // Berechtigung vor dem Speichern des Ereignisses, PDFs vor dem Druckdialog
+                // Berechtigung vor dem Speichern des Ereignisses, PDFs vor dem Berichte-Dialog
                 expect(zielErmitteln.mock.invocationCallOrder[0]).toBeLessThan(closeEreignis.mock.invocationCallOrder[0]);
                 expect(speichern).toHaveBeenCalledWith(expect.objectContaining({ id, datetimeEnd: expect.any(Date) }), undefined, { ziel: { ordner }, download: false });
-                expect(speichern.mock.invocationCallOrder[0]).toBeLessThan(printDialogOrder());
-                openedWith(PrintReportsComponent);
+                expect(speichern.mock.invocationCallOrder[0]).toBeLessThan(berichteDialogOrder());
+                openedWith(BerichteComponent);
                 expect(show).toHaveBeenLastCalledWith('2 PDFs gespeichert in Berichte/2026/2026-001_Uebung_Gemeinlebarn', expect.any(Number));
+            });
+
+            it('fragt die Berechtigung vor dem Abschließen an und schreibt die PDFs in den Ordner', async () =>
+            {
+                zielErmitteln.mockRestore();
+                speichern.mockRestore();
+                const berichte = new FakeDirectoryHandle('Berichte');
+                berichte.berechtigung = 'prompt';
+                ablage.ordner.set(berichte.asHandle());
+                const closeEreignis = vi.spyOn(operating, 'closeEreignis');
+
+                await page.confirmCloseEreignis();
+
+                expect(berichte.requestPermission.mock.invocationCallOrder[0]).toBeLessThan(closeEreignis.mock.invocationCallOrder[0]);
+                const [jahr] = berichte.ordner.keys();
+                const [ereignisOrdner] = berichte.ordner.get(jahr)!.ordner.values();
+                expect([...ereignisOrdner.dateien.keys()]).toEqual([expect.stringMatching(/_Gesamtbericht\.pdf$/)]);
+                expect(show).toHaveBeenLastCalledWith(expect.stringMatching(/^1 PDF gespeichert in Berichte\//), expect.any(Number));
+                openedWith(BerichteComponent);
             });
 
             it('legt nichts ab, wenn die automatische Ablage ausgeschaltet ist', async () =>
@@ -165,7 +184,7 @@ describe('Seiten-Aktionen', () =>
 
                 expect(zielErmitteln).not.toHaveBeenCalled();
                 expect(speichern).not.toHaveBeenCalled();
-                openedWith(PrintReportsComponent);
+                openedWith(BerichteComponent);
             });
 
             it('legt ohne gewählten Ordner nichts ab', async () =>
@@ -176,7 +195,7 @@ describe('Seiten-Aktionen', () =>
 
                 expect(zielErmitteln).not.toHaveBeenCalled();
                 expect(speichern).not.toHaveBeenCalled();
-                openedWith(PrintReportsComponent);
+                openedWith(BerichteComponent);
             });
 
             it('legt beim Abschließen ohne Drucken nichts ab', async () =>
@@ -197,10 +216,10 @@ describe('Seiten-Aktionen', () =>
 
                 expect(speichern).not.toHaveBeenCalled();
                 expect(show).toHaveBeenCalledWith('PDFs wurden nicht abgelegt: Keine Schreibberechtigung für den Ordner „Berichte“', expect.any(Number));
-                openedWith(PrintReportsComponent);
+                openedWith(BerichteComponent);
             });
 
-            it('öffnet den Druckdialog auch, wenn das Ablegen fehlschlägt', async () =>
+            it('öffnet den Berichte-Dialog auch, wenn das Ablegen fehlschlägt', async () =>
             {
                 const showError = vi.spyOn(TestBed.inject(NotificationService), 'showError').mockImplementation(() => undefined);
                 speichern.mockRejectedValue(new Error('Datenträger voll'));
@@ -208,7 +227,7 @@ describe('Seiten-Aktionen', () =>
                 await page.confirmCloseEreignis();
 
                 expect(showError).toHaveBeenCalledWith(expect.any(Error), 'PDFs konnten nicht abgelegt werden', expect.any(Number));
-                openedWith(PrintReportsComponent);
+                openedWith(BerichteComponent);
             });
         });
 
@@ -222,8 +241,8 @@ describe('Seiten-Aktionen', () =>
 
         it('öffnet die Berichte für das laufende Ereignis', () =>
         {
-            page.openPrintReportings();
-            openedWith(PrintReportsComponent);
+            page.openBerichte();
+            openedWith(BerichteComponent);
             expect(openedData()).toBe(operating.ereignis());
         });
     });
@@ -240,26 +259,15 @@ describe('Seiten-Aktionen', () =>
         expect(openedData()).not.toBe(ereignis);
     });
 
-    it('Ereignisse-Seite speichert alle Berichte eines Ereignisses als PDF', async () =>
+    it('Ereignisse-Seite öffnet die Berichte eines Ereignisses', () =>
     {
-        const ablage = TestBed.inject(PdfAblageService);
-        let fertig!: () => void;
-        const speichern = vi.spyOn(ablage, 'speichern').mockImplementation(() =>
-            new Promise(resolve => fertig = () => resolve({ art: 'download', pfad: '', dateien: ['a.pdf'] })));
-        const show = vi.spyOn(TestBed.inject(NotificationService), 'show').mockImplementation(() => undefined);
         const page = TestBed.createComponent(EreignissePageComponent).componentInstance;
         const ereignis = createEreignis({ id: 7 });
 
-        const gespeichert = page.savePdfs(ereignis);
-        expect(page.saving()).toBe(ereignis);
-        await page.savePdfs(createEreignis({ id: 8 }));
-        fertig();
-        await gespeichert;
+        page.openBerichte(ereignis);
 
-        expect(speichern).toHaveBeenCalledTimes(1);
-        expect(speichern).toHaveBeenCalledWith(ereignis);
-        expect(page.saving()).toBeNull();
-        expect(show).toHaveBeenCalledWith('1 PDF heruntergeladen', expect.any(Number));
+        openedWith(BerichteComponent);
+        expect(openedData()).toBe(ereignis);
     });
 
     describe('Verwaltung', () =>

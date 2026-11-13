@@ -9,10 +9,7 @@
     <div class="content">
         <div class="stammdaten">
             <div class="actions">
-                <button mat-raised-button color="primary" (click)="openPrintReportings(ereignis)">Berichte
-                    drucken</button>
-                <button mat-raised-button class="pdf" (click)="savePdfs(ereignis)" [disabled]="!!saving()">
-                    {{ saving() === ereignis ? 'Speichert …' : 'PDFs speichern' }}</button>
+                <button mat-raised-button color="primary" (click)="openBerichte(ereignis)">Berichte</button>
                 <button mat-raised-button (click)="openEditEreignis(ereignis)">Ereignis bearbeiten</button>
             </div>
             <table>
