@@ -119,7 +119,7 @@ describe('Seiten-Aktionen', () =>
             expect(operating.ereignis()).toBeNull();
             expect(navigate).toHaveBeenCalledWith(['/']);
             openedWith(BerichteComponent);
-            expect(openedData()).toMatchObject({ id, datetimeEnd: expect.any(Date) });
+            expect(openedData()).toEqual({ ereignis: expect.objectContaining({ id, datetimeEnd: expect.any(Date) }) });
             expect((await data.getEreignis(id)).datetimeEnd).toBeInstanceOf(Date);
         });
 
@@ -243,7 +243,7 @@ describe('Seiten-Aktionen', () =>
         {
             page.openBerichte();
             openedWith(BerichteComponent);
-            expect(openedData()).toBe(operating.ereignis());
+            expect(openedData()).toEqual({ ereignis: operating.ereignis() });
         });
     });
 
@@ -267,7 +267,8 @@ describe('Seiten-Aktionen', () =>
         page.openBerichte(ereignis);
 
         openedWith(BerichteComponent);
-        expect(openedData()).toBe(ereignis);
+        expect(openedData()).toEqual({ ereignis, pdfSpeichern: true });
+        expect(openedData().ereignis).toBe(ereignis);
     });
 
     describe('Verwaltung', () =>

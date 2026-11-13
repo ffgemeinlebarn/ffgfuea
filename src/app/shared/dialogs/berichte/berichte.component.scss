@@ -123,11 +123,6 @@
         height: 18px;
     }
 
-    .pfad
-    {
-        overflow-wrap: anywhere;
-        color: rgba(0, 0, 0, 0.87);
-    }
 }
 
 .status
@@ -150,4 +145,10 @@
 mat-dialog-actions
 {
     gap: 8px;
+
+    /* Selten gebraucht, daher abseits von Schließen und Drucken */
+    .pdf
+    {
+        margin-right: auto;
+    }
 }
