@@ -1,38 +1,42 @@
 :host {
     display: flex;
-    flex-direction: row;
     flex: 1;
-
-    justify-content: center;
-    align-items: center;
 }
 
+// margin: auto zentriert, ohne bei wenig Platz oben oder links abzuschneiden
+// (anders als align-items/justify-content: center im scrollenden Container)
 .center {
     display: flex;
     flex-direction: column;
-    width: auto;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 1300px;
+    margin: auto;
 
     h2 {
         color: #fff;
         margin-bottom: 40px;
     }
 
+    // Keine feste Höhe: die Zeilen wachsen mit dem Inhalt der Karten.
+    // 4 Spalten am Desktop, 2 am Tablet, 1 am Handy.
     .stepper {
-        display: flex;
-        flex-direction: row;
-        height: 200px;
-        margin-bottom: 100px;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 24px;
+        margin-bottom: 60px;
 
-        .divider,
-        .step {
-            padding: 20px;
+        @media (max-width: 1100px) {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        @media (max-width: 600px) {
+            grid-template-columns: minmax(0, 1fr);
         }
 
         .step {
-            width: 300px;
-            height: auto;
-            padding: 3em 2em;
-            box-sizing: content-box;
+            box-sizing: border-box;
+            padding: 2em;
 
             mat-card-content {
                 margin-top: 20px;
@@ -40,13 +44,6 @@
                 mat-form-field {
                     width: 100%;
                 }
-            }
-
-            .start-button-wrapper {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                height: 100%;
             }
         }
     }
