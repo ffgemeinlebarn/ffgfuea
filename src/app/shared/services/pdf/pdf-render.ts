@@ -24,14 +24,16 @@ const LINIE_FEIN = 0.15;
 const SPALTEN = ['Nr.', 'Zeit', 'Karteinr.', 'Barcode', 'Flaschennr.', 'Type'];
 /** Breiten der Spalten Nr. bis Flaschennr. in mm, Type bekommt den Rest der A4-Seite */
 const SPALTEN_BREITEN: Record<Ausrichtung, Array<number>> = {
-    landscape: [10, 26, 20, 40, 40],
-    portrait: [9, 24, 17, 32, 32]
+    landscape: [10, 35, 20, 40, 40],
+    portrait: [9, 35, 17, 30, 30]
 };
 
-const UNTERSCHRIFT_FELDER = ['Name', 'Unterschrift', 'Datum'];
+/** Spalte mit Datum und Uhrzeit der Füllung */
+const SPALTE_ZEIT = 1;
+
 const UNTERSCHRIFT_HOEHE = 20;
-/** Maximale Breite des Unterschriftsfelds einer Feuerwehr im Gesamtbericht */
-const UNTERSCHRIFT_BREITE = 170;
+/** Breite der Unterschriftslinie */
+const UNTERSCHRIFT_BREITE = 90;
 
 interface ISeite
 {
@@ -82,7 +84,8 @@ export function renderGesamtbericht(ereignis: IEreignis, erstellt: Date, ziel?: 
                 [summenZelle(`Summe ${name}: ${anzahlFuellungen(gruppe.fuellungen.length)}`)],
                 [unterschriftZelle(`Übernommen von Feuerwehr ${name}`)]
             ],
-            didDrawCell: data => drawUnterschriftZelle(data, UNTERSCHRIFT_BREITE)
+            willDrawCell: zeitZelleLeeren,
+            didDrawCell: data => drawZelle(data)
         };
         y = startImGanzen(doc, options, y);
         autoTable(doc, { ...options, startY: y });
@@ -116,7 +119,7 @@ export function renderGesamtbericht(ereignis: IEreignis, erstellt: Date, ziel?: 
     autoTable(doc, { ...summen, startY: y });
     const endeSeite = doc.getCurrentPageInfo().pageNumber;
     doc.setPage(startSeite);
-    drawUnterschrift(doc, RAND.left + spaltenBreite + 15, y, spaltenBreite, 'Füllpersonal');
+    drawUnterschrift(doc, seite.breite - RAND.right - UNTERSCHRIFT_BREITE, y, UNTERSCHRIFT_BREITE, 'Füllpersonal');
     doc.setPage(endeSeite);
 
     drawFusszeilen(doc, ereignis, GESAMTBERICHT_TITEL, ersteSeite);
@@ -135,13 +138,14 @@ export function renderFeuerwehrbericht(ereignis: IEreignis, gruppe: IFeuerwehrFu
         startY: y,
         head: [kopfzeile()],
         body: gruppe.fuellungen.length ? gruppe.fuellungen.map(fuellungsZeile) : [[leerZelle()]],
-        // Summe und Unterschriftsfelder bleiben zumindest bei der letzten Füllung
+        // Summe und Unterschriftsfeld bleiben zumindest bei der letzten Füllung
         foot: [
             [summenZelle(`Summe: ${anzahlFuellungen(gruppe.fuellungen.length)}`)],
-            [unterschriftZelle('Füllpersonal', 8)],
-            [unterschriftZelle(`Übernommen von Feuerwehr ${gruppe.feuerwehr.name}`, 8)]
+            // Die Feuerwehr unterschreibt nur am Gesamtbericht
+            [unterschriftZelle('Füllpersonal', 8)]
         ],
-        didDrawCell: data => drawUnterschriftZelle(data)
+        willDrawCell: zeitZelleLeeren,
+        didDrawCell: data => drawZelle(data)
     });
 
     drawFusszeilen(doc, ereignis, titel, ersteSeite);
@@ -195,11 +199,12 @@ function drawKopf(doc: jsPDF, ereignis: IEreignis, titel: string, erstellt: Date
 {
     const seite = seiteVon(doc);
     const rechts = seite.breite - RAND.right;
-    let y = RAND.top + 5.5;
+    // Etwas Luft über der Überschrift
+    let y = RAND.top + 9;
 
     doc.setTextColor(0);
     doc.setFont(SCHRIFT, 'bold');
-    doc.setFontSize(15);
+    doc.setFontSize(13);
     doc.text(BERICHT_KOPF, RAND.left, y);
     const kopfBreite = doc.getTextWidth(BERICHT_KOPF + ' ');
     doc.setFont(SCHRIFT, 'normal');
@@ -207,14 +212,14 @@ function drawKopf(doc: jsPDF, ereignis: IEreignis, titel: string, erstellt: Date
     const zeileBreite = kopfBreite + doc.getTextWidth(BERICHT_KOPF_ZUSATZ);
 
     doc.setFont(SCHRIFT, 'bold');
-    doc.setFontSize(12);
+    doc.setFontSize(10.5);
     // Passt der Titel nicht mehr neben die Überschrift, kommt er in eine eigene Zeile
     const titelZeilen: Array<string> = doc.splitTextToSize(titel, seite.inhaltBreite);
     if (zeileBreite + 6 + doc.getTextWidth(titelZeilen[0]) > seite.inhaltBreite || titelZeilen.length > 1)
     {
         y += 6;
         doc.text(titelZeilen, RAND.left, y);
-        y += (titelZeilen.length - 1) * 5;
+        y += (titelZeilen.length - 1) * 4.5;
     }
     else
     {
@@ -225,18 +230,18 @@ function drawKopf(doc: jsPDF, ereignis: IEreignis, titel: string, erstellt: Date
     linie(doc, RAND.left, y, rechts, y, LINIE);
     y += 2.5;
 
-    const ende = ereignis.datetimeEnd ? `${datumZeit(ereignis.datetimeEnd)} Uhr` : 'noch nicht beendet';
-    const zeilen: Array<Array<[string, string, number]>> = [
+    const ende = ereignis.datetimeEnd ?? 'noch nicht beendet';
+    const zeilen: Array<Array<[string, string | Date, number]>> = [
         [
             ['Ereignis-Nr.', formatEreignisNummer(ereignis) || '–', 1],
             ['Ereignis', ereignisTyp(ereignis), 1],
             ['Ort', ereignis.ort || '–', 1],
-            ['Beginn', `${datumZeit(ereignis.datetimeStart)} Uhr`, 1],
+            ['Beginn', ereignis.datetimeStart, 1],
             ['Ende', ende, 1]
         ],
         [
             ['Füllpersonal', personenNamen(ereignis.personen ?? []) || '–', 4],
-            ['Erstellt', `${datumZeit(erstellt)} Uhr`, 1]
+            ['Erstellt', erstellt, 1]
         ]
     ];
 
@@ -255,9 +260,18 @@ function drawKopf(doc: jsPDF, ereignis: IEreignis, titel: string, erstellt: Date
             doc.text(label.toUpperCase(), x, y + 2.5);
             doc.setFontSize(9);
             doc.setTextColor(0);
-            const werte: Array<string> = doc.splitTextToSize(wert, breite);
-            doc.text(werte, x, y + 6.3);
-            hoehe = Math.max(hoehe, 3.2 + werte.length * 4);
+            let zeilenAnzahl = 1;
+            if (wert instanceof Date)
+            {
+                drawDatumZeit(doc, wert, x, y + 6.3);
+            }
+            else
+            {
+                const werte: Array<string> = doc.splitTextToSize(wert, breite);
+                doc.text(werte, x, y + 6.3);
+                zeilenAnzahl = werte.length;
+            }
+            hoehe = Math.max(hoehe, 3.2 + zeilenAnzahl * 4);
             x += breite + abstand;
         }
         y += hoehe + 2;
@@ -291,7 +305,7 @@ function drawFusszeilen(doc: jsPDF, ereignis: IEreignis, titel: string, ersteSei
     doc.setTextColor(0);
 }
 
-/** Unterschriftsfeld mit Linien für Name, Unterschrift und Datum */
+/** Unterschriftsfeld: Bezeichnung und eine Linie für die Unterschrift */
 function drawUnterschrift(doc: jsPDF, x: number, y: number, breite: number, label: string): void
 {
     doc.setFont(SCHRIFT, 'bold');
@@ -299,22 +313,25 @@ function drawUnterschrift(doc: jsPDF, x: number, y: number, breite: number, labe
     doc.setTextColor(0);
     doc.text(label, x, y + 3.2);
 
-    // Name und Unterschrift doppelt so breit wie das Datum
-    const abstand = 6;
-    const einheit = (breite - (UNTERSCHRIFT_FELDER.length - 1) * abstand) / 5;
     const linieY = y + 15.5;
-    let feldX = x;
-    UNTERSCHRIFT_FELDER.forEach((feld, i) =>
-    {
-        const feldBreite = (i === UNTERSCHRIFT_FELDER.length - 1 ? 1 : 2) * einheit;
-        linie(doc, feldX, linieY, feldX + feldBreite, linieY, LINIE);
-        doc.setFont(SCHRIFT, 'normal');
-        doc.setFontSize(7.5);
-        doc.setTextColor(...GRAU);
-        doc.text(feld, feldX, linieY + 3.3);
-        feldX += feldBreite + abstand;
-    });
+    linie(doc, x, linieY, x + breite, linieY, LINIE);
+    doc.setFont(SCHRIFT, 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(...GRAU);
+    doc.text('Unterschrift', x, linieY + 3.3);
     doc.setTextColor(0);
+}
+
+/** Datum normal, Uhrzeit fett, z.B. 01.05.2026 **10:00 Uhr** */
+function drawDatumZeit(doc: jsPDF, wert: Date | string, x: number, y: number): void
+{
+    const datum = formatDatum(wert) + ' ';
+    doc.setFont(SCHRIFT, 'normal');
+    doc.text(datum, x, y);
+    const datumBreite = doc.getTextWidth(datum);
+    doc.setFont(SCHRIFT, 'bold');
+    doc.text(formatUhrzeit(wert), x + datumBreite, y);
+    doc.setFont(SCHRIFT, 'normal');
 }
 
 function linie(doc: jsPDF, x1: number, y1: number, x2: number, y2: number, staerke: number, farbe = 0): void
@@ -374,7 +391,8 @@ function fuellungsZeile(fuellung: IFuellung, index: number): RowInput
     const flasche = fuellung.flasche;
     return [
         index + 1,
-        kurzZeit(fuellung.datetime),
+        // Inhalt ist der Text für die Breitenberechnung, gezeichnet wird in drawZelle
+        zeitZelle(fuellung.datetime),
         flasche.karteiNr ?? '',
         flasche.barcode ?? '',
         flasche.flaschennummer ?? '',
@@ -412,14 +430,50 @@ function unterschriftZelle(label: string, abstandOben = 2): CellDef
     };
 }
 
-function drawUnterschriftZelle(data: CellHookData, maxBreite?: number): void
+/** Zelle mit Datum und Uhrzeit, der Text dient jspdf-autotable nur zur Berechnung der Größe */
+interface IZeitZelle extends CellDef
 {
-    if (data.section !== 'foot' || data.row.index === 0) return;
+    datum: Date;
+}
+
+function zeitZelle(wert: Date | string): IZeitZelle
+{
+    return { content: datumZeitText(wert), datum: new Date(wert) };
+}
+
+function zeitVon(data: CellHookData): Date | null
+{
+    if (data.section !== 'body' || data.column.index !== SPALTE_ZEIT) return null;
+    const raw = data.cell.raw as Partial<IZeitZelle> | null;
+    return raw?.datum instanceof Date ? raw.datum : null;
+}
+
+/** Die Zeit-Zelle zeichnet drawZelle mit fetter Uhrzeit */
+function zeitZelleLeeren(data: CellHookData): void
+{
+    if (zeitVon(data)) data.cell.text = [];
+}
+
+function drawZelle(data: CellHookData): void
+{
     const cell = data.cell;
-    const breite = Math.min(maxBreite ?? cell.width, cell.width);
+    const doc = data.doc as jsPDF;
+
+    const zeit = zeitVon(data);
+    if (zeit)
+    {
+        // Grundlinie wie bei jspdf-autotable: oberer Innenabstand plus Schriftgröße
+        const y = cell.y + cell.padding('top') + (cell.styles.fontSize / doc.internal.scaleFactor) * 0.85;
+        doc.setFontSize(cell.styles.fontSize);
+        doc.setTextColor(0);
+        drawDatumZeit(doc, zeit, cell.x + cell.padding('left'), y);
+        return;
+    }
+
+    if (data.section !== 'foot' || data.row.index === 0) return;
+    const breite = Math.min(UNTERSCHRIFT_BREITE, cell.width);
     const label = Array.isArray(cell.raw) ? '' : String((cell.raw as CellDef).content ?? '');
-    const padding = cell.padding('top');
-    drawUnterschrift(data.doc as jsPDF, cell.x + cell.width - breite, cell.y + padding, breite, label);
+    drawUnterschrift(doc, cell.x + cell.width - breite, cell.y + cell.padding('top'), breite, label);
 }
 
 /** Höhe einer Tabelle in mm, ohne sie zu zeichnen */
@@ -463,16 +517,22 @@ function pad(zahl: number): string
     return String(zahl).padStart(2, '0');
 }
 
-/** z.B. 01.05.2026 10:00 */
-export function datumZeit(wert: Date | string): string
+/** z.B. 01.05.2026 */
+export function formatDatum(wert: Date | string): string
 {
     const datum = new Date(wert);
-    return `${pad(datum.getDate())}.${pad(datum.getMonth() + 1)}.${datum.getFullYear()} ${pad(datum.getHours())}:${pad(datum.getMinutes())}`;
+    return `${pad(datum.getDate())}.${pad(datum.getMonth() + 1)}.${datum.getFullYear()}`;
 }
 
-/** z.B. 01.05. 10:00 */
-export function kurzZeit(wert: Date | string): string
+/** z.B. 10:00 Uhr */
+export function formatUhrzeit(wert: Date | string): string
 {
     const datum = new Date(wert);
-    return `${pad(datum.getDate())}.${pad(datum.getMonth() + 1)}. ${pad(datum.getHours())}:${pad(datum.getMinutes())}`;
+    return `${pad(datum.getHours())}:${pad(datum.getMinutes())} Uhr`;
+}
+
+/** z.B. 01.05.2026 10:00 Uhr */
+export function datumZeitText(wert: Date | string): string
+{
+    return `${formatDatum(wert)} ${formatUhrzeit(wert)}`;
 }
