@@ -33,7 +33,9 @@ const stil = {
         '@stylistic/no-multiple-empty-lines': ['error', { max: 1, maxBOF: 0, maxEOF: 0 }],
         '@stylistic/eol-last': 'error',
         '@stylistic/member-delimiter-style': 'error',
-        '@stylistic/type-annotation-spacing': 'error'
+        '@stylistic/type-annotation-spacing': 'error',
+        // === überall, nur `== null` als Kurzform für null oder undefined
+        eqeqeq: ['error', 'smart']
     }
 };
 
@@ -82,6 +84,23 @@ export default defineConfig(
             '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
             // Kurze Callbacks wie () => this.dialog.close() oder setTimeout(() => …) sind gewollt;
             // geprüft wird weiterhin alles außerhalb von Arrow-Kurzformen.
+            // Würde `wert as Date` in `wert!` umschreiben, widerspricht no-non-null-assertion
+            '@typescript-eslint/non-nullable-type-assertion-style': 'off',
+            // Weggelassene Felder per Rest-Destrukturierung ({ id, ...rest }) und _-Präfix sind gewollt
+            '@typescript-eslint/no-unused-vars': ['error', { ignoreRestSiblings: true, argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+            // async ngOnInit() u. ä. erfüllt Angulars void-Interfaces; Angular wartet darauf nicht und das ist gewollt
+            '@typescript-eslint/no-misused-promises': ['error', { checksVoidReturn: { inheritedMethods: false } }],
+            // `text || '–'`: ein leerer Text gilt bewusst als fehlend
+            '@typescript-eslint/prefer-nullish-coalescing': ['error', { ignorePrimitives: { string: true } }],
+            // catch (error) { reject(error); } reicht den Fehler unverändert weiter
+            '@typescript-eslint/prefer-promise-reject-errors': ['error', { allowThrowingUnknown: true }],
+            // Aus. Daten aus IndexedDB (ältere Stände), MAT und Backups halten sich nicht immer an die
+            // Interfaces; `?.`/`?? []` darauf sind bewusste Schutzmaßnahmen. Zudem sieht die Regel nicht,
+            // dass sich Werte während eines await ändern (abbruch.aborted), und meldet Index-Zugriffe
+            // (liste[0]?.…) ohne noUncheckedIndexedAccess als unnötig.
+            '@typescript-eslint/no-unnecessary-condition': 'off',
+            // Leere Klassen mit Decorator (@Component für Test-Dialoge) sind in Angular üblich
+            '@typescript-eslint/no-extraneous-class': ['error', { allowWithDecorator: true }],
             '@typescript-eslint/no-confusing-void-expression': ['error', { ignoreArrowShorthand: true }],
             '@angular-eslint/component-selector': ['error', { type: 'element', prefix: 'ffg', style: 'kebab-case' }],
             '@angular-eslint/directive-selector': ['error', { type: 'attribute', prefix: 'ffg', style: 'camelCase' }]
@@ -95,7 +114,9 @@ export default defineConfig(
             // Ein falsches `!` lässt den Test fehlschlagen – genau das soll er dann auch.
             '@typescript-eslint/no-non-null-assertion': 'off',
             // Fakes bilden asynchrone APIs nach (async () => wert), ohne selbst etwas abzuwarten.
-            '@typescript-eslint/require-await': 'off'
+            '@typescript-eslint/require-await': 'off',
+            // expect(service.methode).toHaveBeenCalled() prüft Mocks, ruft die Methode nicht ohne `this` auf
+            '@typescript-eslint/unbound-method': 'off'
         }
     },
 
@@ -104,7 +125,11 @@ export default defineConfig(
         extends: [
             angular.configs.templateRecommended,
             angular.configs.templateAccessibility
-        ]
+        ],
+        rules: {
+            // wie im TypeScript-Code: `!= null` als Kurzform für null oder undefined
+            '@angular-eslint/template/eqeqeq': ['error', { allowNullOrUndefined: true }]
+        }
     },
 
     {
