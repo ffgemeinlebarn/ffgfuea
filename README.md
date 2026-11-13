@@ -9,7 +9,8 @@ FF Gemeinlebarn Füllapplikation
 ## Entwicklung
 
 - `npm start` – Entwicklungsserver. Verwendet Beispieldaten statt des lokalen MAT Sync-Services (`fakeSyncApi` in `src/environments/environment.development.ts`).
-- `npm test` – Unit-Tests mit Vitest
+- `npm test` – Unit-Tests mit Vitest, `npm run test:coverage` einmalig mit Coverage-Schwelle
+- `npm run lint` – ESLint für das ganze Projekt, `npx eslint <datei>` für einzelne Dateien
 - `npm run build` – Produktions-Build nach `dist/ffgfuea/browser`
 - `npm run e2e` – E2E-Tests mit Playwright, siehe unten
 
@@ -45,7 +46,8 @@ Alternativ in GitHub unter *Actions → Build & Deploy → Run workflow* von `ma
 
 | Prüfung | Lokal | CI (Workflow → Check) | Wann in CI |
 | --- | --- | --- | --- |
-| Unit-Tests & Build | `npm test`, `npm run build` | `multistage.yml` → **Test & Build** | Push auf `main`, `v*`-Tags, jeder PR |
+| Unit-Tests mit Coverage-Schwelle & Build | `npm run test:coverage`, `npm run build` | `multistage.yml` → **Test & Build** | Push auf `main`, `v*`-Tags, jeder PR |
+| ESLint (Code-Stil und typ-informierte Regeln) | `npm run lint` | Schritt in **Test & Build** | wie oben |
 | npm audit (nur Produktionsabhängigkeiten, ab *high*) | `npm audit --omit=dev --audit-level=high` | Schritt in **Test & Build** | wie oben |
 | Lizenzen der Abhängigkeiten | `npm run check:licenses` | Schritt in **Test & Build** | wie oben |
 | CodeQL (SAST, Suite `security-extended`) für App und Workflows | `npm run sast:codeql` | `codeql.yml` → **Analyze (javascript-typescript)**, **Analyze (actions)** | Push auf `main`, jeder PR, montags |
@@ -54,12 +56,16 @@ Alternativ in GitHub unter *Actions → Build & Deploy → Run workflow* von `ma
 | OpenSSF Scorecard (Supply-Chain-Praktiken) | – | `scorecard.yml` → **Scorecard analysis** | Push auf `main`, montags |
 | Updates von npm-Paketen und Actions | – | Dependabot (`.github/dependabot.yml`) | montags |
 
+Lokal laufen zusätzlich Git-Hooks über [lefthook](https://lefthook.dev) (`lefthook.yml`, installiert bei `npm ci`/`npm install`): vor jedem Commit gitleaks und ESLint auf die gestagten Dateien, vor jedem Push Typecheck und Unit-Tests. Für Claude Code prüft ein Hook in `.claude/settings.json` jede bearbeitete Datei mit ESLint und gitleaks (`scripts/claude-hook-check.mjs`). Im Notfall überspringen: `LEFTHOOK=0 git commit …`.
+
 Alle Actions sind per Commit-SHA gepinnt (Kommentar mit Version dahinter), Dependabot hält sie aktuell. Workflows haben nur die nötigen Rechte (`permissions`), neue Pushes auf einen PR brechen ältere Läufe ab.
 
 ### Lokale Befehle
 
 - `npm run sast:codeql` lädt beim ersten Aufruf das gepinnte CodeQL-Bundle (~550 MB, Prüfsumme wird kontrolliert) nach `~/.cache/ffgfuea/codeql` (änderbar über `FFGFUEA_CACHE_DIR` bzw. `CODEQL_CACHE_DIR`), analysiert App und Workflows und schreibt `reports/codeql.sarif` (plus je Sprache `reports/codeql-<sprache>.sarif`). Gibt es Funde der Stufe *error* oder *warning*, listet das Skript sie auf und endet mit Exit-Code 1. Bei wenig Arbeitsspeicher: `CODEQL_RAM=2048 CODEQL_THREADS=2 npm run sast:codeql`.
-- `npm run secrets:scan` lädt das gepinnte gitleaks nach `~/.cache/ffgfuea/gitleaks` und prüft die gesamte Git-Historie (alle Refs) und das Arbeitsverzeichnis. Gefundene Secrets werden nur geschwärzt ausgegeben. `bash scripts/gitleaks.sh --staged` prüft nur die gestagten Änderungen (für einen Pre-Commit-Hook), `--history` bzw. `--dir` nur einen Teil.
+- `npm run secrets:scan` lädt das gepinnte gitleaks nach `~/.cache/ffgfuea/gitleaks` und prüft die gesamte Git-Historie (alle Refs) und das Arbeitsverzeichnis. Gefundene Secrets werden nur geschwärzt ausgegeben. `bash scripts/gitleaks.sh --staged` prüft nur die gestagten Änderungen (Pre-Commit-Hook), `--files <datei> …` nur einzelne Dateien (Claude-Code-Hook), `--history` bzw. `--dir` nur einen Teil.
+- `npm run test:coverage` misst die Coverage (Bericht in `coverage/`) und schlägt fehl, wenn eine der Schwellen in `angular.json` (`coverageThresholds`) unterschritten wird.
+- `npx lefthook run pre-commit` bzw. `pre-push` führt die Git-Hooks von Hand aus. In CI (`CI` gesetzt), ohne Git-Repository und in Git-Worktrees installiert `npm ci` keine Hooks; die im Haupt-Repo installierten gelten auch für Worktrees.
 - `npm run check:licenses` prüft die Lizenzen aller installierten Pakete gegen `license-check.json`.
 - `reports/` ist in `.gitignore`.
 
