@@ -8,6 +8,8 @@ describe('PrintReportsComponent', () =>
     const ff1 = createFeuerwehr(1, ['11111', '11112']);
     const ff2 = createFeuerwehr(2, ['22221']);
     const ereignis = createEreignis({
+        jahr: 2026,
+        nummer: 12,
         fuellungen: [createFuellung(ff1.flaschen[0]), createFuellung(ff2.flaschen[0]), createFuellung(ff1.flaschen[1])]
     });
 
@@ -40,6 +42,7 @@ describe('PrintReportsComponent', () =>
     it('zeigt das Ereignis und alle Berichte ausgewählt an', () =>
     {
         expect(fixture.nativeElement.querySelector('.ereignis').textContent).toContain('Übung in Gemeinlebarn');
+        expect(fixture.nativeElement.querySelector('.ereignis').textContent).toContain('2026-012');
         expect(reportCheckboxes().map(c => c.checked)).toEqual([true, true, true]);
         expect(fixture.nativeElement.querySelector('.reports').textContent).toContain('Bericht für die Feuerwehr FF 2');
     });

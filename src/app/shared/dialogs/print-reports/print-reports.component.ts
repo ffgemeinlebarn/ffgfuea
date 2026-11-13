@@ -5,6 +5,7 @@ import { MatCheckbox } from '@angular/material/checkbox';
 import { MAT_DIALOG_DATA, MatDialogActions, MatDialogContent, MatDialogRef, MatDialogTitle } from '@angular/material/dialog';
 import { MatDivider } from '@angular/material/divider';
 import { IEreignis } from '../../interfaces/i-ereignis';
+import { EreignisNummerPipe } from '../../pipes/ereignis-nummer/ereignis-nummer.pipe';
 import { FeuerwehrberichtComponent } from '../../reports/feuerwehrbericht/feuerwehrbericht.component';
 import { GesamtberichtComponent } from '../../reports/gesamtbericht/gesamtbericht.component';
 import { anzahlFuellungen, ereignisBezeichnung, groupFuellungenByFeuerwehr, IFeuerwehrFuellungen } from '../../reports/report-data';
@@ -23,7 +24,7 @@ export interface IReport
     templateUrl: './print-reports.component.html',
     styleUrls: ['./print-reports.component.scss'],
     imports: [
-        MatDialogTitle, MatDialogContent, MatDialogActions, MatCheckbox, MatButton, MatDivider, DatePipe,
+        MatDialogTitle, MatDialogContent, MatDialogActions, MatCheckbox, MatButton, MatDivider, DatePipe, EreignisNummerPipe,
         GesamtberichtComponent, FeuerwehrberichtComponent
     ]
 })

@@ -3,6 +3,10 @@
 <mat-dialog-content>
   <dl class="ereignis">
     <div>
+      <dt>Nummer</dt>
+      <dd>{{ (data | ereignisNummer) || '–' }}</dd>
+    </div>
+    <div>
       <dt>Ereignis</dt>
       <dd>{{ bezeichnung }}</dd>
     </div>
