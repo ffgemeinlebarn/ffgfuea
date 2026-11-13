@@ -16,7 +16,7 @@
     "exceptions": {
         "rgbcolor@1.0.1": {
             "license": "MIT",
-            "reason": "package.json declares the non-SPDX expression \"MIT OR SEE LICENSE IN FEEL-FREE.md\", so the checker can only guess (\"MIT*\"). LICENSE.md in the package is the MIT license text. Pulled in by jspdf -> canvg (optional dependency of jsPDF)."
+            "reason": "package.json declares \"MIT OR SEE LICENSE IN FEEL-FREE.md\", which is not a valid SPDX expression. LICENSE.md in the package is the MIT license text. Pulled in by jspdf -> canvg (optional dependency of jsPDF)."
         }
     }
 }
