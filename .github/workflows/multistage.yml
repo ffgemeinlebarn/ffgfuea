@@ -48,8 +48,17 @@ jobs:
       - name: Check licenses
         run: npm run check:licenses
 
-      - name: Test
-        run: npx ng test --watch=false
+      # Schwellen je Metrik stehen in angular.json (coverageThresholds); darunter schlägt der Schritt fehl
+      - name: Test with coverage
+        run: npm run test:coverage
+
+      - name: Upload coverage report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 14
 
       - name: Build
         run: npx ng build
