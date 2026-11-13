@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, input } from '@angular/core';
 import { IEreignis } from '../../interfaces/i-ereignis';
-import { anzahlFuellungen, flaschenTyp, groupFuellungenByFeuerwehr } from '../report-data';
+import { anzahlFuellungen, flaschenTyp, GESAMTBERICHT_TITEL, groupFuellungenByFeuerwehr } from '../report-data';
 import { ReportHeaderComponent } from '../report-header/report-header.component';
 import { UnterschriftComponent } from '../unterschrift/unterschrift.component';
 
@@ -17,7 +17,7 @@ import { UnterschriftComponent } from '../unterschrift/unterschrift.component';
 })
 export class GesamtberichtComponent
 {
-    public static readonly titel = 'Gesamtbericht';
+    public static readonly titel = GESAMTBERICHT_TITEL;
 
     public readonly ereignis = input.required<IEreignis>();
     public readonly gedruckt = input.required<Date>();

@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, input } from '@angular/core';
 import { IEreignis } from '../../interfaces/i-ereignis';
-import { anzahlFuellungen, flaschenTyp, IFeuerwehrFuellungen } from '../report-data';
+import { anzahlFuellungen, feuerwehrberichtTitel, flaschenTyp, IFeuerwehrFuellungen } from '../report-data';
 import { ReportHeaderComponent } from '../report-header/report-header.component';
 import { UnterschriftComponent } from '../unterschrift/unterschrift.component';
 
@@ -18,7 +18,7 @@ export class FeuerwehrberichtComponent
 {
     public static titel(feuerwehrName: string): string
     {
-        return `Bericht für die Feuerwehr ${feuerwehrName}`;
+        return feuerwehrberichtTitel(feuerwehrName);
     }
 
     public readonly ereignis = input.required<IEreignis>();

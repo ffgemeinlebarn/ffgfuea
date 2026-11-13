@@ -5,6 +5,17 @@ import { IFlasche } from '../interfaces/i-flasche';
 import { IFuellung } from '../interfaces/i-fuellung';
 import { IPerson } from '../interfaces/i-person';
 
+/** Überschrift aller Berichte */
+export const BERICHT_KOPF = 'Füllbericht';
+export const BERICHT_KOPF_ZUSATZ = 'der Atemluftfüllstelle Gemeinlebarn';
+
+export const GESAMTBERICHT_TITEL = 'Gesamtbericht';
+
+export function feuerwehrberichtTitel(feuerwehrName: string): string
+{
+    return `Bericht für die Feuerwehr ${feuerwehrName}`;
+}
+
 /** Füllungen einer Feuerwehr innerhalb eines Ereignisses */
 export interface IFeuerwehrFuellungen
 {
