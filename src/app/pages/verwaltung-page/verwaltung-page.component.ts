@@ -1,7 +1,7 @@
 import { Component, inject, signal } from '@angular/core';
-import { MatDialog } from '@angular/material/dialog';
 import { SyncService } from 'src/app/shared/services/sync/sync.service';
 import { DataService } from 'src/app/shared/services/data/data.service';
+import { DialogService } from 'src/app/shared/services/dialog/dialog.service';
 import { IFeuerwehr } from 'src/app/shared/interfaces/i-feuerwehr';
 import { RemoveFeuerwehrComponent } from 'src/app/shared/dialogs/remove-feuerwehr/remove-feuerwehr.component';
 import { IPerson } from 'src/app/shared/interfaces/i-person';
@@ -24,7 +24,7 @@ import { MatTable, MatColumnDef, MatHeaderCellDef, MatHeaderCell, MatCellDef, Ma
 })
 export class VerwaltungPageComponent
 {
-    private dialog = inject(MatDialog);
+    private dialogs = inject(DialogService);
     private sync = inject(SyncService);
     data = inject(DataService);
 
@@ -41,7 +41,7 @@ export class VerwaltungPageComponent
 
     public openRemoveFeuerwehr(feuerwehr: IFeuerwehr)
     {
-        this.dialog.open(RemoveFeuerwehrComponent, { width: '500px', data: feuerwehr });
+        this.dialogs.open(RemoveFeuerwehrComponent, feuerwehr);
     }
 
     public async addPerson()
@@ -53,7 +53,7 @@ export class VerwaltungPageComponent
 
     public editPerson(person: IPerson)
     {
-        this.dialog.open(EditPersonComponent, { width: '500px', data: { ...person } });
+        this.dialogs.open(EditPersonComponent, { ...person });
     }
 
     public removePerson(person: IPerson)

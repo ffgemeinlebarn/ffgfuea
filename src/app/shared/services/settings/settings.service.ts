@@ -1,12 +1,12 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { MatSnackBar } from '@angular/material/snack-bar';
+import { NotificationDuration, NotificationService } from '../notification/notification.service';
 
 @Injectable({
     providedIn: 'root'
 })
 export class SettingsService
 {
-    private snackBar = inject(MatSnackBar);
+    private notification = inject(NotificationService);
 
     public readonly testMode = signal(false);
     public readonly syncUrl = signal('');
@@ -28,7 +28,7 @@ export class SettingsService
     {
         localStorage.setItem('testMode', String(this.testMode()));
         localStorage.setItem('syncUrl', this.syncUrl());
-        this.snackBar.open('Die Einstellungen wurden gespeichert!', undefined, { duration: 1000 });
+        this.notification.show('Die Einstellungen wurden gespeichert!', NotificationDuration.short);
     }
 
     public writeSyncLastEdit(lastEdit: string)

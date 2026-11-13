@@ -1,5 +1,4 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { MatDialog } from '@angular/material/dialog';
 import { Router } from '@angular/router';
 import { AddMangelComponent } from 'src/app/shared/dialogs/add-mangel/add-mangel.component';
 import { ConfirmEreignisAbschlussComponent } from 'src/app/shared/dialogs/confirm-ereignis-abschluss/confirm-ereignis-abschluss.component';
@@ -8,6 +7,7 @@ import { PrintReportsComponent } from 'src/app/shared/dialogs/print-reports/prin
 import { RemoveFuellungComponent } from 'src/app/shared/dialogs/remove-fuellung/remove-fuellung.component';
 import { SearchFlascheComponent } from 'src/app/shared/dialogs/search-flasche/search-flasche.component';
 import { IFuellung } from 'src/app/shared/interfaces/i-fuellung';
+import { DialogService } from '../../shared/services/dialog/dialog.service';
 import { OperatingService } from '../../shared/services/operating/operating.service';
 import { TimingService } from '../../shared/services/timing/timing.service';
 import { DatePipe } from '@angular/common';
@@ -28,7 +28,7 @@ import { MatFabButton } from '@angular/material/button';
 export class OperatingPageComponent implements OnInit
 {
     private router = inject(Router);
-    private dialog = inject(MatDialog);
+    private dialogs = inject(DialogService);
     timing = inject(TimingService);
     operating = inject(OperatingService);
 
@@ -52,46 +52,40 @@ export class OperatingPageComponent implements OnInit
 
     public openSearchFlasche()
     {
-        this.dialog.open(SearchFlascheComponent, { width: '500px' });
+        this.dialogs.open(SearchFlascheComponent);
     }
 
-    public openEditEreignis()
+    public async openEditEreignis()
     {
         const ereignis = this.operating.ereignis();
         if (ereignis?.id == null) return;
-        const id = ereignis.id;
-        this.dialog.open(EditEreignisComponent, { width: '500px', data: structuredClone(ereignis) })
-            .afterClosed()
-            .subscribe(() => this.operating.reloadEreignis(id));
+
+        await this.dialogs.open(EditEreignisComponent, structuredClone(ereignis));
+        await this.operating.reloadEreignis(ereignis.id);
     }
 
-    public openAddMangel()
+    public async openAddMangel()
     {
         const ereignis = this.operating.ereignis();
         if (ereignis?.id == null) return;
-        const id = ereignis.id;
-        this.dialog.open(AddMangelComponent, { width: '500px', data: ereignis })
-            .afterClosed()
-            .subscribe(() => this.operating.reloadEreignis(id));
+
+        await this.dialogs.open(AddMangelComponent, ereignis);
+        await this.operating.reloadEreignis(ereignis.id);
     }
 
     public openFuellungContext(fuellung: IFuellung)
     {
-        this.dialog.open(RemoveFuellungComponent, { width: '500px', data: fuellung });
+        this.dialogs.open(RemoveFuellungComponent, fuellung);
     }
 
     public openPrintReportings()
     {
-        this.dialog.open(PrintReportsComponent, { width: '500px', data: this.operating.ereignis() });
+        this.dialogs.open(PrintReportsComponent, this.operating.ereignis());
     }
 
-    public confirmCloseEreignis()
+    public async confirmCloseEreignis()
     {
-        this.dialog.open(ConfirmEreignisAbschlussComponent, { width: '500px' })
-            .afterClosed()
-            .subscribe(confirmation =>
-            {
-                if (confirmation) this.operating.closeEreignis();
-            });
+        if (await this.dialogs.confirm(ConfirmEreignisAbschlussComponent))
+            await this.operating.closeEreignis();
     }
 }

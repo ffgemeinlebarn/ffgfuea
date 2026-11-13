@@ -1,12 +1,11 @@
 import { Component, DOCUMENT, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
-import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
-import { firstValueFrom } from 'rxjs';
 import { ConfirmImportComponent, IConfirmImportData } from 'src/app/shared/dialogs/confirm-import/confirm-import.component';
 import { BackupError, IBackup, LEGACY_VERSION, serializeBackup } from 'src/app/shared/services/backup/backup-format';
 import { BackupService, ImportMode } from 'src/app/shared/services/backup/backup.service';
 import { DataService } from 'src/app/shared/services/data/data.service';
 import { DatabaseService } from 'src/app/shared/services/database/database.service';
+import { DialogService } from 'src/app/shared/services/dialog/dialog.service';
+import { NotificationDuration, NotificationService } from 'src/app/shared/services/notification/notification.service';
 import { SettingsService } from 'src/app/shared/services/settings/settings.service';
 import { errorMessage } from 'src/app/shared/utils/error-message';
 import { environment } from 'src/environments/environment';
@@ -31,8 +30,8 @@ export class SettingsPageComponent implements OnInit, OnDestroy
     database = inject(DatabaseService);
     private data = inject(DataService);
     private backup = inject(BackupService);
-    private dialog = inject(MatDialog);
-    private snackBar = inject(MatSnackBar);
+    private dialogs = inject(DialogService);
+    private notification = inject(NotificationService);
     private document = inject(DOCUMENT);
 
     /** Testmodus und Import nur, wenn kein Ereignis läuft */
@@ -75,7 +74,7 @@ export class SettingsPageComponent implements OnInit, OnDestroy
         }
         catch (error)
         {
-            this.snackBar.open(`Export fehlgeschlagen: ${errorMessage(error)}`, undefined, { duration: 5000 });
+            this.notification.showError(error, 'Export fehlgeschlagen', NotificationDuration.long);
         }
         finally
         {
@@ -116,8 +115,7 @@ export class SettingsPageComponent implements OnInit, OnDestroy
                 ereignisse: this.data.ereignisse().length,
                 testMode: this.database.testMode
             };
-            const dialog = this.dialog.open(ConfirmImportComponent, { width: '500px', data: vorhanden });
-            if (!await firstValueFrom(dialog.afterClosed())) return;
+            if (!await this.dialogs.confirm(ConfirmImportComponent, vorhanden)) return;
         }
 
         this.busy.set(true);
@@ -125,12 +123,12 @@ export class SettingsPageComponent implements OnInit, OnDestroy
         {
             const result = await this.backup.import(backup, mode);
             const skipped = result.skipped > 0 ? `, ${result.skipped} bereits vorhanden` : '';
-            this.snackBar.open(`Import abgeschlossen: ${result.ereignisse} Ereignisse, ${result.personen} Personen und ${result.feuerwehren} Feuerwehren übernommen${skipped}`, undefined, { duration: 5000 });
+            this.notification.show(`Import abgeschlossen: ${result.ereignisse} Ereignisse, ${result.personen} Personen und ${result.feuerwehren} Feuerwehren übernommen${skipped}`, NotificationDuration.long);
             this.selectFile(undefined);
         }
         catch (error)
         {
-            this.snackBar.open(`Import fehlgeschlagen: ${errorMessage(error)}`, undefined, { duration: 5000 });
+            this.notification.showError(error, 'Import fehlgeschlagen', NotificationDuration.long);
         }
         finally
         {

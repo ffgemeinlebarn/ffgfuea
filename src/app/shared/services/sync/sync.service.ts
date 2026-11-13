@@ -1,10 +1,9 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { DataService } from '../data/data.service';
+import { NotificationService } from '../notification/notification.service';
 import { SettingsService } from '../settings/settings.service';
 import { IFeuerwehrRef } from '../../interfaces/i-feuerwehr';
 import { SyncApi } from '../sync-api/sync-api';
-import { errorMessage } from '../../utils/error-message';
 
 @Injectable({
     providedIn: 'root'
@@ -14,7 +13,7 @@ export class SyncService
     private api = inject(SyncApi);
     private data = inject(DataService);
     private settings = inject(SettingsService);
-    private snackBar = inject(MatSnackBar);
+    private notification = inject(NotificationService);
 
     public readonly progressActive = signal(false);
     public readonly progressMessage = signal('Lade Daten aus MAT Datenbank');
@@ -27,7 +26,7 @@ export class SyncService
         }
         catch (error)
         {
-            this.showError(error);
+            this.notification.showError(error);
         }
     }
 
@@ -43,7 +42,7 @@ export class SyncService
         }
         catch
         {
-            this.snackBar.open('Synchronisation nicht möglich - Service nicht erreichbar!', undefined, { duration: 3000 });
+            this.notification.show('Synchronisation nicht möglich - Service nicht erreichbar!');
             return;
         }
 
@@ -66,7 +65,7 @@ export class SyncService
             catch (error)
             {
                 failed = true;
-                this.showError(error);
+                this.notification.showError(error);
             }
         }
 
@@ -95,10 +94,5 @@ export class SyncService
             ...rest,
             flaschen: (flaschen ?? []).map(flasche => ({ ...flasche, feuerwehr: ref }))
         });
-    }
-
-    private showError(error: unknown)
-    {
-        this.snackBar.open(errorMessage(error), undefined, { duration: 3000 });
     }
 }

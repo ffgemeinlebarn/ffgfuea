@@ -1,13 +1,12 @@
 import { DOCUMENT, DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
-import { MatDialog } from '@angular/material/dialog';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
 import { ConfirmFuellungComponent } from '../../dialogs/confirm-fuellung/confirm-fuellung.component';
 import { IEreignis } from '../../interfaces/i-ereignis';
 import { IFlasche } from '../../interfaces/i-flasche';
 import { IFuellung } from '../../interfaces/i-fuellung';
 import { DataService } from '../data/data.service';
-import { errorMessage } from '../../utils/error-message';
+import { DialogService } from '../dialog/dialog.service';
+import { NotificationDuration, NotificationService } from '../notification/notification.service';
 import { TimingService } from '../timing/timing.service';
 
 @Injectable({
@@ -17,9 +16,9 @@ export class OperatingService
 {
     private data = inject(DataService);
     private timing = inject(TimingService);
-    private dialog = inject(MatDialog);
+    private dialogs = inject(DialogService);
     private router = inject(Router);
-    private snackBar = inject(MatSnackBar);
+    private notification = inject(NotificationService);
 
     private readonly minBarcodeZeichen = 5;
     private barcodeInputBuffer = '';
@@ -58,7 +57,7 @@ export class OperatingService
             // Enter
             if (event.key === 'Enter' && this.barcodeInputBuffer.length >= this.minBarcodeZeichen)
             {
-                this.snackBar.open(`Barcodeeingabe erkannt: ${this.barcodeInputBuffer}`, undefined, { duration: 1000 });
+                this.notification.show(`Barcodeeingabe erkannt: ${this.barcodeInputBuffer}`, NotificationDuration.short);
 
                 this.addFuellungByBarcode(this.barcodeInputBuffer);
                 this.barcodeInputBuffer = '';
@@ -100,7 +99,7 @@ export class OperatingService
         }
         catch (error)
         {
-            this.snackBar.open(errorMessage(error), undefined, { duration: 3000 });
+            this.notification.showError(error);
         }
     }
 
@@ -111,30 +110,21 @@ export class OperatingService
             flasche
         };
 
-        if (this.confirmFuellungActive())
-        {
-            const dialog = this.dialog.open(ConfirmFuellungComponent, { width: '500px', data: fuellung });
-            dialog.afterClosed().subscribe(confirmation =>
-            {
-                if (confirmation) this.updateFuellungen(fuellungen => [fuellung, ...fuellungen]);
-            });
-        }
-        else
-        {
-            await this.updateFuellungen(fuellungen => [fuellung, ...fuellungen]);
-        }
+        if (this.confirmFuellungActive() && !await this.dialogs.confirm(ConfirmFuellungComponent, fuellung)) return;
+
+        await this.updateFuellungen(fuellungen => [fuellung, ...fuellungen]);
     }
 
     public async removeFuellung(fuellung: IFuellung)
     {
         if (!this.ereignis()?.fuellungen.includes(fuellung))
         {
-            this.snackBar.open(`Füllung konnte nicht entfernt werden!`, undefined, { duration: 3000 });
+            this.notification.show('Füllung konnte nicht entfernt werden!');
             return;
         }
 
         await this.updateFuellungen(fuellungen => fuellungen.filter(item => item !== fuellung));
-        this.snackBar.open(`Füllung entfernt!`, undefined, { duration: 3000 });
+        this.notification.show('Füllung entfernt!');
     }
 
     public async closeEreignis()
