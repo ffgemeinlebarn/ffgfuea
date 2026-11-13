@@ -27,7 +27,7 @@
     "@angular/service-worker": "^22.2.3",
     "dexie": "^4.4.6",
     "jspdf": "4.2.1",
-    "jspdf-autotable": "5.0.8",
+    "jspdf-autotable": "5.0.9",
     "rxjs": "^7.8.1",
     "tslib": "^2.4.0"
   },
