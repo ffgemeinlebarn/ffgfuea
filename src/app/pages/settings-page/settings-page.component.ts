@@ -7,6 +7,7 @@ import { DatabaseService } from 'src/app/shared/services/database/database.servi
 import { DialogService } from 'src/app/shared/services/dialog/dialog.service';
 import { NotificationDuration, NotificationService } from 'src/app/shared/services/notification/notification.service';
 import { SettingsService } from 'src/app/shared/services/settings/settings.service';
+import { downloadBlob } from 'src/app/shared/utils/download';
 import { errorMessage } from 'src/app/shared/utils/error-message';
 import { environment } from 'src/environments/environment';
 import { MatButton } from '@angular/material/button';
@@ -138,12 +139,7 @@ export class SettingsPageComponent implements OnInit, OnDestroy
 
     private download(blob: Blob, fileName: string)
     {
-        const url = URL.createObjectURL(blob);
-        const link = this.document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        link.click();
-        setTimeout(() => URL.revokeObjectURL(url));
+        downloadBlob(this.document, blob, fileName);
     }
 }
 
