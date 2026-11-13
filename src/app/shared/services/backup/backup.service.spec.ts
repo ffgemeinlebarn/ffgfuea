@@ -74,7 +74,7 @@ describe('BackupService', () =>
         const lines = text.split('\n');
 
         expect(lines.filter(line => line.startsWith('    {"type"'))).toHaveLength(2);
-        expect(JSON.parse(text).ereignisse).toHaveLength(2);
+        expect((JSON.parse(text) as IBackup).ereignisse).toHaveLength(2);
     });
 
     it('benennt die Datei nach Zeitpunkt und Testmodus', async () =>
@@ -137,7 +137,7 @@ describe('BackupService', () =>
 
             const text = await serializeBackup(await service.createBackup()).text();
 
-            expect(JSON.parse(text).ereignisse[0]).toMatchObject({ jahr: 2026, nummer: 1 });
+            expect((JSON.parse(text) as IBackup).ereignisse[0]).toMatchObject({ jahr: 2026, nummer: 1 });
         });
 
         it('bleiben beim Ersetzen erhalten, fehlende werden angehängt', async () =>

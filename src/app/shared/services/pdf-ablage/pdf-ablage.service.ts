@@ -120,7 +120,7 @@ export class PdfAblageService
     public async zielErmitteln(): Promise<IAblageZiel>
     {
         await this.geladen;
-        const ordner = this.ordner() as IOrdnerHandle | null;
+        const ordner: IOrdnerHandle | null = this.ordner();
         if (!ordner) return { ordner: null };
 
         try

@@ -1,0 +1,26 @@
+# Git-Hooks (https://lefthook.dev). Installiert über `npm ci`/`npm install` (prepare → scripts/lefthook-install.mjs).
+#
+#   npx lefthook run pre-commit       Hooks von Hand ausführen
+#   npx lefthook run pre-push
+#   LEFTHOOK=0 git commit …           im Notfall überspringen (git commit/push --no-verify geht auch)
+
+pre-commit:
+  parallel: true
+  jobs:
+    - name: gitleaks
+      run: bash scripts/gitleaks.sh --staged
+
+    - name: eslint
+      glob: "*.{ts,html,mjs,js}"
+      # Von ESLint ignorierte Dateien (dist/, .claude/worktrees/ …) ohne Warnung überspringen
+      run: npx --no -- eslint --no-warn-ignored {staged_files}
+
+pre-push:
+  piped: true
+  jobs:
+    # Typecheck inkl. Templates (strictTemplates): ngc für App und Unit-Tests, tsc für E2E
+    - name: typecheck
+      run: npx --no -- ngc -p tsconfig.app.json --noEmit && npx --no -- ngc -p tsconfig.spec.json --noEmit && npx --no -- tsc --noEmit -p e2e/tsconfig.json
+
+    - name: unit-tests
+      run: npx --no -- ng test --watch=false

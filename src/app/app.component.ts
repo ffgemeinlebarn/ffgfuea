@@ -21,6 +21,6 @@ export class AppComponent
 
     constructor()
     {
-        this.sync.syncSavedFeuerwehren();
+        void this.sync.syncSavedFeuerwehren();
     }
 }

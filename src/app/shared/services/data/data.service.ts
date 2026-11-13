@@ -35,7 +35,7 @@ export class DataService
 
     constructor()
     {
-        this.load();
+        void this.load();
     }
 
     public async load(): Promise<void>
@@ -53,6 +53,8 @@ export class DataService
     public async loadFeuerwehren(): Promise<void>
     {
         const feuerwehren = await this.database.db.feuerwehren.toArray();
+        // Gespeicherte Nummern können aus älteren Ständen als Text vorliegen
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion
         this.feuerwehren.set(feuerwehren.sort((a, b) => Number(a.feuerwehrNummer) - Number(b.feuerwehrNummer)));
     }
 
@@ -120,7 +122,7 @@ export class DataService
 
         const flasche: IFlasche = {
             ...daten,
-            barcode: daten.barcode!.trim(),
+            barcode: (daten.barcode ?? '').trim(),
             lastEdit: new Date(),
             quelle: 'manuell',
             feuerwehr: toFeuerwehrRef(feuerwehr)

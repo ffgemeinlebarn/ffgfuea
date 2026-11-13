@@ -54,7 +54,7 @@ export class EditFlascheComponent
     private readonly original = this.input.flasche;
 
     public readonly form = new FormGroup({
-        barcode: new FormControl(this.original?.barcode ?? '', { nonNullable: true, validators: control => this.validateBarcode(control) }),
+        barcode: new FormControl(this.original?.barcode ?? '', { nonNullable: true, validators: (control: AbstractControl<string>) => this.validateBarcode(control) }),
         karteiNr: new FormControl<number | null>(this.original?.karteiNr ?? null, Validators.min(0)),
         flaschennummer: new FormControl(this.original?.flaschennummer ?? '', { nonNullable: true }),
         typenBezeichnung: new FormControl(this.original?.typenBezeichnung ?? '', { nonNullable: true }),

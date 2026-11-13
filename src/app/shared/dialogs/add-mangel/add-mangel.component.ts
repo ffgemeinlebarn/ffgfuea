@@ -43,7 +43,7 @@ export class AddMangelComponent
         this.dialog.close();
     }
 
-    public async add(): Promise<void>
+    public add(): void
     {
         // const mangel = new Mangel(this.selectedflascheId, new Date(), this.selectedPerson.id, this.selectedMangelType.bereich, this.selectedMangelType.title, this.selectedMangelNote, this.data.id);
         // this.maengelService.saveOrCreate(mangel);

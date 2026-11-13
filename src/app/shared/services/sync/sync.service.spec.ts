@@ -16,7 +16,7 @@ class StubSyncApi extends SyncApi
 
     public getFeuerwehr = vi.fn(async (feuerwehrNummer: number) =>
     {
-        const feuerwehr = this.feuerwehren.get(Number(feuerwehrNummer));
+        const feuerwehr = this.feuerwehren.get(feuerwehrNummer);
         // Wie vom MAT Sync-Service: ohne Rückverweis auf die Feuerwehr und ohne Quelle
         return feuerwehr ? { ...feuerwehr, flaschen: feuerwehr.flaschen.map(({ feuerwehr: _, quelle: __, ...flasche }) => flasche) } : null;
     });

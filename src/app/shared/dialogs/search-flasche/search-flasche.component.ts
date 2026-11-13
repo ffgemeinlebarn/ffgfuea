@@ -36,7 +36,7 @@ export class SearchFlascheComponent
 
     public add(): void
     {
-        this.operating.addFuellung(this.selectedFlasche);
+        void this.operating.addFuellung(this.selectedFlasche);
         this.dialog.close();
     }
 }

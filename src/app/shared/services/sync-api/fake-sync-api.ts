@@ -19,7 +19,6 @@ export class FakeSyncApi extends SyncApi
     public async getFeuerwehr(feuerwehrNummer: number): Promise<IMatFeuerwehr | null>
     {
         await delay(500);
-        feuerwehrNummer = Number(feuerwehrNummer);
         const name = `Feuerwehr Nr. ${feuerwehrNummer}`;
 
         return {

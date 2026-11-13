@@ -1,13 +1,14 @@
 import { TestBed } from '@angular/core/testing';
-import { MatDialog } from '@angular/material/dialog';
+import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { Router, provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { Observable, of } from 'rxjs';
+import type { Mock, MockInstance } from 'vitest';
 import { createEreignis, createFeuerwehr } from 'src/app/testing/test-data';
 import { ConfirmEreignisAbschlussComponent } from '../shared/dialogs/confirm-ereignis-abschluss/confirm-ereignis-abschluss.component';
 import { EditEreignisComponent } from '../shared/dialogs/edit-ereignis/edit-ereignis.component';
 import { EditFlascheComponent } from '../shared/dialogs/edit-flasche/edit-flasche.component';
 import { EditPersonComponent } from '../shared/dialogs/edit-person/edit-person.component';
-import { BerichteComponent } from '../shared/dialogs/berichte/berichte.component';
+import { BerichteComponent, IBerichteDaten } from '../shared/dialogs/berichte/berichte.component';
 import { RemoveFeuerwehrComponent } from '../shared/dialogs/remove-feuerwehr/remove-feuerwehr.component';
 import { RemoveFlascheComponent } from '../shared/dialogs/remove-flasche/remove-flasche.component';
 import { EreignisType } from '../shared/enums/ereignis-type';
@@ -28,9 +29,9 @@ import { VerwaltungPageComponent } from './verwaltung-page/verwaltung-page.compo
 describe('Seiten-Aktionen', () =>
 {
     let data: DataService;
-    let navigate: ReturnType<typeof vi.spyOn>;
+    let navigate: MockInstance<Router['navigate']>;
     let dialogResult: unknown;
-    let open: ReturnType<typeof vi.fn>;
+    let open: Mock<(component: unknown, config?: MatDialogConfig<unknown>) => { afterClosed: () => Observable<unknown> }>;
     const feuerwehr = createFeuerwehr(1, ['11111']);
 
     beforeEach(async () =>
@@ -50,7 +51,7 @@ describe('Seiten-Aktionen', () =>
     });
 
     const openedWith = (component: unknown) => expect(open).toHaveBeenCalledWith(component, expect.anything());
-    const openedData = () => open.mock.lastCall![1].data;
+    const openedData = () => open.mock.lastCall![1]?.data;
 
     it('Startseite legt ein neues Ereignis an und wechselt in den Betrieb', async () =>
     {
@@ -119,16 +120,16 @@ describe('Seiten-Aktionen', () =>
             expect(operating.ereignis()).toBeNull();
             expect(navigate).toHaveBeenCalledWith(['/']);
             openedWith(BerichteComponent);
-            expect(openedData()).toEqual({ ereignis: expect.objectContaining({ id, datetimeEnd: expect.any(Date) }) });
+            expect(openedData()).toEqual({ ereignis: expect.objectContaining({ id, datetimeEnd: expect.any(Date) as Date }) as unknown });
             expect((await data.getEreignis(id)).datetimeEnd).toBeInstanceOf(Date);
         });
 
         describe('automatische PDF-Ablage beim Abschließen & Drucken', () =>
         {
             let ablage: PdfAblageService;
-            let zielErmitteln: ReturnType<typeof vi.spyOn>;
-            let speichern: ReturnType<typeof vi.spyOn>;
-            let show: ReturnType<typeof vi.spyOn>;
+            let zielErmitteln: MockInstance<PdfAblageService['zielErmitteln']>;
+            let speichern: MockInstance<PdfAblageService['speichern']>;
+            let show: MockInstance<NotificationService['show']>;
             const ordner = new FakeDirectoryHandle('Berichte').asHandle();
 
             beforeEach(() =>
@@ -151,7 +152,7 @@ describe('Seiten-Aktionen', () =>
 
                 // Berechtigung vor dem Speichern des Ereignisses, PDFs vor dem Berichte-Dialog
                 expect(zielErmitteln.mock.invocationCallOrder[0]).toBeLessThan(closeEreignis.mock.invocationCallOrder[0]);
-                expect(speichern).toHaveBeenCalledWith(expect.objectContaining({ id, datetimeEnd: expect.any(Date) }), undefined, { ziel: { ordner }, download: false });
+                expect(speichern).toHaveBeenCalledWith(expect.objectContaining({ id, datetimeEnd: expect.any(Date) as Date }), undefined, { ziel: { ordner }, download: false });
                 expect(speichern.mock.invocationCallOrder[0]).toBeLessThan(berichteDialogOrder());
                 openedWith(BerichteComponent);
                 expect(show).toHaveBeenLastCalledWith('2 PDFs gespeichert in Berichte/2026/2026-001_Uebung_Gemeinlebarn', expect.any(Number));
@@ -268,7 +269,7 @@ describe('Seiten-Aktionen', () =>
 
         openedWith(BerichteComponent);
         expect(openedData()).toEqual({ ereignis, pdfSpeichern: true });
-        expect(openedData().ereignis).toBe(ereignis);
+        expect((openedData() as IBerichteDaten).ereignis).toBe(ereignis);
     });
 
     describe('Verwaltung', () =>
@@ -296,24 +297,24 @@ describe('Seiten-Aktionen', () =>
         it('entfernt Füllpersonal', async () =>
         {
             const id = await data.savePerson({ vorname: 'Max', nachname: 'Muster' });
-            await page.removePerson(data.personen().find(p => p.id === id)!);
+            page.removePerson(data.personen().find(p => p.id === id)!);
             await vi.waitFor(() => expect(data.personen()).toEqual([]));
         });
 
         it('legt eine manuelle Flasche für die Feuerwehr an', () =>
         {
-            page.addFlasche(feuerwehr);
+            void page.addFlasche(feuerwehr);
             openedWith(EditFlascheComponent);
             expect(openedData()).toEqual({ feuerwehr: { feuerwehrNummer: 1, eigentuemerId: 1, name: 'FF 1' } });
         });
 
         it('bearbeitet nur manuelle Flaschen', async () =>
         {
-            page.editFlasche(feuerwehr.flaschen[0]);
+            void page.editFlasche(feuerwehr.flaschen[0]);
             expect(open).not.toHaveBeenCalled();
 
             const manuell = await data.saveManuelleFlasche(1, { barcode: '19999' });
-            page.editFlasche(manuell);
+            void page.editFlasche(manuell);
             openedWith(EditFlascheComponent);
             expect(openedData()).toEqual({ feuerwehr: manuell.feuerwehr, flasche: manuell });
         });

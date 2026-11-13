@@ -99,8 +99,10 @@ export class PdfService
             fortschritt?.();
         }
 
-        if (berichte.length > 1) setTitel(doc!, ereignis, SAMMEL_TITEL);
-        return doc!.output('blob');
+        // Nach der Prüfung oben gibt es immer mindestens einen Bericht
+        if (!doc) throw new Error('Kein Bericht ausgewählt');
+        if (berichte.length > 1) setTitel(doc, ereignis, SAMMEL_TITEL);
+        return doc.output('blob');
     }
 }
 

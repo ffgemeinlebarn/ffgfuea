@@ -18,7 +18,7 @@ export class RemoveFeuerwehrComponent
 
     public remove()
     {
-        this.data.removeFeuerwehr(this.feuerwehr).finally(() => this.dialog.close());
+        void this.data.removeFeuerwehr(this.feuerwehr).finally(() => this.dialog.close());
     }
 
     public close(): void
