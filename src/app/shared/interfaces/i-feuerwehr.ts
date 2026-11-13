@@ -12,3 +12,12 @@ export interface IFeuerwehr extends IFeuerwehrRef
 {
     flaschen: Array<IFlasche>;
 }
+
+export function toFeuerwehrRef(feuerwehr: IFeuerwehrRef): IFeuerwehrRef
+{
+    return {
+        feuerwehrNummer: feuerwehr.feuerwehrNummer,
+        eigentuemerId: feuerwehr.eigentuemerId,
+        name: feuerwehr.name
+    };
+}

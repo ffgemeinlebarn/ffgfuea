@@ -101,6 +101,22 @@ describe('Seiten', () =>
         expect(element.querySelectorAll('tr[mat-row]').length).toBe(2);
     });
 
+    it('Verwaltung zeigt die Quelle der Flaschen und bietet nur manuelle Flaschen zur Bearbeitung an', async () =>
+    {
+        await data.saveFeuerwehr(createFeuerwehr(2, ['2000001'], ['2000002']));
+
+        const fixture = await render(VerwaltungPageComponent);
+        const element: HTMLElement = fixture.nativeElement;
+        const zeilen = Array.from(element.querySelectorAll('tr[mat-row]'));
+        const quellen = zeilen.map(zeile => zeile.querySelector('.quelle')?.textContent?.trim());
+        const bearbeitbar = zeilen.map(zeile => zeile.querySelectorAll('.aktionen button').length);
+
+        expect(quellen).toEqual(['MAT', 'Manuell', 'MAT', 'MAT']);
+        expect(bearbeitbar).toEqual([0, 2, 0, 0]);
+        expect(element.textContent).toContain('2 Flaschen, davon 1 manuell');
+        expect(element.textContent).toContain('Flasche hinzufügen');
+    });
+
     it('Verwaltung fügt Füllpersonal hinzu und leert die Eingabe', async () =>
     {
         const fixture = await render(VerwaltungPageComponent);

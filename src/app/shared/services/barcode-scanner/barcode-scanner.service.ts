@@ -2,7 +2,7 @@ import { DOCUMENT, DestroyRef, Injectable, inject, signal } from '@angular/core'
 import { Subject } from 'rxjs';
 
 /** Kürzere Eingaben sind Tastatureingaben und keine Barcodes */
-const MIN_BARCODE_LENGTH = 5;
+export const MIN_BARCODE_LENGTH = 5;
 
 const isDigit = (value: string) => /^\d$/.test(value);
 

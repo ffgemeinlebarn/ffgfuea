@@ -5,9 +5,11 @@ import { of } from 'rxjs';
 import { createEreignis, createFeuerwehr } from 'src/app/testing/test-data';
 import { ConfirmEreignisAbschlussComponent } from '../shared/dialogs/confirm-ereignis-abschluss/confirm-ereignis-abschluss.component';
 import { EditEreignisComponent } from '../shared/dialogs/edit-ereignis/edit-ereignis.component';
+import { EditFlascheComponent } from '../shared/dialogs/edit-flasche/edit-flasche.component';
 import { EditPersonComponent } from '../shared/dialogs/edit-person/edit-person.component';
 import { PrintReportsComponent } from '../shared/dialogs/print-reports/print-reports.component';
 import { RemoveFeuerwehrComponent } from '../shared/dialogs/remove-feuerwehr/remove-feuerwehr.component';
+import { RemoveFlascheComponent } from '../shared/dialogs/remove-flasche/remove-flasche.component';
 import { EreignisType } from '../shared/enums/ereignis-type';
 import { BarcodeScannerService } from '../shared/services/barcode-scanner/barcode-scanner.service';
 import { DataService } from '../shared/services/data/data.service';
@@ -172,6 +174,44 @@ describe('Seiten-Aktionen', () =>
             const id = await data.savePerson({ vorname: 'Max', nachname: 'Muster' });
             await page.removePerson(data.personen().find(p => p.id === id)!);
             await vi.waitFor(() => expect(data.personen()).toEqual([]));
+        });
+
+        it('legt eine manuelle Flasche für die Feuerwehr an', () =>
+        {
+            page.addFlasche(feuerwehr);
+            openedWith(EditFlascheComponent);
+            expect(openedData()).toEqual({ feuerwehr: { feuerwehrNummer: 1, eigentuemerId: 1, name: 'FF 1' } });
+        });
+
+        it('bearbeitet nur manuelle Flaschen', async () =>
+        {
+            page.editFlasche(feuerwehr.flaschen[0]);
+            expect(open).not.toHaveBeenCalled();
+
+            const manuell = await data.saveManuelleFlasche(1, { barcode: '19999' });
+            page.editFlasche(manuell);
+            openedWith(EditFlascheComponent);
+            expect(openedData()).toEqual({ feuerwehr: manuell.feuerwehr, flasche: manuell });
+        });
+
+        it('löscht eine manuelle Flasche nur nach Bestätigung', async () =>
+        {
+            const manuell = await data.saveManuelleFlasche(1, { barcode: '19999' });
+            const barcodes = () => data.feuerwehren()[0].flaschen.map(f => f.barcode);
+
+            dialogResult = false;
+            await page.removeFlasche(manuell);
+            openedWith(RemoveFlascheComponent);
+            expect(barcodes()).toEqual(['11111', '19999']);
+
+            dialogResult = true;
+            await page.removeFlasche(manuell);
+            expect(barcodes()).toEqual(['11111']);
+
+            open.mockClear();
+            await page.removeFlasche(feuerwehr.flaschen[0]);
+            expect(open).not.toHaveBeenCalled();
+            expect(barcodes()).toEqual(['11111']);
         });
 
         it('synchronisiert eine neue Feuerwehr', () =>

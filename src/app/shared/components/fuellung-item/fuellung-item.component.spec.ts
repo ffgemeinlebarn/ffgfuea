@@ -16,4 +16,17 @@ describe('FuellungItemComponent', () =>
         expect(text).toContain('Barcode: 11111');
         expect(text).toContain('14:03:09 Uhr');
     });
+
+    it('kennzeichnet manuell erfasste Flaschen dezent', async () =>
+    {
+        const [mat, manuell] = createFeuerwehr(1, ['11111'], ['19999']).flaschen;
+        const fixture = TestBed.createComponent(FuellungItemComponent);
+        fixture.componentRef.setInput('fuellung', createFuellung(mat));
+        await fixture.whenStable();
+        expect(fixture.nativeElement.textContent).not.toContain('manuell erfasst');
+
+        fixture.componentRef.setInput('fuellung', createFuellung(manuell));
+        await fixture.whenStable();
+        expect(fixture.nativeElement.textContent).toContain('manuell erfasst');
+    });
 });
