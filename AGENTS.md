@@ -17,22 +17,32 @@ FFGFÜA ist die PWA der Atemluftfüllstelle der FF Gemeinlebarn: Atemschutzflasc
 | --- | --- |
 | Dev-Server (Fake-MAT-API, Port 4200) | `npm start` |
 | Unit-Tests | `npx ng test --watch=false` |
+| Unit-Tests mit Coverage-Schwelle (CI-Gate) | `npm run test:coverage` |
+| Lint (ganzes Projekt / eine Datei) | `npm run lint` / `npx eslint <datei>` |
 | Build | `npx ng build` |
 | E2E (startet eigenen Server auf Port 4300) | `npm run e2e` (lokal ggf. `PW_CHROMIUM_PATH=/usr/bin/chromium npm run e2e`) |
 | Lizenzen | `npm run check:licenses` |
 | Secrets (gitleaks) | `npm run secrets:scan` |
 | SAST (CodeQL, lädt beim 1. Mal ~550 MB) | `npm run sast:codeql` |
+| Git-Hooks von Hand | `npx lefthook run pre-commit` / `npx lefthook run pre-push` |
 
-Vor jedem Commit: Unit-Tests und Build grün. Bei Änderungen an Abläufen in der UI zusätzlich `npm run e2e`.
+Vor jedem Commit: Lint, Unit-Tests und Build grün. Bei Änderungen an Abläufen in der UI zusätzlich `npm run e2e`.
 
 ## Konventionen
 
 - **Sprache:** Fachbegriffe, UI-Texte und Kommentare auf Deutsch (Ereignis, Feuerwehr, Flasche, Füllung, Füllpersonal, Mangel). Commit-Messages auf Englisch im Imperativ („Add …“, „Fix …“).
-- **Stil:** Allman-Klammern (öffnende Klammer in eigener Zeile), 4 Leerzeichen, `inject()` statt Konstruktor-Injection, Signals für Zustand, `@if`/`@for` im Template.
+- **Stil:** ESLint (`eslint.config.mjs`) ist maßgeblich, kein Prettier (kann keine Allman-Klammern). Allman-Klammern (öffnende Klammer in eigener Zeile), 4 Leerzeichen, `inject()` statt Konstruktor-Injection, Signals für Zustand, `@if`/`@for` im Template.
 - **TypeScript:** `strict: true` und `strictTemplates`. Kein `any`, `!` nur wenn wirklich garantiert.
 - **Dialoge** nur über `DialogService` (`open()` liefert ein Promise mit dem Ergebnis, `confirm()` ein `boolean`), **Meldungen** nur über `NotificationService`. `MatDialog`/`MatSnackBar` nicht direkt verwenden.
 - **Modelle** in `src/app/shared/interfaces/`: Pflichtfelder sind Pflicht. Rohdaten von MAT sind `IMatFeuerwehr`/`IMatFlasche`.
 - **Tests:** Verhalten testen, nicht Implementierung. Testdaten über `src/app/testing/test-data.ts`, Dialog-Provider über `src/app/testing/dialog.ts`, Dateisystem-Fakes über `src/app/testing/file-system.ts`. Unit-Specs heißen `*.spec.ts`, E2E-Specs `e2e/*.e2e.ts`.
+
+## Hooks und Gates
+
+- **lefthook** (`lefthook.yml`, installiert über `prepare` bei `npm ci`/`npm install`): pre-commit gitleaks auf die gestagten Änderungen und ESLint auf die gestagten Dateien, pre-push Typecheck (`ngc` inkl. Templates, `tsc` für E2E) und Unit-Tests. In CI, ohne `.git` und in Git-Worktrees installiert `prepare` nichts; die Hooks aus dem Haupt-Repo gelten auch in Worktrees.
+- **Claude-Code-Hook** (`.claude/settings.json`): Nach jedem Edit/Write prüft `scripts/claude-hook-check.mjs` die geänderte Datei mit ESLint und gitleaks. Befunde kommen als Hook-Feedback zurück und sind sofort zu beheben.
+- **Notfall:** `LEFTHOOK=0 git commit …` (oder `--no-verify`) überspringt die Git-Hooks. Nur ausnahmsweise, CI prüft dasselbe.
+- **Coverage-Schwelle:** `npm run test:coverage` ist CI-Gate, die Schwellen stehen in `angular.json` (`coverageThresholds`). Neuer Code bringt Tests mit, Schwellen nicht senken.
 
 ## Architektur in Kürze
 
@@ -77,6 +87,5 @@ Vor jedem Commit: Unit-Tests und Build grün. Bei Änderungen an Abläufen in de
 
 Geplante Schritte stehen als GitHub-Issues im Repo. Vor größeren Änderungen dort nachsehen:
 
-- [#12](https://github.com/ffgemeinlebarn/ffgfuea/issues/12) Qualität Welle 2: ESLint, lefthook, Claude-Code-Hooks, Coverage-Schwelle
 - [#13](https://github.com/ffgemeinlebarn/ffgfuea/issues/13) Altberichte-Übergangslösung nach der Migration entfernen
 - [#14](https://github.com/ffgemeinlebarn/ffgfuea/issues/14) Manuelle Schritte: Browser-Checks, GitHub-Einstellungen, LICENSE
