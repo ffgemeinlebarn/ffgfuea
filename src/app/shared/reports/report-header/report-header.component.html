@@ -1,12 +1,14 @@
 <header>
   <div class="titelzeile">
-    <h1>Füllbericht <span>der Atemluftfüllstelle Gemeinlebarn</span></h1>
+    <h1>{{ kopf }} <span>{{ kopfZusatz }}</span></h1>
     <p class="titel">{{ titel() }}</p>
   </div>
 
   <dl class="ereignis">
-    <!-- Platz für die Ereignisnummer: hier als erstes Feld ergänzen, z.B.
-         <div><dt>Ereignis-Nr.</dt><dd>…</dd></div> -->
+    <div class="feld">
+      <dt>Ereignis-Nr.</dt>
+      <dd>{{ nummer() || '–' }}</dd>
+    </div>
     <div class="feld">
       <dt>Ereignis</dt>
       <dd>{{ typ() }}</dd>

@@ -6,7 +6,9 @@ import { DataService } from 'src/app/shared/services/data/data.service';
 import { DatabaseService } from 'src/app/shared/services/database/database.service';
 import { DialogService } from 'src/app/shared/services/dialog/dialog.service';
 import { NotificationDuration, NotificationService } from 'src/app/shared/services/notification/notification.service';
+import { PdfAblageService } from 'src/app/shared/services/pdf-ablage/pdf-ablage.service';
 import { SettingsService } from 'src/app/shared/services/settings/settings.service';
+import { downloadBlob } from 'src/app/shared/utils/download';
 import { errorMessage } from 'src/app/shared/utils/error-message';
 import { environment } from 'src/environments/environment';
 import { MatButton } from '@angular/material/button';
@@ -28,6 +30,7 @@ export class SettingsPageComponent implements OnInit, OnDestroy
 {
     settings = inject(SettingsService);
     database = inject(DatabaseService);
+    ablage = inject(PdfAblageService);
     private data = inject(DataService);
     private backup = inject(BackupService);
     private dialogs = inject(DialogService);
@@ -62,6 +65,32 @@ export class SettingsPageComponent implements OnInit, OnDestroy
         this.settings.saveAll();
         this.database.refresh();
         await this.data.load();
+    }
+
+    public async ordnerWaehlen()
+    {
+        try
+        {
+            if (await this.ablage.ordnerWaehlen())
+                this.notification.show(`PDFs werden im Ordner „${this.ablage.ordnerName()}“ abgelegt`);
+        }
+        catch (error)
+        {
+            this.notification.showError(error, 'Ordner konnte nicht ausgewählt werden', NotificationDuration.long);
+        }
+    }
+
+    public async ordnerEntfernen()
+    {
+        try
+        {
+            await this.ablage.ordnerEntfernen();
+            this.notification.show('Ordner entfernt, PDFs werden jetzt heruntergeladen');
+        }
+        catch (error)
+        {
+            this.notification.showError(error, 'Ordner konnte nicht entfernt werden', NotificationDuration.long);
+        }
     }
 
     public async export()
@@ -138,12 +167,7 @@ export class SettingsPageComponent implements OnInit, OnDestroy
 
     private download(blob: Blob, fileName: string)
     {
-        const url = URL.createObjectURL(blob);
-        const link = this.document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        link.click();
-        setTimeout(() => URL.revokeObjectURL(url));
+        downloadBlob(this.document, blob, fileName);
     }
 }
 

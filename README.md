@@ -23,6 +23,27 @@ Flaschen kommen aus der MAT Synchronisierung oder werden unter *Verwaltung* je F
 
 Die Synchronisierung ersetzt die MAT Flaschen einer Feuerwehr und behält ihre manuellen Flaschen. Liefert MAT eine Flasche mit dem Barcode einer manuellen Flasche – egal bei welcher Feuerwehr – gewinnt MAT: Die manuelle Flasche wird entfernt und darüber informiert. Bereits erfasste Füllungen bleiben unverändert.
 
+## Berichte als PDF
+
+Im Druckdialog (*Als PDF speichern*, nur die ausgewählten Berichte) und unter *Ereignisse* (*PDFs speichern*, alle Berichte) lassen sich die Berichte als PDF speichern: der Gesamtbericht im A4-Querformat und ein Bericht pro Feuerwehr im A4-Hochformat. Die PDFs werden mit jsPDF erzeugt (echter Text, Kopfzeilen der Tabelle auf jeder Seite, Fußzeile mit Ereignisnummer und „Seite x von y“). jsPDF wird erst beim ersten Speichern nachgeladen.
+
+Den Zielordner wählt man einmal unter *Einstellungen → PDF-Ablage*. Darin werden die PDFs nach Jahr und Ereignisnummer abgelegt, vorhandene Dateien werden überschrieben:
+
+```
+<Ordner>/
+  2026/
+    2026-007_Einsatz_Tulln/
+      2026-007_Gesamtbericht.pdf
+      2026-007_Feuerwehr_FF_Tulln.pdf
+      2026-007_Feuerwehr_FF_Grossweikersdorf.pdf
+```
+
+Ordner- und Dateinamen enthalten keine Umlaute (ä → ae, ß → ss) und keine Sonderzeichen. Im Testmodus landen die PDFs im Unterordner `Testmodus`.
+
+Ist *Beim Abschließen & Drucken automatisch als PDF ablegen* eingeschaltet (Standard) und ein Ordner gewählt, legt „Abschließen & Berichte drucken“ alle Berichte vor dem Druckdialog im Ordner ab.
+
+Die Ordnerauswahl nutzt die File System Access API und funktioniert nur in **Chrome und Edge am PC**. Der Ordner wird in einer eigenen IndexedDB (`ffgfuea_dateiablage`) gespeichert, die Schreibberechtigung fragt der Browser bei Bedarf beim Speichern ab. Ohne gewählten Ordner, ohne Berechtigung oder in anderen Browsern werden die PDFs einzeln heruntergeladen – mit denselben Dateinamen, damit sie nach Ereignisnummer sortiert bleiben.
+
 ## Export & Import
 
 Unter *Einstellungen* lassen sich alle Daten als JSON-Datei herunterladen und wieder importieren – zur Weiterverarbeitung oder als Sicherung. Im Testmodus wird die Testdatenbank exportiert bzw. befüllt.

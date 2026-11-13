@@ -57,6 +57,16 @@ describe('GesamtberichtComponent', () =>
         expect(texts(element, '.abschluss > ffg-unterschrift .label')).toEqual(['Füllpersonal']);
     });
 
+    it('zeigt die Ereignisnummer im Kopf', async () =>
+    {
+        const mitNummer = await render(createEreignis({ jahr: 2026, nummer: 7 }));
+        expect(texts(mitNummer, 'ffg-report-header .feld:first-child dt, ffg-report-header .feld:first-child dd'))
+            .toEqual(['Ereignis-Nr.', '2026-007']);
+
+        const ohneNummer = await render(createEreignis());
+        expect(texts(ohneNummer, 'ffg-report-header .feld:first-child dd')).toEqual(['–']);
+    });
+
     it('weist auf fehlende Füllungen hin', async () =>
     {
         const element = await render(createEreignis());
