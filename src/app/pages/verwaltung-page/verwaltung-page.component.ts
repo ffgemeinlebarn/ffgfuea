@@ -40,7 +40,8 @@ export class VerwaltungPageComponent
 
     public addFeuerwehrToSync(feuerwehrNummer: number | null)
     {
-        if (feuerwehrNummer == null) return;
+        // type="number" liefert eine Zahl, leer oder ungültig null bzw. keine ganze Zahl
+        if (feuerwehrNummer == null || !Number.isInteger(feuerwehrNummer) || feuerwehrNummer <= 0) return;
         void this.sync.addFeuerwehr(feuerwehrNummer);
     }
 

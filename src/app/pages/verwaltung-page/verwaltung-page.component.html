@@ -35,7 +35,7 @@
     <h3>Feuerwehr zur Synchronisierung hinzufügen</h3>
     <mat-form-field appearance="fill">
       <mat-label>Feuerwehrnummer</mat-label>
-      <input matInput placeholder="Feuerwehrnummer" [(ngModel)]="feuerwehrNummerToSync">
+      <input matInput type="number" min="1" step="1" placeholder="Feuerwehrnummer" [(ngModel)]="feuerwehrNummerToSync">
     </mat-form-field>
     <div>
       <button mat-raised-button color="primary" (click)="addFeuerwehrToSync(feuerwehrNummerToSync)">Zur Synchroniserung hinzufügen</button>
