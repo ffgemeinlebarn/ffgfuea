@@ -62,7 +62,10 @@ describe('PDF-Berichte', () =>
             // Datum normal, Uhrzeit fett als eigenes Textstück
             expect(text).toContain('(01.05.2026 )');
             expect(text).toContain('(18:30 Uhr)');
-            expect(text).toContain('(Übernommen von Feuerwehr FF 1)');
+            // Unterschriftsfeld der Feuerwehr nur mit ihrem Namen
+            expect(text).not.toContain('Übernommen');
+            // Bezeichnung direkt über der Unterschriftslinie
+            expect(text).toMatch(/\(FF 1\) Tj\s+ET[^()]*\(Unterschrift\)/);
             // Unterschriftsfelder ohne Name und Datum
             expect(text).not.toContain('(Name)');
             expect(text).not.toContain('(Datum)');
@@ -118,7 +121,7 @@ describe('PDF-Berichte', () =>
             expect(text).toContain('(Summe: 3 Füllungen)');
             expect(text).toContain('(Füllpersonal)');
             // Die Feuerwehr unterschreibt nur am Gesamtbericht
-            expect(text).not.toContain('(Übernommen von Feuerwehr FF 1)');
+            expect(text).not.toMatch(/\(FF 1\) Tj\s+ET[^()]*\(Unterschrift\)/);
             expect(text).not.toContain('(Name)');
             expect(text).toContain('(Seite 1 von 1)');
         });

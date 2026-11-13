@@ -26,12 +26,20 @@ export interface IReport
     gruppe?: IFeuerwehrFuellungen;
 }
 
+/** Daten für den Dialog */
+export interface IBerichteDaten
+{
+    ereignis: IEreignis;
+    /** Zusätzlich „Als PDF speichern“ anbieten (selten gebraucht, daher nur unter „Einsätze & Übungen“) */
+    pdfSpeichern?: boolean;
+}
+
 /** Schnellauswahl im Menü */
 export type BerichtVorauswahl = 'alle' | 'gesamt' | 'feuerwehren';
 
 /**
  * Berichte eines Ereignisses: Auswahl von Gesamtbericht und Feuerwehrberichten, die gedruckt
- * oder als PDF gespeichert werden. Mit gewähltem Ordner wird jedes erzeugte PDF dort abgelegt.
+ * oder (nur mit pdfSpeichern) als PDF gespeichert werden. Mit gewähltem Ordner wird jedes erzeugte PDF dort abgelegt.
  */
 @Component({
     selector: 'ffg-berichte',
@@ -49,16 +57,15 @@ export class BerichteComponent
     private pdf = inject(PdfService);
     private druck = inject(PdfDruckService);
     public readonly ablage = inject(PdfAblageService);
-    public readonly data = inject<IEreignis>(MAT_DIALOG_DATA);
+    private readonly daten = inject<IBerichteDaten>(MAT_DIALOG_DATA);
+    public readonly ereignis = this.daten.ereignis;
+    public readonly pdfSpeichern = this.daten.pdfSpeichern ?? false;
 
-    public readonly typ = ereignisTyp(this.data);
-    public readonly anzahl = anzahlFuellungen(this.data.fuellungen?.length ?? 0);
+    public readonly typ = ereignisTyp(this.ereignis);
+    public readonly anzahl = anzahlFuellungen(this.ereignis.fuellungen?.length ?? 0);
     public readonly reports: Array<IReport> = this.createReports();
     public readonly gesamtbericht = this.reports[0];
     public readonly feuerwehrberichte = this.reports.slice(1);
-
-    /** Ordner samt Unterordnern, in dem die PDFs landen, ohne Ordner null (Download) */
-    public readonly zielPfad = computed(() => this.ablage.zielPfad(this.data));
 
     private readonly selectedIds = signal<ReadonlySet<string>>(new Set(this.reports.map(report => report.id)));
 
@@ -81,7 +88,7 @@ export class BerichteComponent
 
     private createReports(): Array<IReport>
     {
-        const gruppen = groupFuellungenByFeuerwehr(this.data.fuellungen ?? []);
+        const gruppen = groupFuellungenByFeuerwehr(this.ereignis.fuellungen ?? []);
         const feuerwehren = `${gruppen.length} ${gruppen.length === 1 ? 'Feuerwehr' : 'Feuerwehren'}`;
 
         return [
@@ -151,7 +158,7 @@ export class BerichteComponent
             if (ziel.ordner) this.schritte.update(s => ({ ...s, gesamt: s.gesamt + auswahl.length }));
 
             const erstellt = new Date();
-            const pdf = await this.pdf.createSammelPdf(this.data, auswahl, erstellt, () => this.schritt());
+            const pdf = await this.pdf.createSammelPdf(this.ereignis, auswahl, erstellt, () => this.schritt());
 
             this.status.set('Druckdialog wird geöffnet …');
             const druck = await this.druck.drucken(pdf);
@@ -181,7 +188,7 @@ export class BerichteComponent
         this.beginnen('PDFs werden erstellt …', auswahl.length);
         try
         {
-            const ergebnis = await this.ablage.speichern(this.data, auswahl, { erstellt: new Date(), fortschritt: () => this.schritt() });
+            const ergebnis = await this.ablage.speichern(this.ereignis, auswahl, { erstellt: new Date(), fortschritt: () => this.schritt() });
             if (ergebnis) this.melden([this.ablage.meldung(ergebnis)]);
         }
         catch (error)
@@ -202,7 +209,7 @@ export class BerichteComponent
         this.status.set('PDFs werden im Ordner abgelegt …');
         try
         {
-            const ergebnis = await this.ablage.speichern(this.data, auswahl, { ziel, download: false, erstellt, fortschritt: () => this.schritt() });
+            const ergebnis = await this.ablage.speichern(this.ereignis, auswahl, { ziel, download: false, erstellt, fortschritt: () => this.schritt() });
             return ergebnis ? this.ablage.meldung(ergebnis) : '';
         }
         catch (error)

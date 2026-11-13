@@ -1,5 +1,5 @@
 import { Component, inject } from '@angular/core';
-import { BerichteComponent } from 'src/app/shared/dialogs/berichte/berichte.component';
+import { BerichteComponent, IBerichteDaten } from 'src/app/shared/dialogs/berichte/berichte.component';
 import { EditEreignisComponent } from 'src/app/shared/dialogs/edit-ereignis/edit-ereignis.component';
 import { EreignisType } from 'src/app/shared/enums/ereignis-type';
 import { IEreignis } from 'src/app/shared/interfaces/i-ereignis';
@@ -28,7 +28,7 @@ export class EreignissePageComponent
     /** Berichte drucken oder als PDF speichern */
     public openBerichte(ereignis: IEreignis)
     {
-        this.dialogs.open(BerichteComponent, ereignis);
+        this.dialogs.open(BerichteComponent, { ereignis, pdfSpeichern: true } satisfies IBerichteDaten);
     }
 
     public openEditEreignis(ereignis: IEreignis)

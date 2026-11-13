@@ -50,9 +50,9 @@ export function renderGesamtbericht(ereignis: IEreignis, erstellt: Date, ziel?: 
 {
     const { doc, ersteSeite } = beginneBericht(ziel, 'landscape', GESAMTBERICHT_TITEL, ereignis);
     const seite = seiteVon(doc);
-    let y = drawKopf(doc, ereignis, GESAMTBERICHT_TITEL, erstellt);
-
     const gruppen = groupFuellungenByFeuerwehr(ereignis.fuellungen ?? []);
+    // Die Zeile mit dem Namen der Feuerwehr bringt eigenen Abstand nach oben mit
+    let y = drawKopf(doc, ereignis, GESAMTBERICHT_TITEL, erstellt, gruppen.length ? 2.5 : 6);
     if (gruppen.length === 0)
     {
         autoTable(doc, {
@@ -82,7 +82,7 @@ export function renderGesamtbericht(ereignis: IEreignis, erstellt: Date, ziel?: 
             // Summe und Unterschriftsfeld bleiben zumindest bei der letzten Füllung
             foot: [
                 [summenZelle(`Summe ${name}: ${anzahlFuellungen(gruppe.fuellungen.length)}`)],
-                [unterschriftZelle(`Übernommen von Feuerwehr ${name}`)]
+                [unterschriftZelle(name)]
             ],
             willDrawCell: zeitZelleLeeren,
             didDrawCell: data => drawZelle(data)
@@ -194,8 +194,8 @@ function seiteVon(doc: jsPDF): ISeite
     return { breite, hoehe: doc.internal.pageSize.getHeight(), inhaltBreite: breite - RAND.left - RAND.right };
 }
 
-/** Kopf mit Titel und den Daten des Ereignisses, liefert die y-Position danach */
-function drawKopf(doc: jsPDF, ereignis: IEreignis, titel: string, erstellt: Date): number
+/** Kopf mit Titel und den Daten des Ereignisses, liefert die y-Position danach (plus `abstandDanach` in mm) */
+function drawKopf(doc: jsPDF, ereignis: IEreignis, titel: string, erstellt: Date, abstandDanach = 6): number
 {
     const seite = seiteVon(doc);
     const rechts = seite.breite - RAND.right;
@@ -226,9 +226,10 @@ function drawKopf(doc: jsPDF, ereignis: IEreignis, titel: string, erstellt: Date
         doc.text(titel, rechts, y, { align: 'right' });
     }
 
-    y += 2.5;
+    // Luft zwischen Überschrift, Linie und den Daten des Ereignisses
+    y += 4.5;
     linie(doc, RAND.left, y, rechts, y, LINIE);
-    y += 2.5;
+    y += 4;
 
     const ende = ereignis.datetimeEnd ?? 'noch nicht beendet';
     const zeilen: Array<Array<[string, string | Date, number]>> = [
@@ -279,7 +280,7 @@ function drawKopf(doc: jsPDF, ereignis: IEreignis, titel: string, erstellt: Date
 
     y += 0.5;
     linie(doc, RAND.left, y, rechts, y, LINIE);
-    return y + 6;
+    return y + abstandDanach;
 }
 
 /** Fußzeilen der Seiten ab ersteSeite, die Seitenzahlen zählen nur innerhalb des Berichts */

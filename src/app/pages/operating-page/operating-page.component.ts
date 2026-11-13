@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { AddMangelComponent } from 'src/app/shared/dialogs/add-mangel/add-mangel.component';
 import { ConfirmEreignisAbschlussComponent, EreignisAbschluss } from 'src/app/shared/dialogs/confirm-ereignis-abschluss/confirm-ereignis-abschluss.component';
 import { EditEreignisComponent } from 'src/app/shared/dialogs/edit-ereignis/edit-ereignis.component';
-import { BerichteComponent } from 'src/app/shared/dialogs/berichte/berichte.component';
+import { BerichteComponent, IBerichteDaten } from 'src/app/shared/dialogs/berichte/berichte.component';
 import { RemoveFuellungComponent } from 'src/app/shared/dialogs/remove-fuellung/remove-fuellung.component';
 import { SearchFlascheComponent } from 'src/app/shared/dialogs/search-flasche/search-flasche.component';
 import { IFuellung } from 'src/app/shared/interfaces/i-fuellung';
@@ -90,7 +90,8 @@ export class OperatingPageComponent implements OnInit
 
     public openBerichte()
     {
-        this.dialogs.open(BerichteComponent, this.operating.ereignis());
+        const ereignis = this.operating.ereignis();
+        if (ereignis) this.dialogs.open(BerichteComponent, { ereignis } satisfies IBerichteDaten);
     }
 
     public async confirmCloseEreignis()
@@ -110,7 +111,7 @@ export class OperatingPageComponent implements OnInit
 
         // Alle Berichte ablegen, bevor der Berichte-Dialog zum Drucken öffnet
         if (ziel) await this.pdfAblegen(ereignis, ziel);
-        this.dialogs.open(BerichteComponent, ereignis);
+        this.dialogs.open(BerichteComponent, { ereignis } satisfies IBerichteDaten);
     }
 
     private async pdfAblegen(ereignis: IEreignis, ziel: IAblageZiel)

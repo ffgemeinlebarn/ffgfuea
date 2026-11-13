@@ -125,7 +125,7 @@ Die Synchronisierung ersetzt die MAT Flaschen einer Feuerwehr und behält ihre m
 Der Dialog *Berichte* (Kachel im Füllbetrieb, Button unter *Ereignisse*, nach „Abschließen & Berichte drucken“) zeigt das Ereignis und bietet den Gesamtbericht (A4-Querformat) und einen Bericht pro Feuerwehr (A4-Hochformat) zur Auswahl an, mit Schnellauswahl *Alle Berichte*, *Nur Gesamtbericht* und *Alle Feuerwehrberichte*. Alle Berichte werden mit jsPDF als PDF erzeugt (echter Text, Kopfzeilen der Tabelle auf jeder Seite, Fußzeile mit Ereignisnummer und „Seite x von y“ pro Bericht). jsPDF wird erst beim ersten Bericht nachgeladen.
 
 - **Drucken** erzeugt ein einziges PDF mit allen ausgewählten Berichten (Seiten in Hoch- und Querformat gemischt) und öffnet dafür den Druckdialog des Browsers über einen versteckten iframe. Klappt das nicht, wird das PDF in einem neuen Tab geöffnet; blockiert der Browser auch das, bietet der Dialog einen Link *PDF öffnen* an.
-- **Als PDF speichern** speichert jeden ausgewählten Bericht als eigenes PDF.
+- **Als PDF speichern** (nur unter „Einsätze & Übungen“, im Füllbetrieb nicht angeboten) speichert jeden ausgewählten Bericht als eigenes PDF.
 
 Ist unter *Einstellungen → PDF-Ablage* ein Ordner gewählt, wird jeder Bericht, der gedruckt oder gespeichert wird, dort als eigenes PDF abgelegt. Darin werden die PDFs nach Jahr und Ereignisnummer abgelegt, vorhandene Dateien werden überschrieben:
 
