@@ -82,8 +82,6 @@ export default defineConfig(
             '@typescript-eslint/dot-notation': ['error', { allowIndexSignaturePropertyAccess: true }],
             // Zahlen in Template-Strings sind gewollt (Ereignisnummer, Anzahl, Druck …)
             '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
-            // Kurze Callbacks wie () => this.dialog.close() oder setTimeout(() => …) sind gewollt;
-            // geprüft wird weiterhin alles außerhalb von Arrow-Kurzformen.
             // Würde `wert as Date` in `wert!` umschreiben, widerspricht no-non-null-assertion
             '@typescript-eslint/non-nullable-type-assertion-style': 'off',
             // Weggelassene Felder per Rest-Destrukturierung ({ id, ...rest }) und _-Präfix sind gewollt
@@ -101,6 +99,8 @@ export default defineConfig(
             '@typescript-eslint/no-unnecessary-condition': 'off',
             // Leere Klassen mit Decorator (@Component für Test-Dialoge) sind in Angular üblich
             '@typescript-eslint/no-extraneous-class': ['error', { allowWithDecorator: true }],
+            // Kurze Callbacks wie () => this.dialog.close() oder setTimeout(() => …) sind gewollt;
+            // geprüft wird weiterhin alles außerhalb von Arrow-Kurzformen.
             '@typescript-eslint/no-confusing-void-expression': ['error', { ignoreArrowShorthand: true }],
             '@angular-eslint/component-selector': ['error', { type: 'element', prefix: 'ffg', style: 'kebab-case' }],
             '@angular-eslint/directive-selector': ['error', { type: 'attribute', prefix: 'ffg', style: 'camelCase' }]
