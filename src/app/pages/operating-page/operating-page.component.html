@@ -99,7 +99,7 @@
       <div class="tile-wrapper">
         <mat-card>
           <div class="card-wrapper">
-            <h1>{{ ereignis.type == 'einsatz' ? 'Aktueller Einsatz' : 'Aktuelle Übung' }}</h1>
+            <h1>{{ ereignis.type == 'einsatz' ? 'Aktueller Einsatz' : 'Aktuelle Übung' }} {{ ereignis | ereignisNummer }}</h1>
             <p>Beginn: <strong>{{ ereignis.datetimeStart | date: 'dd.MM.yyyy' }}</strong></p>
             <p>Ort: <strong>{{ ereignis.ort }}</strong></p>
             <p>Personal: <strong>@for (person of ereignis.personen; track person.id; let last = $last) {
@@ -116,23 +116,23 @@
     </mat-grid-tile>
     <mat-grid-tile colspan="2" rowspan="1">
       <div class="tile-wrapper">
-        <mat-card matRipple (click)="openPrintReportings()">
+        <mat-card matRipple (click)="openBerichte()">
           <div class="card-wrapper card-wrapper--center">
-            <mat-icon>print</mat-icon>
-            <h1>Berichte drucken</h1>
+            <mat-icon>description</mat-icon>
+            <h1>Berichte</h1>
           </div>
         </mat-card>
       </div>
     </mat-grid-tile>
     <mat-grid-tile colspan="4" rowspan="1">
       <div class="tile-wrapper">
-        <mat-card matRipple [class.tile-active]="operating.barcodeInputActive()" (click)="toggleScannerInput()">
+        <mat-card matRipple [class.tile-active]="scanner.active()" (click)="toggleScannerInput()">
           <div class="card-wrapper card-wrapper--center input-method">
             <mat-icon>document_scanner</mat-icon>
             <h1>Die Barcodescanner-Eingabe ist
-              <strong>{{ operating.barcodeInputActive() ? 'aktiviert' : 'deaktiviert' }}</strong>!</h1>
-              <p [hidden]="!operating.barcodeInputActive()">Der Barcode-Scanner kann verwendet werden</p>
-              <p [hidden]="operating.barcodeInputActive()">Hier drücken, um die Scanner-Eingabe zu verwenden</p>
+              <strong>{{ scanner.active() ? 'aktiviert' : 'deaktiviert' }}</strong>!</h1>
+              <p [hidden]="!scanner.active()">Der Barcode-Scanner kann verwendet werden</p>
+              <p [hidden]="scanner.active()">Hier drücken, um die Scanner-Eingabe zu verwenden</p>
             </div>
           </mat-card>
         </div>

@@ -4,12 +4,22 @@ import { IPerson } from './i-person';
 
 export interface IEreignis
 {
+    /** Erst nach dem ersten Speichern vergeben */
     id?: number;
     type: EreignisType;
-    datetimeStart?: Date;
-    datetimeEnd?: Date;
+    datetimeStart: Date;
+    /** null, solange das Ereignis läuft */
+    datetimeEnd: Date | null;
     ort?: string;
 
-    personen?: Array<IPerson>;
-    fuellungen?: Array<IFuellung>;
+    /**
+     * Ereignisnummer (JJJJ-NNN, siehe formatEreignisNummer): Jahr und laufende Nummer innerhalb des Jahres.
+     * Wird beim ersten Speichern aus dem Jahr des Beginns vergeben und bleibt danach unverändert,
+     * auch wenn der Beginn später geändert wird. Pro Jahr eindeutig.
+     */
+    jahr?: number;
+    nummer?: number;
+
+    personen: Array<IPerson>;
+    fuellungen: Array<IFuellung>;
 }

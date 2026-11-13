@@ -5,6 +5,9 @@
 <h2 mat-dialog-title>Feuerwehr {{ fuellungToConfirm?.flasche?.feuerwehr?.name }}</h2>
 <div class="content" mat-dialog-content>
     <p>Type: {{ fuellungToConfirm?.flasche?.typenBezeichnung }} ({{ fuellungToConfirm?.flasche?.typenInfo1 }} {{ fuellungToConfirm?.flasche?.typenInfo2 }} {{ fuellungToConfirm?.flasche?.typenInfo3 }})</p>
+    @if (manuell) {
+        <p class="manuell">Manuell erfasste Flasche</p>
+    }
 
     <button mat-button class="confirm" (click)="confirm()">
         <mat-icon>check_circle</mat-icon>

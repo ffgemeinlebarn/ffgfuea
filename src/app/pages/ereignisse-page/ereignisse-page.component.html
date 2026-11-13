@@ -2,19 +2,22 @@
 @for (ereignis of data.ereignisse(); track ereignis.id) {
 <mat-expansion-panel>
     <mat-expansion-panel-header>
-        <mat-panel-title>{{ ereignis?.type == EreignisType.Uebung ? 'Übung' : 'Einsatz' }}{{ ereignis?.ort ? ' in '+
+        <mat-panel-title><span class="ereignis-nummer">{{ ereignis | ereignisNummer }}</span>{{ ereignis?.type == EreignisType.Uebung ? 'Übung' : 'Einsatz' }}{{ ereignis?.ort ? ' in '+
             ereignis?.ort : '' }}</mat-panel-title>
         <mat-panel-description>{{ ereignis.datetimeStart | date: 'dd.MM.yyyy' }}</mat-panel-description>
     </mat-expansion-panel-header>
     <div class="content">
         <div class="stammdaten">
             <div class="actions">
-                <button mat-raised-button color="primary" (click)="openPrintReportings(ereignis)">Berichte
-                    drucken</button>
+                <button mat-raised-button color="primary" (click)="openBerichte(ereignis)">Berichte</button>
                 <button mat-raised-button (click)="openEditEreignis(ereignis)">Ereignis bearbeiten</button>
             </div>
             <table>
                 <tbody>
+                    <tr>
+                        <th>Nummer:</th>
+                        <td>{{ ereignis | ereignisNummer }}</td>
+                    </tr>
                     <tr>
                         <th>Type:</th>
                         <td>{{ ereignis.type == EreignisType.Uebung ? 'Übung' : 'Einsatz' }}</td>

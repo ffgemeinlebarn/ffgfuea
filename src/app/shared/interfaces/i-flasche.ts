@@ -1,6 +1,7 @@
-import { IFeuerwehr } from './i-feuerwehr';
+import { IFeuerwehrRef } from './i-feuerwehr';
 
-export interface IFlasche
+/** Flasche, wie sie der MAT Sync-Service liefert */
+export interface IMatFlasche
 {
     geraeteNr?: number;
     karteiNr?: number;
@@ -14,6 +15,27 @@ export interface IFlasche
     typenInfo2?: string;
     typenInfo3?: string;
     lastEdit?: Date | string;
+}
 
-    feuerwehr?: IFeuerwehr;
+/**
+ * Herkunft einer Flasche:
+ * mat = aus der MAT Synchronisierung (nur lesbar), manuell = in der Verwaltung erfasst
+ */
+export type FlaschenQuelle = 'mat' | 'manuell';
+
+export interface IFlasche extends IMatFlasche
+{
+    feuerwehr: IFeuerwehrRef;
+    /** Fehlt bei Flaschen, die vor Einführung manueller Flaschen gespeichert wurden - diese stammen aus MAT */
+    quelle?: FlaschenQuelle;
+}
+
+export function getFlaschenQuelle(flasche: Pick<IFlasche, 'quelle'>): FlaschenQuelle
+{
+    return flasche.quelle ?? 'mat';
+}
+
+export function isManuelleFlasche(flasche: Pick<IFlasche, 'quelle'>): boolean
+{
+    return getFlaschenQuelle(flasche) === 'manuell';
 }

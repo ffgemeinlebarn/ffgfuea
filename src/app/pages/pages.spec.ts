@@ -60,6 +60,7 @@ describe('Seiten', () =>
         const fixture = await render(OperatingPageComponent);
 
         await vi.waitFor(() => expect(fixture.nativeElement.textContent).toContain('Tulln'));
+        expect(fixture.nativeElement.textContent).toContain('Aktuelle Übung 2026-001');
         expect(fixture.nativeElement.textContent).toContain('Barcode: 1234501');
     });
 
@@ -76,7 +77,9 @@ describe('Seiten', () =>
 
         const fixture = await render(EreignissePageComponent);
 
-        expect(fixture.nativeElement.textContent).toContain('Übung in Tulln');
+        const titles = [...fixture.nativeElement.querySelectorAll('mat-panel-title')].map((title: Element) => title.textContent.trim());
+        expect(titles).toEqual(['2026-001Übung in Tulln']);
+        expect(fixture.nativeElement.querySelector('.ereignis-nummer').textContent).toBe('2026-001');
     });
 
     it('Statistik-Seite zeigt die Jahre', async () =>
@@ -96,6 +99,22 @@ describe('Seiten', () =>
         expect(element.textContent).toContain('12345 - FF 12345');
         expect(element.textContent).toContain('Max Muster');
         expect(element.querySelectorAll('tr[mat-row]').length).toBe(2);
+    });
+
+    it('Verwaltung zeigt die Quelle der Flaschen und bietet nur manuelle Flaschen zur Bearbeitung an', async () =>
+    {
+        await data.saveFeuerwehr(createFeuerwehr(2, ['2000001'], ['2000002']));
+
+        const fixture = await render(VerwaltungPageComponent);
+        const element: HTMLElement = fixture.nativeElement;
+        const zeilen = Array.from(element.querySelectorAll('tr[mat-row]'));
+        const quellen = zeilen.map(zeile => zeile.querySelector('.quelle')?.textContent?.trim());
+        const bearbeitbar = zeilen.map(zeile => zeile.querySelectorAll('.aktionen button').length);
+
+        expect(quellen).toEqual(['MAT', 'Manuell', 'MAT', 'MAT']);
+        expect(bearbeitbar).toEqual([0, 2, 0, 0]);
+        expect(element.textContent).toContain('2 Flaschen, davon 1 manuell');
+        expect(element.textContent).toContain('Flasche hinzufügen');
     });
 
     it('Verwaltung fügt Füllpersonal hinzu und leert die Eingabe', async () =>

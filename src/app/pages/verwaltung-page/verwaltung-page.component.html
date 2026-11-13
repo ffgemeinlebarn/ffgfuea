@@ -47,10 +47,14 @@
       <mat-expansion-panel-header>
         <mat-panel-title>{{feuerwehr.feuerwehrNummer}} - {{feuerwehr.name}}</mat-panel-title>
         <mat-panel-description>
-          <span>{{ feuerwehr.flaschen.length }} Flaschen</span>
+          <span>{{ feuerwehr.flaschen.length }} Flaschen{{ anzahlManuell(feuerwehr) ? ', davon ' + anzahlManuell(feuerwehr) + ' manuell' : '' }}</span>
         </mat-panel-description>
       </mat-expansion-panel-header>
       <div class="buttons">
+        <button mat-raised-button (click)="addFlasche(feuerwehr)">
+          <mat-icon>add</mat-icon>
+          Flasche hinzufügen
+        </button>
         <button mat-raised-button color="warn" (click)="openRemoveFeuerwehr(feuerwehr)">
           <mat-icon>delete</mat-icon>
           Feuerwehr entfernen
@@ -85,6 +89,29 @@
         <ng-container matColumnDef="lastEdit">
           <th mat-header-cell *matHeaderCellDef>Letzte Änderung</th>
           <td mat-cell *matCellDef="let flasche">{{ flasche.lastEdit | date: 'dd.MM.yyy HH:mm:ss' }}</td>
+        </ng-container>
+        <ng-container matColumnDef="quelle">
+          <th mat-header-cell *matHeaderCellDef>Quelle</th>
+          <td mat-cell *matCellDef="let flasche">
+            @if (isManuell(flasche)) {
+              <span class="quelle manuell" title="In der Verwaltung erfasst">Manuell</span>
+            } @else {
+              <span class="quelle" title="Aus der MAT Synchronisierung">MAT</span>
+            }
+          </td>
+        </ng-container>
+        <ng-container matColumnDef="aktionen">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let flasche" class="aktionen">
+            @if (isManuell(flasche)) {
+              <button mat-icon-button title="Flasche bearbeiten" aria-label="Flasche bearbeiten" (click)="editFlasche(flasche)">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button mat-icon-button title="Flasche löschen" aria-label="Flasche löschen" (click)="removeFlasche(flasche)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            }
+          </td>
         </ng-container>
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>

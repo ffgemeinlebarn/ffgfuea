@@ -3,16 +3,19 @@ import { Injectable, inject } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { IEreignis } from '../../interfaces/i-ereignis';
 import { IPerson } from '../../interfaces/i-person';
+import { assignEreignisNummern } from '../../models/ereignis-nummer/ereignis-nummer';
 import { DataService } from '../data/data.service';
 import { DatabaseService } from '../database/database.service';
 import { SettingsService } from '../settings/settings.service';
+import { errorMessage } from '../../utils/error-message';
 import { BACKUP_FORMAT, BACKUP_VERSION, BackupError, IBackup, LEGACY_VERSION, parseBackup } from './backup-format';
 
 const TABLES = ['feuerwehren', 'personen', 'ereignisse'];
 
 /**
  * merge: nur Feuerwehren, Personen und Ereignisse hinzufügen, die es noch nicht gibt
- * replace: alle vorhandenen Daten löschen und den Export wiederherstellen
+ *        (neue Ereignisse bekommen neue Ereignisnummern)
+ * replace: alle vorhandenen Daten löschen und den Export wiederherstellen (samt Ereignisnummern)
  */
 export type ImportMode = 'merge' | 'replace';
 
@@ -55,7 +58,7 @@ export class BackupService
 
     public fileName(backup: IBackup): string
     {
-        const timestamp = formatDate(backup.exportedAt, 'yyyy-MM-dd_HH-mm', 'en-US');
+        const timestamp = formatDate(backup.exportedAt ?? new Date(), 'yyyy-MM-dd_HH-mm', 'en-US');
         return `ffgfuea-export${backup.testMode ? '-test' : ''}_${timestamp}.json`;
     }
 
@@ -105,7 +108,10 @@ export class BackupService
         await Promise.all([db.feuerwehren.clear(), db.personen.clear(), db.ereignisse.clear()]);
         await db.feuerwehren.bulkAdd(backup.feuerwehren);
         await db.personen.bulkAdd(backup.personen);
-        await db.ereignisse.bulkAdd(backup.ereignisse);
+        // Ereignisnummern bleiben erhalten, Ereignisse aus älteren Exporten ohne Nummer werden angehängt
+        const ereignisse = backup.ereignisse.map(ereignis => ({ ...ereignis }));
+        assignEreignisNummern(ereignisse);
+        await db.ereignisse.bulkAdd(ereignisse);
 
         return {
             feuerwehren: backup.feuerwehren.length,
@@ -137,14 +143,18 @@ export class BackupService
         newPersonen.forEach((person, i) => person.id = personIds[i]);
 
         // Ereignisse: gleiche Art mit gleichem Beginn gilt als bereits vorhanden
-        const ereignisKeys = new Set((await db.ereignisse.toArray()).map(ereignisKey));
+        const vorhandene = await db.ereignisse.toArray();
+        const ereignisKeys = new Set(vorhandene.map(ereignisKey));
         const ereignisse: Array<IEreignis> = [];
-        for (const { id, ...ereignis } of backup.ereignisse)
+        for (const { id, jahr, nummer, ...ereignis } of backup.ereignisse)
         {
             if (ereignisKeys.has(ereignisKey(ereignis))) continue;
             ereignisKeys.add(ereignisKey(ereignis));
             ereignisse.push({ ...ereignis, personen: ereignis.personen?.map(person => personen.get(personKey(person)) ?? person) });
         }
+        // Neue Ereignisse bekommen immer neue Ereignisnummern im Anschluss an die vorhandenen ihres Jahres
+        // (in der Reihenfolge ihres Beginns), die Nummern aus dem Export werden nicht übernommen
+        assignEreignisNummern(ereignisse, vorhandene);
         await db.ereignisse.bulkAdd(ereignisse);
 
         const total = backup.feuerwehren.length + backup.personen.length + backup.ereignisse.length;
@@ -159,23 +169,25 @@ export class BackupService
     private fromLegacy(items: Array<unknown>): unknown
     {
         const problems: Array<string> = [];
-        const ereignisse = items.map((item, i) => ({
-            ...(item as object),
-            fuellungen: Array.isArray(item?.['fuellungen'])
-                ? item['fuellungen'].map((fuellung, j) =>
+        const ereignisse = items.map((value, i) =>
+        {
+            const item = (value ?? {}) as Record<string, unknown>;
+            if (!Array.isArray(item['fuellungen'])) return item;
+
+            const fuellungen = item['fuellungen'].map((fuellung, j) =>
+            {
+                try
                 {
-                    try
-                    {
-                        return { datetime: fuellung?.datetime, flasche: this.data.getFlascheByBarcode(String(fuellung?.flaschenBarcode)) };
-                    }
-                    catch (error)
-                    {
-                        problems.push(`Ereignis ${i + 1}, Füllung ${j + 1}: ${error.message}`);
-                        return null;
-                    }
-                })
-                : item?.['fuellungen']
-        }));
+                    return { datetime: fuellung?.datetime, flasche: this.data.getFlascheByBarcode(String(fuellung?.flaschenBarcode)) };
+                }
+                catch (error)
+                {
+                    problems.push(`Ereignis ${i + 1}, Füllung ${j + 1}: ${errorMessage(error)}`);
+                    return null;
+                }
+            });
+            return { ...item, fuellungen };
+        });
 
         if (problems.length > 0)
             throw new BackupError(problems);

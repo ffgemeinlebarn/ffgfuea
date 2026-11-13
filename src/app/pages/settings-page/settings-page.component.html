@@ -34,6 +34,46 @@
   <p>Stand des MAT Sync Datensatzes: {{ settings.syncLastEdit() }}</p>
 </mat-card>
 
+<mat-card class="pdf-ablage">
+  <h2>PDF-Ablage</h2>
+  <p>Ist ein Ordner gewählt, wird jeder Bericht, der im Dialog <em>Berichte</em> gedruckt oder als PDF gespeichert wird,
+    dort als eigenes PDF abgelegt. Die PDFs werden nach Jahr und Ereignisnummer sortiert, z.B.
+    <code>2026/2026-007_Einsatz_Tulln/2026-007_Gesamtbericht.pdf</code>. Vorhandene Dateien werden dabei überschrieben.
+    @if (database.testMode) {
+      Im Testmodus landen die PDFs im Unterordner <code>Testmodus</code>.
+    }
+  </p>
+
+  @if (ablage.unterstuetzt) {
+    <p class="ordner">Ordner:
+      @if (ablage.ordnerName(); as name) {
+        <strong>{{ name }}</strong>
+      } @else {
+        <strong>keiner ausgewählt</strong> – gespeicherte PDFs werden einzeln heruntergeladen
+      }
+    </p>
+    <div class="ordner-aktionen">
+      <button mat-stroked-button class="ordner-waehlen" (click)="ordnerWaehlen()">
+        {{ ablage.ordnerName() ? 'Ordner ändern' : 'Ordner auswählen' }}
+      </button>
+      @if (ablage.ordnerName()) {
+        <button mat-button class="ordner-entfernen" (click)="ordnerEntfernen()">Ordner entfernen</button>
+      }
+    </div>
+  } @else {
+    <p><strong>Dieser Browser unterstützt keine Ordnerauswahl (nur Chrome und Edge am PC), die PDFs werden einzeln
+      heruntergeladen.</strong></p>
+  }
+
+  <mat-slide-toggle class="pdf-auto-ablage" [(ngModel)]="settings.pdfAutoAblage">
+    Beim Abschließen & Drucken alle Berichte ablegen
+  </mat-slide-toggle>
+  <p class="hinweis">Nur mit ausgewähltem Ordner: Vor dem Öffnen des Dialogs <em>Berichte</em> werden alle Berichte des
+    abgeschlossenen Ereignisses im Ordner abgelegt, auch wenn danach nur ein Teil gedruckt wird.</p>
+</mat-card>
+
+<ffg-altberichte-card></ffg-altberichte-card>
+
 <mat-card>
   <h2>Export</h2>
   <p>Lädt alle Feuerwehren samt Flaschen, das Füllpersonal und alle Einsätze & Übungen als JSON-Datei herunter.
@@ -51,7 +91,7 @@
 
   @if (noOpenEreignis()) {
     <input #fileInput type="file" accept=".json,application/json" hidden
-      (change)="selectFile(fileInput.files[0]); fileInput.value = ''">
+      (change)="selectFile(fileInput.files?.[0]); fileInput.value = ''">
     <button mat-stroked-button [disabled]="busy()" (click)="fileInput.click()">Datei auswählen</button>
   } @else {
     <p><strong>Während eines laufenden Einsatzes oder einer Übung ist kein Import möglich.</strong></p>
@@ -71,7 +111,8 @@
     </div>
   }
 
-  @if (importBackup(); as backup) {
+  @if (importSummary(); as summary) {
+    @let backup = summary.backup;
     <div class="summary">
       <p><strong>{{ importFileName() }}</strong></p>
       <ul>
@@ -80,11 +121,11 @@
         } @else if (backup.exportedAt) {
           <li>Exportiert am {{ backup.exportedAt | date: 'dd.MM.yyyy HH:mm' }}{{ backup.appVersion ? ' mit Version ' + backup.appVersion : '' }}{{ backup.testMode ? ' aus der Testdatenbank' : '' }}</li>
         }
-        <li>{{ backup.feuerwehren.length }} Feuerwehren mit {{ importSummary().flaschen }} Flaschen</li>
+        <li>{{ backup.feuerwehren.length }} Feuerwehren mit {{ summary.flaschen }} Flaschen</li>
         <li>{{ backup.personen.length }} Personen</li>
-        <li>{{ backup.ereignisse.length }} Einsätze & Übungen mit {{ importSummary().fuellungen }} Füllungen
-          @if (importSummary().from) {
-            ({{ importSummary().from | date: 'dd.MM.yyyy' }} bis {{ importSummary().to | date: 'dd.MM.yyyy' }})
+        <li>{{ backup.ereignisse.length }} Einsätze & Übungen mit {{ summary.fuellungen }} Füllungen
+          @if (summary.from && summary.to) {
+            ({{ summary.from | date: 'dd.MM.yyyy' }} bis {{ summary.to | date: 'dd.MM.yyyy' }})
           }
         </li>
       </ul>

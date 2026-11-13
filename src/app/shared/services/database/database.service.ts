@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import Dexie, { Table } from 'dexie';
 import { environment } from 'src/environments/environment';
 import { IEreignis } from '../../interfaces/i-ereignis';
+import { assignEreignisNummern } from '../../models/ereignis-nummer/ereignis-nummer';
 import { IFeuerwehr } from '../../interfaces/i-feuerwehr';
 import { IMangel } from '../../interfaces/i-mangel';
 import { IPerson } from '../../interfaces/i-person';
@@ -14,30 +15,42 @@ export class DatabaseService
 {
     private settings = inject(SettingsService);
 
-    public db: Database = null;
-    /** Ob die geöffnete Datenbank die Testdatenbank ist (unabhängig von noch nicht gespeicherten Einstellungen) */
-    public testMode = false;
+    private database!: Database;
+    private openedInTestMode = false;
 
     constructor()
     {
         this.refresh();
     }
 
+    /** Die geöffnete Datenbank, wechselt mit refresh() */
+    public get db(): Database
+    {
+        return this.database;
+    }
+
+    /** Ob die geöffnete Datenbank die Testdatenbank ist (unabhängig von noch nicht gespeicherten Einstellungen) */
+    public get testMode(): boolean
+    {
+        return this.openedInTestMode;
+    }
+
+    /** Öffnet die Datenbank passend zum gespeicherten Testmodus */
     public refresh()
     {
-        this.db?.close();
-        this.testMode = this.settings.testMode();
-        const name = environment.database.name + (this.testMode ? '_test' : '');
-        this.db = new Database(name);
+        this.database?.close();
+        this.openedInTestMode = this.settings.testMode();
+        const name = environment.database.name + (this.openedInTestMode ? '_test' : '');
+        this.database = new Database(name);
     }
 }
 
-class Database extends Dexie
+export class Database extends Dexie
 {
-    public feuerwehren: Table<IFeuerwehr, number>;
-    public maengel: Table<IMangel, number>;
-    public personen: Table<IPerson, number>;
-    public ereignisse: Table<IEreignis, number>;
+    public feuerwehren!: Table<IFeuerwehr, number>;
+    public maengel!: Table<IMangel, number>;
+    public personen!: Table<IPerson, number>;
+    public ereignisse!: Table<IEreignis, number>;
 
     constructor(name: string)
     {
@@ -47,6 +60,16 @@ class Database extends Dexie
             // maengel: '++id, flascheId, datetime, personId, ereignisId, datetimeFixed',
             personen: '++id',
             ereignisse: '++id'
+        });
+        // Ereignisnummern: bestehende Ereignisse pro Jahr in der Reihenfolge ihres Beginns nummerieren
+        this.version(2).stores({
+            ereignisse: '++id, &[jahr+nummer]'
+        }).upgrade(async transaction =>
+        {
+            const ereignisse = transaction.table<IEreignis, number>('ereignisse');
+            const all = await ereignisse.toArray();
+            assignEreignisNummern(all);
+            await ereignisse.bulkPut(all);
         });
     }
 }

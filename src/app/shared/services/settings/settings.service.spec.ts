@@ -30,6 +30,20 @@ describe('SettingsService', () =>
         expect(localStorage.getItem('testMode')).toBe('true');
     });
 
+    it('legt PDFs standardmäßig automatisch ab', () =>
+    {
+        const service = TestBed.inject(SettingsService);
+        expect(service.pdfAutoAblage()).toBe(true);
+
+        service.pdfAutoAblage.set(false);
+        service.saveAll();
+        expect(localStorage.getItem('pdfAutoAblage')).toBe('false');
+
+        service.pdfAutoAblage.set(true);
+        service.loadAll();
+        expect(service.pdfAutoAblage()).toBe(false);
+    });
+
     it('merkt sich den Stand der Synchronisierung', () =>
     {
         const service = TestBed.inject(SettingsService);

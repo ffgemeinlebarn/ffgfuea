@@ -9,7 +9,7 @@ export class TimingService
 {
     private readonly now = signal(new Date());
 
-    public readonly ereignisStart = signal<Date>(null);
+    public readonly ereignisStart = signal<Date | null>(null);
 
     public readonly currentTime = computed(() =>
     {

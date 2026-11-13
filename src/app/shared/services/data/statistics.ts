@@ -39,6 +39,7 @@ export function buildStatistics(ereignisse: Array<IEreignis>): Array<IJahresStat
 
         for (const fuellung of fuellungen)
         {
+            // Ältere Datensätze können Flaschen ohne Feuerwehr enthalten
             const feuerwehr = fuellung.flasche?.feuerwehr;
             if (!feuerwehr) continue;
 

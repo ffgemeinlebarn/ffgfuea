@@ -1,14 +1,18 @@
 import { EreignisType } from '../../enums/ereignis-type';
 import { IEreignis } from '../../interfaces/i-ereignis';
 import { IFeuerwehr } from '../../interfaces/i-feuerwehr';
-import { IFlasche } from '../../interfaces/i-flasche';
+import { FlaschenQuelle, IFlasche } from '../../interfaces/i-flasche';
 import { IFuellung } from '../../interfaces/i-fuellung';
 import { IPerson } from '../../interfaces/i-person';
+import { formatEreignisNummer, hasEreignisNummer } from '../../models/ereignis-nummer/ereignis-nummer';
 
 export const BACKUP_FORMAT = 'ffgfuea-export';
+/** Die Ereignisnummer (jahr, nummer) ist optional, Exporte ohne sie bleiben daher Version 1 */
 export const BACKUP_VERSION = 1;
 /** Altes Import-Format aus dem README: nur Ereignisse mit Flaschen-Barcodes */
 export const LEGACY_VERSION = 0;
+
+const FLASCHEN_QUELLEN: Array<FlaschenQuelle> = ['mat', 'manuell'];
 
 export interface IBackup
 {
@@ -83,6 +87,8 @@ export function parseBackup(value: unknown): IBackup
         .forEach(id => problems.push(`Die Personen-Id ${id} kommt mehrfach vor.`));
     findDuplicates(ereignisse.map(ereignis => ereignis?.id))
         .forEach(id => problems.push(`Die Ereignis-Id ${id} kommt mehrfach vor.`));
+    findDuplicates(ereignisse.map(ereignis => hasEreignisNummer(ereignis) ? formatEreignisNummer(ereignis) : null))
+        .forEach(nummer => problems.push(`Die Ereignisnummer ${nummer} kommt mehrfach vor.`));
 
     if (ereignisse.filter(ereignis => ereignis && ereignis.datetimeEnd == null).length > 1)
         problems.push('Es darf höchstens ein Ereignis nicht abgeschlossen sein.');
@@ -90,19 +96,20 @@ export function parseBackup(value: unknown): IBackup
     if (problems.length > 0)
         throw new BackupError(problems);
 
+    // Ohne Probleme ist jeder Datensatz gültig
     return {
         format: BACKUP_FORMAT,
         version: value['version'],
         appVersion: typeof value['appVersion'] === 'string' ? value['appVersion'] : null,
         exportedAt: typeof value['exportedAt'] === 'string' ? value['exportedAt'] : null,
         testMode: value['testMode'] === true,
-        feuerwehren,
-        personen,
-        ereignisse
+        feuerwehren: feuerwehren as Array<IFeuerwehr>,
+        personen: personen as Array<IPerson>,
+        ereignisse: ereignisse as Array<IEreignis>
     };
 }
 
-function parseFeuerwehr(item: unknown, label: string, problems: Array<string>): IFeuerwehr
+function parseFeuerwehr(item: unknown, label: string, problems: Array<string>): IFeuerwehr | undefined
 {
     if (!isObject(item) || !Number.isFinite(item['feuerwehrNummer']))
     {
@@ -113,10 +120,19 @@ function parseFeuerwehr(item: unknown, label: string, problems: Array<string>): 
     if (item['flaschen'] != null && !Array.isArray(item['flaschen']))
         problems.push(`${label}: "flaschen" ist keine Liste.`);
 
-    return { ...item, flaschen: (item['flaschen'] ?? []) as Array<IFlasche> };
+    // quelle fehlt bei älteren Exporten (= MAT) und wird sonst unverändert übernommen
+    if (Array.isArray(item['flaschen']))
+        item['flaschen'].forEach((flasche, i) =>
+        {
+            const quelle = isObject(flasche) ? flasche['quelle'] : undefined;
+            if (quelle != null && !FLASCHEN_QUELLEN.includes(quelle as FlaschenQuelle))
+                problems.push(`${label}, Flasche ${i + 1}: Unbekannte Quelle "${quelle}".`);
+        });
+
+    return { ...item, flaschen: (item['flaschen'] ?? []) as Array<IFlasche> } as IFeuerwehr;
 }
 
-function parsePerson(item: unknown, label: string, problems: Array<string>): IPerson
+function parsePerson(item: unknown, label: string, problems: Array<string>): IPerson | undefined
 {
     if (!isObject(item) || typeof item['vorname'] !== 'string' || typeof item['nachname'] !== 'string')
     {
@@ -130,7 +146,7 @@ function parsePerson(item: unknown, label: string, problems: Array<string>): IPe
     return item as unknown as IPerson;
 }
 
-function parseEreignis(item: unknown, label: string, problems: Array<string>): IEreignis
+function parseEreignis(item: unknown, label: string, problems: Array<string>): IEreignis | undefined
 {
     if (!isObject(item))
     {
@@ -143,6 +159,11 @@ function parseEreignis(item: unknown, label: string, problems: Array<string>): I
 
     if (!Object.values(EreignisType).includes(item['type'] as EreignisType))
         problems.push(`${label}: Unbekannte Art "${item['type']}".`);
+
+    // Ereignisnummer ist optional (ältere Exporte haben keine), wenn vorhanden aber vollständig
+    if ((item['jahr'] != null || item['nummer'] != null)
+        && !(isPositiveInteger(item['jahr']) && isPositiveInteger(item['nummer'])))
+        problems.push(`${label}: Ungültige Ereignisnummer.`);
 
     const datetimeStart = parseDate(item['datetimeStart']);
     if (datetimeStart == null)
@@ -159,19 +180,19 @@ function parseEreignis(item: unknown, label: string, problems: Array<string>): I
         problems.push(`${label}: "fuellungen" ist keine Liste.`);
 
     const fuellungen = (Array.isArray(item['fuellungen']) ? item['fuellungen'] : [])
-        .map((fuellung, i) => parseFuellung(fuellung, `${label}, Füllung ${i + 1}`, problems));
+        .map((fuellung, i) => parseFuellung(fuellung, `${label}, Füllung ${i + 1}`, problems)) as Array<IFuellung>;
 
     return {
         ...item,
         type: item['type'] as EreignisType,
-        datetimeStart,
+        datetimeStart: datetimeStart as Date,
         datetimeEnd,
         personen: Array.isArray(item['personen']) ? item['personen'] : [],
         fuellungen
     };
 }
 
-function parseFuellung(item: unknown, label: string, problems: Array<string>): IFuellung
+function parseFuellung(item: unknown, label: string, problems: Array<string>): IFuellung | undefined
 {
     const datetime = isObject(item) ? parseDate(item['datetime']) : null;
 
@@ -181,7 +202,7 @@ function parseFuellung(item: unknown, label: string, problems: Array<string>): I
     if (!isObject(item) || !isObject(item['flasche']))
         problems.push(`${label}: Flasche fehlt.`);
 
-    return isObject(item) ? { ...item, datetime, flasche: item['flasche'] } : undefined;
+    return isObject(item) ? { ...item, datetime: datetime as Date, flasche: item['flasche'] as IFlasche } : undefined;
 }
 
 function parseDate(value: unknown): Date | null
@@ -189,6 +210,11 @@ function parseDate(value: unknown): Date | null
     if (typeof value !== 'string' && !(value instanceof Date)) return null;
     const date = new Date(value);
     return isNaN(date.getTime()) ? null : date;
+}
+
+function isPositiveInteger(value: unknown): boolean
+{
+    return Number.isInteger(value) && (value as number) > 0;
 }
 
 function isObject(value: unknown): value is Record<string, unknown>
