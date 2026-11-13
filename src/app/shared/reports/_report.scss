@@ -1,0 +1,104 @@
+// Gemeinsame Gestaltung der Berichte. Jede Berichtskomponente bindet die Mixins selbst ein,
+// damit sie auch einzeln (z.B. für ein PDF pro Bericht) vollständig gestaltet ist.
+
+$schrift: Roboto, Arial, "Helvetica Neue", sans-serif;
+$linie: 0.3mm solid #000;
+$linie-fein: 0.15mm solid #999;
+
+// Benannte Seite: Die Berichte legen damit ihr eigenes Format fest (Hoch- oder Querformat),
+// auch wenn mehrere Berichte in einem Druckauftrag landen
+@mixin seite($name, $format)
+{
+    @page #{$name}
+    {
+        size: A4 $format;
+        margin: 12mm 12mm 14mm;
+    }
+
+    :host
+    {
+        page: $name;
+        // Jeder Bericht beginnt auf einer neuen Seite (am Dokumentanfang ohne Wirkung)
+        break-before: page;
+    }
+}
+
+@mixin basis
+{
+    :host
+    {
+        display: block;
+        box-sizing: border-box;
+        font-family: $schrift;
+        font-size: 9pt;
+        line-height: 1.35;
+        color: #000;
+        background: #fff;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}
+
+// Tabelle der Füllungen mit den Spalten Nr., Zeit, Karteinr., Barcode, Flaschennr., Type
+@mixin fuellungen-tabelle
+{
+    table.fuellungen
+    {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+
+        // Kopfzeile auf jeder Seite wiederholen
+        thead
+        {
+            display: table-header-group;
+        }
+
+        tr
+        {
+            break-inside: avoid;
+        }
+
+        th,
+        td
+        {
+            padding: 1.2mm 1.5mm;
+            text-align: left;
+            vertical-align: top;
+            overflow-wrap: anywhere;
+        }
+
+        thead th
+        {
+            font-size: 8pt;
+            font-weight: 600;
+            border-top: $linie;
+            border-bottom: $linie;
+            background: #eee;
+        }
+
+        tbody td
+        {
+            border-bottom: $linie-fein;
+        }
+
+        .nr
+        {
+            text-align: right;
+        }
+
+        .summe td
+        {
+            font-weight: 600;
+            border-top: $linie;
+            border-bottom: $linie;
+        }
+
+        .leer td
+        {
+            padding: 4mm 1.5mm;
+            font-style: italic;
+            text-align: center;
+        }
+    }
+}
