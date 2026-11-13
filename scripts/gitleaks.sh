@@ -5,11 +5,13 @@
 #   bash scripts/gitleaks.sh --history    # git history only (used in CI)
 #   bash scripts/gitleaks.sh --dir        # working tree only (incl. untracked files)
 #   bash scripts/gitleaks.sh --staged     # staged changes only (for pre-commit hooks)
+#   bash scripts/gitleaks.sh --files a b  # only the given files (for Claude Code hooks)
 #
 # On first use the binary is downloaded into $FFGFUEA_CACHE_DIR/gitleaks
 # (default: ~/.cache/ffgfuea/gitleaks) and its SHA-256 checksum verified.
 # Findings are always printed redacted. Exit codes: 0 = clean, 1 = leaks found,
-# 2 = setup error. Extra arguments after the mode are passed on to gitleaks.
+# 2 = setup error. Extra arguments after the mode are passed on to gitleaks
+# (with --files they are the files to scan instead).
 #
 # Environment:
 #   FFGFUEA_CACHE_DIR   cache root (default: ${XDG_CACHE_HOME:-~/.cache}/ffgfuea)
@@ -75,9 +77,21 @@ install_gitleaks() {
 
 mode="all"
 case "${1:-}" in
-  --history | --dir | --staged | --all) mode="${1#--}"; shift ;;
-  -h | --help) sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  --history | --dir | --staged | --files | --all) mode="${1#--}"; shift ;;
+  -h | --help) sed -n '2,18p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
 esac
+
+files=()
+if [ "$mode" = "files" ]; then
+  [ $# -gt 0 ] || die "--files needs at least one file"
+  # Paths relative to the repo root, so the path allowlists in .gitleaks.toml apply
+  for file in "$@"; do
+    [ -f "$file" ] || die "not a file: $file"
+    abs="$(cd "$(dirname "$file")" && pwd -P)/$(basename "$file")"
+    files+=("${abs#"$(cd "$ROOT_DIR" && pwd -P)"/}")
+  done
+  set --
+fi
 
 install_gitleaks
 cd "$ROOT_DIR"
@@ -92,6 +106,13 @@ case "$mode" in
     ;;
   dir)
     "$GITLEAKS" dir "${common[@]}" --verbose "$@" .
+    ;;
+  files)
+    status=0
+    for file in "${files[@]}"; do
+      "$GITLEAKS" dir "${common[@]}" --verbose --no-color --log-level warn "$file" || status=$?
+    done
+    exit "$status"
     ;;
   all)
     status=0
