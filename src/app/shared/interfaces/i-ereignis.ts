@@ -12,6 +12,14 @@ export interface IEreignis
     datetimeEnd: Date | null;
     ort?: string;
 
+    /**
+     * Ereignisnummer (JJJJ-NNN, siehe formatEreignisNummer): Jahr und laufende Nummer innerhalb des Jahres.
+     * Wird beim ersten Speichern aus dem Jahr des Beginns vergeben und bleibt danach unverändert,
+     * auch wenn der Beginn später geändert wird. Pro Jahr eindeutig.
+     */
+    jahr?: number;
+    nummer?: number;
+
     personen: Array<IPerson>;
     fuellungen: Array<IFuellung>;
 }

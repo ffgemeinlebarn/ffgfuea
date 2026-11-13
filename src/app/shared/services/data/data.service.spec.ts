@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { createEreignis, createFeuerwehr } from 'src/app/testing/test-data';
+import { formatEreignisNummer } from '../../models/ereignis-nummer/ereignis-nummer';
 import { DatabaseService } from '../database/database.service';
 import { SettingsService } from '../settings/settings.service';
 import { DataService, compareById } from './data.service';
@@ -82,6 +83,40 @@ describe('DataService', () =>
         expect(service.ereignisse().map(e => e.ort)).toEqual(['Neu', 'Alt']);
         expect(service.ereignisse()[1].fuellungen).toEqual([]);
         expect(service.statistics().map(stat => stat.year)).toEqual([2026, 2025]);
+    });
+
+    describe('Ereignisnummer', () =>
+    {
+        async function save(datetimeStart: Date): Promise<string>
+        {
+            const ereignis = createEreignis({ datetimeStart, datetimeEnd: datetimeStart });
+            await service.saveEreignis(ereignis);
+            return formatEreignisNummer(ereignis);
+        }
+
+        it('beginnt jedes Jahr bei 1 und zählt weiter', async () =>
+        {
+            expect(await save(new Date(2025, 11, 30))).toBe('2025-001');
+            expect(await save(new Date(2025, 11, 31))).toBe('2025-002');
+            expect(await save(new Date(2026, 0, 1))).toBe('2026-001');
+            expect(await save(new Date(2026, 0, 2))).toBe('2026-002');
+            // Nachträglich angelegtes Ereignis des Vorjahres
+            expect(await save(new Date(2025, 5, 1))).toBe('2025-003');
+
+            expect(service.ereignisse().map(formatEreignisNummer)).toEqual(['2026-002', '2026-001', '2025-002', '2025-001', '2025-003']);
+        });
+
+        it('bleibt beim Bearbeiten unverändert, auch wenn sich der Beginn ändert', async () =>
+        {
+            await save(new Date(2026, 0, 1));
+            const id = await service.saveEreignis(createEreignis({ datetimeStart: new Date(2026, 1, 1) }));
+
+            const ereignis = await service.getEreignis(id);
+            await service.saveEreignis({ ...ereignis, ort: 'Tulln', datetimeStart: new Date(2027, 0, 1) });
+
+            expect(formatEreignisNummer(await service.getEreignis(id))).toBe('2026-002');
+            expect(await save(new Date(2027, 0, 1))).toBe('2027-001');
+        });
     });
 
     it('findet das offene Ereignis', async () =>
