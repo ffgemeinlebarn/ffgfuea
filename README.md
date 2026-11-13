@@ -1,5 +1,9 @@
 # FFGFÜA
 
+[![Build & Deploy](https://github.com/ffgemeinlebarn/ffgfuea/actions/workflows/multistage.yml/badge.svg)](https://github.com/ffgemeinlebarn/ffgfuea/actions/workflows/multistage.yml)
+[![CodeQL](https://github.com/ffgemeinlebarn/ffgfuea/actions/workflows/codeql.yml/badge.svg)](https://github.com/ffgemeinlebarn/ffgfuea/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/ffgemeinlebarn/ffgfuea/badge)](https://scorecard.dev/viewer/?uri=github.com/ffgemeinlebarn/ffgfuea)
+
 FF Gemeinlebarn Füllapplikation
 
 ## Entwicklung
