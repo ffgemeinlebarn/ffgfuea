@@ -6,6 +6,7 @@
     "start": "ng serve",
     "build": "ng build",
     "test": "ng test",
+    "sast:codeql": "bash scripts/codeql.sh",
     "secrets:scan": "bash scripts/gitleaks.sh",
     "check:licenses": "node scripts/check-licenses.mjs"
   },

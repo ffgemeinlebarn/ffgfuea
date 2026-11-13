@@ -1,0 +1,22 @@
+name: ffgfuea CodeQL config
+
+# Same suite locally (scripts/codeql.sh) and in CI (.github/workflows/codeql.yml).
+queries:
+  - uses: security-extended
+
+# Only the shipped application code is analysed.
+# - node_modules, dist, .angular: third-party or generated code; findings there are
+#   neither ours to fix nor representative of what we ship (dependencies are covered
+#   by OSV-Scanner / npm audit instead).
+# - Unit tests (*.spec.ts), the Vitest setup and src/app/testing/: they only run in
+#   Vitest/jsdom on developer machines and CI and are never part of the build, so
+#   security alerts there are not exploitable. They mostly produce noise (fixture data,
+#   fake data sources) that would have to be dismissed by hand on every new test.
+paths-ignore:
+  - node_modules
+  - dist
+  - .angular
+  - reports
+  - '**/*.spec.ts'
+  - src/test-setup.ts
+  - src/app/testing
