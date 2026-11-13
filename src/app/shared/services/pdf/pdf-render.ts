@@ -226,9 +226,10 @@ function drawKopf(doc: jsPDF, ereignis: IEreignis, titel: string, erstellt: Date
         doc.text(titel, rechts, y, { align: 'right' });
     }
 
-    y += 2.5;
+    // Luft zwischen Überschrift, Linie und den Daten des Ereignisses
+    y += 4.5;
     linie(doc, RAND.left, y, rechts, y, LINIE);
-    y += 2.5;
+    y += 4;
 
     const ende = ereignis.datetimeEnd ?? 'noch nicht beendet';
     const zeilen: Array<Array<[string, string | Date, number]>> = [

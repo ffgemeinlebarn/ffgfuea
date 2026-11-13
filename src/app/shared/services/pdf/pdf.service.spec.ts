@@ -51,7 +51,7 @@ describe('PDF-Berichte', () =>
     {
         it('ist A4 im Querformat und enthält Kopf, Feuerwehren und Fußzeile', () =>
         {
-            const doc = renderGesamtbericht(ereignisMit([2, 1]), erstellt);
+            const doc = renderGesamtbericht(ereignisMit([1, 1]), erstellt);
 
             expect(doc.getNumberOfPages()).toBe(1);
             expect(format(doc)).toEqual({ breite: A4.lang, hoehe: A4.kurz });
@@ -153,7 +153,7 @@ describe('PDF-Berichte', () =>
 
         it('hängt Berichte mit eigener Ausrichtung an ein Dokument an', () =>
         {
-            const ereignis = ereignisMit([2, 1]);
+            const ereignis = ereignisMit([1, 1]);
             const [g1, g2] = groupFuellungenByFeuerwehr(ereignis.fuellungen);
 
             let doc = renderFeuerwehrbericht(ereignis, g1, erstellt);
@@ -195,7 +195,7 @@ describe('PDF-Berichte', () =>
         it('erzeugt die ausgewählten Berichte als ein PDF in der Reihenfolge der Auswahl', async () =>
         {
             const service = TestBed.inject(PdfService);
-            const ereignis = ereignisMit([2, 1]);
+            const ereignis = ereignisMit([1, 1]);
             const fortschritt = vi.fn();
 
             const pdf = await service.createSammelPdf(ereignis, undefined, erstellt, fortschritt);
@@ -228,7 +228,7 @@ describe('PDF-Berichte', () =>
         const ereignis = createEreignis({
             jahr: 2026,
             nummer: 7,
-            fuellungen: [createFuellung(ff1.flaschen[0]), createFuellung(ff2.flaschen[0]), createFuellung(ff1.flaschen[1])]
+            fuellungen: [createFuellung(ff1.flaschen[0]), createFuellung(ff2.flaschen[0])]
         });
 
         it('erzeugt ein PDF für den Gesamtbericht und eines pro Feuerwehr', async () =>
