@@ -1,6 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { EreignisType } from 'src/app/shared/enums/ereignis-type';
 import { createEreignis, createFeuerwehr, createFuellung } from 'src/app/testing/test-data';
+import { IEreignis } from 'src/app/shared/interfaces/i-ereignis';
+import { formatEreignisNummer } from '../../models/ereignis-nummer/ereignis-nummer';
 import { DataService } from '../data/data.service';
 import { DatabaseService } from '../database/database.service';
 import { SettingsService } from '../settings/settings.service';
@@ -107,6 +109,81 @@ describe('BackupService', () =>
         expect(data.ereignisse()).toHaveLength(2);
         expect(imported?.personen).toEqual([max]);
         expect(max?.id).not.toBe(backup.personen[0].id);
+    });
+
+    describe('Ereignisnummern', () =>
+    {
+        const nummern = () => data.ereignisse().map(ereignis => `${ereignis.ort} ${formatEreignisNummer(ereignis)}`);
+
+        function backupOf(ereignisse: Array<IEreignis>): IBackup
+        {
+            return service.read(JSON.stringify({ format: BACKUP_FORMAT, version: 1, feuerwehren: [], personen: [], ereignisse }));
+        }
+
+        it('werden exportiert', async () =>
+        {
+            await seed();
+
+            const text = await serializeBackup(await service.createBackup()).text();
+
+            expect(JSON.parse(text).ereignisse[0]).toMatchObject({ jahr: 2026, nummer: 1 });
+        });
+
+        it('bleiben beim Ersetzen erhalten, fehlende werden angehängt', async () =>
+        {
+            await data.saveEreignis(createEreignis({ ort: 'Vorhanden', datetimeEnd: new Date() }));
+            const backup = backupOf([
+                createEreignis({ id: 1, ort: 'Alt', datetimeStart: new Date(2026, 0, 1), datetimeEnd: new Date(), jahr: 2026, nummer: 5 }),
+                createEreignis({ id: 2, ort: 'Ohne B', datetimeStart: new Date(2025, 11, 1), datetimeEnd: new Date() }),
+                createEreignis({ id: 3, ort: 'Ohne A', datetimeStart: new Date(2026, 3, 1), datetimeEnd: new Date() }),
+                createEreignis({ id: 4, ort: 'Verschoben', datetimeStart: new Date(2026, 6, 1), datetimeEnd: new Date(), jahr: 2025, nummer: 1 })
+            ]);
+
+            await service.import(backup, 'replace');
+
+            expect(nummern()).toEqual(['Verschoben 2025-001', 'Ohne A 2026-006', 'Alt 2026-005', 'Ohne B 2025-002']);
+            expect(backup.ereignisse[1].nummer).toBeUndefined();
+        });
+
+        it('werden beim Zusammenführen für neue Ereignisse neu vergeben', async () =>
+        {
+            await data.saveEreignis(createEreignis({ ort: 'Vorhanden A', datetimeStart: new Date(2026, 0, 1), datetimeEnd: new Date() }));
+            await data.saveEreignis(createEreignis({ ort: 'Vorhanden B', datetimeStart: new Date(2026, 1, 1), datetimeEnd: new Date() }));
+            const backup = backupOf([
+                createEreignis({ id: 1, ort: 'Doppelt', datetimeStart: new Date(2026, 0, 1), datetimeEnd: new Date(), jahr: 2026, nummer: 1 }),
+                createEreignis({ id: 2, ort: 'Neu Mai', datetimeStart: new Date(2026, 4, 1), datetimeEnd: new Date(), jahr: 2026, nummer: 3 }),
+                createEreignis({ id: 3, ort: 'Neu März', datetimeStart: new Date(2026, 2, 1), datetimeEnd: new Date(), jahr: 2026, nummer: 2 }),
+                createEreignis({ id: 4, ort: 'Neu Vorjahr', datetimeStart: new Date(2025, 4, 1), datetimeEnd: new Date(), jahr: 2025, nummer: 9 })
+            ]);
+
+            expect((await service.import(backup, 'merge')).ereignisse).toBe(3);
+
+            expect(nummern()).toEqual(['Neu Mai 2026-004', 'Neu März 2026-003', 'Vorhanden B 2026-002', 'Vorhanden A 2026-001', 'Neu Vorjahr 2025-001']);
+        });
+
+        it('werden beim Einlesen geprüft', () =>
+        {
+            const problems = (ereignisse: Array<unknown>) =>
+            {
+                try
+                {
+                    backupOf(ereignisse as Array<IEreignis>);
+                    return [];
+                }
+                catch (error)
+                {
+                    return (error as BackupError).problems;
+                }
+            };
+            const ereignis = createEreignis({ datetimeEnd: new Date() });
+
+            expect(problems([{ ...ereignis, jahr: 2026 }, { ...ereignis, jahr: 2026, nummer: 0 }])).toEqual([
+                'Ereignis 1: Ungültige Ereignisnummer.',
+                'Ereignis 2: Ungültige Ereignisnummer.'
+            ]);
+            expect(problems([{ ...ereignis, jahr: 2026, nummer: 7 }, { ...ereignis, jahr: 2026, nummer: 7 }]))
+                .toEqual(['Die Ereignisnummer 2026-007 kommt mehrfach vor.']);
+        });
     });
 
     it('setzt nach dem Import von Feuerwehren die MAT Synchronisierung zurück', async () =>

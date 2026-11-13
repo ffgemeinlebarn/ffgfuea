@@ -4,8 +4,10 @@ import { IFeuerwehr } from '../../interfaces/i-feuerwehr';
 import { IFlasche } from '../../interfaces/i-flasche';
 import { IFuellung } from '../../interfaces/i-fuellung';
 import { IPerson } from '../../interfaces/i-person';
+import { formatEreignisNummer, hasEreignisNummer } from '../../models/ereignis-nummer/ereignis-nummer';
 
 export const BACKUP_FORMAT = 'ffgfuea-export';
+/** Die Ereignisnummer (jahr, nummer) ist optional, Exporte ohne sie bleiben daher Version 1 */
 export const BACKUP_VERSION = 1;
 /** Altes Import-Format aus dem README: nur Ereignisse mit Flaschen-Barcodes */
 export const LEGACY_VERSION = 0;
@@ -83,6 +85,8 @@ export function parseBackup(value: unknown): IBackup
         .forEach(id => problems.push(`Die Personen-Id ${id} kommt mehrfach vor.`));
     findDuplicates(ereignisse.map(ereignis => ereignis?.id))
         .forEach(id => problems.push(`Die Ereignis-Id ${id} kommt mehrfach vor.`));
+    findDuplicates(ereignisse.map(ereignis => hasEreignisNummer(ereignis) ? formatEreignisNummer(ereignis) : null))
+        .forEach(nummer => problems.push(`Die Ereignisnummer ${nummer} kommt mehrfach vor.`));
 
     if (ereignisse.filter(ereignis => ereignis && ereignis.datetimeEnd == null).length > 1)
         problems.push('Es darf höchstens ein Ereignis nicht abgeschlossen sein.');
@@ -145,6 +149,11 @@ function parseEreignis(item: unknown, label: string, problems: Array<string>): I
     if (!Object.values(EreignisType).includes(item['type'] as EreignisType))
         problems.push(`${label}: Unbekannte Art "${item['type']}".`);
 
+    // Ereignisnummer ist optional (ältere Exporte haben keine), wenn vorhanden aber vollständig
+    if ((item['jahr'] != null || item['nummer'] != null)
+        && !(isPositiveInteger(item['jahr']) && isPositiveInteger(item['nummer'])))
+        problems.push(`${label}: Ungültige Ereignisnummer.`);
+
     const datetimeStart = parseDate(item['datetimeStart']);
     if (datetimeStart == null)
         problems.push(`${label}: Ungültiger Beginn.`);
@@ -190,6 +199,11 @@ function parseDate(value: unknown): Date | null
     if (typeof value !== 'string' && !(value instanceof Date)) return null;
     const date = new Date(value);
     return isNaN(date.getTime()) ? null : date;
+}
+
+function isPositiveInteger(value: unknown): boolean
+{
+    return Number.isInteger(value) && (value as number) > 0;
 }
 
 function isObject(value: unknown): value is Record<string, unknown>

@@ -60,6 +60,7 @@ describe('Seiten', () =>
         const fixture = await render(OperatingPageComponent);
 
         await vi.waitFor(() => expect(fixture.nativeElement.textContent).toContain('Tulln'));
+        expect(fixture.nativeElement.textContent).toContain('Aktuelle Übung 2026-001');
         expect(fixture.nativeElement.textContent).toContain('Barcode: 1234501');
     });
 
@@ -76,7 +77,9 @@ describe('Seiten', () =>
 
         const fixture = await render(EreignissePageComponent);
 
-        expect(fixture.nativeElement.textContent).toContain('Übung in Tulln');
+        const titles = [...fixture.nativeElement.querySelectorAll('mat-panel-title')].map((title: Element) => title.textContent.trim());
+        expect(titles).toEqual(['2026-001Übung in Tulln']);
+        expect(fixture.nativeElement.querySelector('.ereignis-nummer').textContent).toBe('2026-001');
     });
 
     it('Statistik-Seite zeigt die Jahre', async () =>

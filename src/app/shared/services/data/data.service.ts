@@ -1,8 +1,10 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
+import Dexie from 'dexie';
 import { IEreignis } from '../../interfaces/i-ereignis';
 import { IFeuerwehr } from '../../interfaces/i-feuerwehr';
 import { IFlasche } from '../../interfaces/i-flasche';
 import { IPerson } from '../../interfaces/i-person';
+import { assignEreignisNummern, hasEreignisNummer } from '../../models/ereignis-nummer/ereignis-nummer';
 import { DatabaseService } from '../database/database.service';
 import { buildStatistics } from './statistics';
 
@@ -111,10 +113,24 @@ export class DataService
         return ereignis;
     }
 
+    /**
+     * Neue Ereignisse bekommen die nächste freie Ereignisnummer im Jahr ihres Beginns.
+     * Die Nummer bleibt danach unverändert, auch wenn der Beginn später geändert wird.
+     */
     public async saveEreignis(ereignis: IEreignis): Promise<number>
     {
         ereignis.fuellungen ??= [];
-        const id = await this.database.db.ereignisse.put(ereignis);
+        const db = this.database.db;
+        const id = await db.transaction('rw', db.ereignisse, async () =>
+        {
+            if (!hasEreignisNummer(ereignis))
+            {
+                const jahr = ereignis.datetimeStart.getFullYear();
+                const letztes = await db.ereignisse.where('[jahr+nummer]').between([jahr, Dexie.minKey], [jahr, Dexie.maxKey]).last();
+                assignEreignisNummern([ereignis], letztes ? [letztes] : []);
+            }
+            return db.ereignisse.put(ereignis);
+        });
         await this.loadEreignisse();
         return id;
     }

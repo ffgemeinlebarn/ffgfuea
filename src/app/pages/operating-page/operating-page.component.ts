@@ -18,13 +18,14 @@ import { MatRipple } from '@angular/material/core';
 import { MatIcon } from '@angular/material/icon';
 import { MatList } from '@angular/material/list';
 import { FuellungItemComponent } from '../../shared/components/fuellung-item/fuellung-item.component';
+import { EreignisNummerPipe } from '../../shared/pipes/ereignis-nummer/ereignis-nummer.pipe';
 import { MatFabButton } from '@angular/material/button';
 
 @Component({
     selector: 'ffg-operating-page',
     templateUrl: './operating-page.component.html',
     styleUrls: ['./operating-page.component.scss'],
-    imports: [MatGridList, MatGridTile, MatCard, MatRipple, MatIcon, MatCardTitle, MatList, FuellungItemComponent, MatCardActions, MatFabButton, DatePipe]
+    imports: [MatGridList, MatGridTile, MatCard, MatRipple, MatIcon, MatCardTitle, MatList, FuellungItemComponent, MatCardActions, MatFabButton, DatePipe, EreignisNummerPipe]
 })
 export class OperatingPageComponent implements OnInit
 {

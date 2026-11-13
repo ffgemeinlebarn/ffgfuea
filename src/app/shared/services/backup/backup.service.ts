@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { environment } from 'src/environments/environment';
 import { IEreignis } from '../../interfaces/i-ereignis';
 import { IPerson } from '../../interfaces/i-person';
+import { assignEreignisNummern } from '../../models/ereignis-nummer/ereignis-nummer';
 import { DataService } from '../data/data.service';
 import { DatabaseService } from '../database/database.service';
 import { SettingsService } from '../settings/settings.service';
@@ -13,7 +14,8 @@ const TABLES = ['feuerwehren', 'personen', 'ereignisse'];
 
 /**
  * merge: nur Feuerwehren, Personen und Ereignisse hinzufügen, die es noch nicht gibt
- * replace: alle vorhandenen Daten löschen und den Export wiederherstellen
+ *        (neue Ereignisse bekommen neue Ereignisnummern)
+ * replace: alle vorhandenen Daten löschen und den Export wiederherstellen (samt Ereignisnummern)
  */
 export type ImportMode = 'merge' | 'replace';
 
@@ -106,7 +108,10 @@ export class BackupService
         await Promise.all([db.feuerwehren.clear(), db.personen.clear(), db.ereignisse.clear()]);
         await db.feuerwehren.bulkAdd(backup.feuerwehren);
         await db.personen.bulkAdd(backup.personen);
-        await db.ereignisse.bulkAdd(backup.ereignisse);
+        // Ereignisnummern bleiben erhalten, Ereignisse aus älteren Exporten ohne Nummer werden angehängt
+        const ereignisse = backup.ereignisse.map(ereignis => ({ ...ereignis }));
+        assignEreignisNummern(ereignisse);
+        await db.ereignisse.bulkAdd(ereignisse);
 
         return {
             feuerwehren: backup.feuerwehren.length,
@@ -138,14 +143,18 @@ export class BackupService
         newPersonen.forEach((person, i) => person.id = personIds[i]);
 
         // Ereignisse: gleiche Art mit gleichem Beginn gilt als bereits vorhanden
-        const ereignisKeys = new Set((await db.ereignisse.toArray()).map(ereignisKey));
+        const vorhandene = await db.ereignisse.toArray();
+        const ereignisKeys = new Set(vorhandene.map(ereignisKey));
         const ereignisse: Array<IEreignis> = [];
-        for (const { id, ...ereignis } of backup.ereignisse)
+        for (const { id, jahr, nummer, ...ereignis } of backup.ereignisse)
         {
             if (ereignisKeys.has(ereignisKey(ereignis))) continue;
             ereignisKeys.add(ereignisKey(ereignis));
             ereignisse.push({ ...ereignis, personen: ereignis.personen?.map(person => personen.get(personKey(person)) ?? person) });
         }
+        // Neue Ereignisse bekommen immer neue Ereignisnummern im Anschluss an die vorhandenen ihres Jahres
+        // (in der Reihenfolge ihres Beginns), die Nummern aus dem Export werden nicht übernommen
+        assignEreignisNummern(ereignisse, vorhandene);
         await db.ereignisse.bulkAdd(ereignisse);
 
         const total = backup.feuerwehren.length + backup.personen.length + backup.ereignisse.length;

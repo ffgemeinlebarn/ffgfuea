@@ -24,7 +24,7 @@ describe('Dialoge', () =>
         [ConfirmEreignisAbschlussComponent, null, 'Abschließen & Berichte drucken'],
         [ConfirmFuellungComponent, fuellung, 'Barcode: 11111'],
         [ConfirmImportComponent, { feuerwehren: 2, personen: 3, ereignisse: 40, testMode: true }, '40 Einsätze & Übungen, 3 Personen und 2 Feuerwehren der Testdatenbank'],
-        [EditEreignisComponent, createEreignis({ ort: 'Tulln' }), 'Übung in Tulln'],
+        [EditEreignisComponent, createEreignis({ ort: 'Tulln', jahr: 2026, nummer: 7 }), '2026-007 Übung in Tulln'],
         [EditPersonComponent, { vorname: 'Max', nachname: 'Muster' }, 'Max Muster'],
         [RemoveFeuerwehrComponent, feuerwehr, 'Soll die Feuerwehr FF 1 wirklich entfernt werden?'],
         [RemoveFuellungComponent, fuellung, 'Feuerwehr: FF 1'],

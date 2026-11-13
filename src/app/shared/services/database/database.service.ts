@@ -2,6 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import Dexie, { Table } from 'dexie';
 import { environment } from 'src/environments/environment';
 import { IEreignis } from '../../interfaces/i-ereignis';
+import { assignEreignisNummern } from '../../models/ereignis-nummer/ereignis-nummer';
 import { IFeuerwehr } from '../../interfaces/i-feuerwehr';
 import { IMangel } from '../../interfaces/i-mangel';
 import { IPerson } from '../../interfaces/i-person';
@@ -59,6 +60,16 @@ export class Database extends Dexie
             // maengel: '++id, flascheId, datetime, personId, ereignisId, datetimeFixed',
             personen: '++id',
             ereignisse: '++id'
+        });
+        // Ereignisnummern: bestehende Ereignisse pro Jahr in der Reihenfolge ihres Beginns nummerieren
+        this.version(2).stores({
+            ereignisse: '++id, &[jahr+nummer]'
+        }).upgrade(async transaction =>
+        {
+            const ereignisse = transaction.table<IEreignis, number>('ereignisse');
+            const all = await ereignisse.toArray();
+            assignEreignisNummern(all);
+            await ereignisse.bulkPut(all);
         });
     }
 }

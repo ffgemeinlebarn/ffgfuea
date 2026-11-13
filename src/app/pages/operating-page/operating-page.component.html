@@ -99,7 +99,7 @@
       <div class="tile-wrapper">
         <mat-card>
           <div class="card-wrapper">
-            <h1>{{ ereignis.type == 'einsatz' ? 'Aktueller Einsatz' : 'Aktuelle Übung' }}</h1>
+            <h1>{{ ereignis.type == 'einsatz' ? 'Aktueller Einsatz' : 'Aktuelle Übung' }} {{ ereignis | ereignisNummer }}</h1>
             <p>Beginn: <strong>{{ ereignis.datetimeStart | date: 'dd.MM.yyyy' }}</strong></p>
             <p>Ort: <strong>{{ ereignis.ort }}</strong></p>
             <p>Personal: <strong>@for (person of ereignis.personen; track person.id; let last = $last) {

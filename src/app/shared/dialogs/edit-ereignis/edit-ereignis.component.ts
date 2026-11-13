@@ -8,12 +8,13 @@ import { MatSelect, MatOption } from '@angular/material/select';
 import { FormsModule } from '@angular/forms';
 import { MatInput } from '@angular/material/input';
 import { MatButton } from '@angular/material/button';
+import { EreignisNummerPipe } from '../../pipes/ereignis-nummer/ereignis-nummer.pipe';
 
 @Component({
     selector: 'ffg-edit-ereignis',
     templateUrl: './edit-ereignis.component.html',
     styleUrls: ['./edit-ereignis.component.scss'],
-    imports: [MatFormField, MatLabel, MatSelect, FormsModule, MatOption, MatInput, MatButton]
+    imports: [MatFormField, MatLabel, MatSelect, FormsModule, MatOption, MatInput, MatButton, EreignisNummerPipe]
 })
 export class EditEreignisComponent
 {
