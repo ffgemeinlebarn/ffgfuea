@@ -28,11 +28,11 @@ export class EreignissePageComponent
     /** Berichte drucken oder als PDF speichern */
     public openBerichte(ereignis: IEreignis)
     {
-        this.dialogs.open(BerichteComponent, { ereignis, pdfSpeichern: true } satisfies IBerichteDaten);
+        void this.dialogs.open(BerichteComponent, { ereignis, pdfSpeichern: true } satisfies IBerichteDaten);
     }
 
     public openEditEreignis(ereignis: IEreignis)
     {
-        this.dialogs.open(EditEreignisComponent, structuredClone(ereignis));
+        void this.dialogs.open(EditEreignisComponent, structuredClone(ereignis));
     }
 }

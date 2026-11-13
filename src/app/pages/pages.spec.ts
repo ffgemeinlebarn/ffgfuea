@@ -39,7 +39,7 @@ describe('Seiten', () =>
     {
         const fixture = await render(StartPageComponent);
 
-        expect(fixture.nativeElement.textContent).toContain('Neuen Einsatz oder neue Übung erstellen');
+        expect((fixture.nativeElement as HTMLElement).textContent).toContain('Neuen Einsatz oder neue Übung erstellen');
         expect(fixture.componentInstance.data.personen()[0].vorname).toBe('Max');
         expect(navigate).not.toHaveBeenCalled();
     });
@@ -59,9 +59,9 @@ describe('Seiten', () =>
 
         const fixture = await render(OperatingPageComponent);
 
-        await vi.waitFor(() => expect(fixture.nativeElement.textContent).toContain('Tulln'));
-        expect(fixture.nativeElement.textContent).toContain('Aktuelle Übung 2026-001');
-        expect(fixture.nativeElement.textContent).toContain('Barcode: 1234501');
+        await vi.waitFor(() => expect((fixture.nativeElement as HTMLElement).textContent).toContain('Tulln'));
+        expect((fixture.nativeElement as HTMLElement).textContent).toContain('Aktuelle Übung 2026-001');
+        expect((fixture.nativeElement as HTMLElement).textContent).toContain('Barcode: 1234501');
     });
 
     it('Operating-Seite leitet ohne offenes Ereignis zur Startseite', async () =>
@@ -77,9 +77,9 @@ describe('Seiten', () =>
 
         const fixture = await render(EreignissePageComponent);
 
-        const titles = [...fixture.nativeElement.querySelectorAll('mat-panel-title')].map((title: Element) => title.textContent.trim());
+        const titles = [...(fixture.nativeElement as HTMLElement).querySelectorAll('mat-panel-title')].map((title: Element) => title.textContent.trim());
         expect(titles).toEqual(['2026-001Übung in Tulln']);
-        expect(fixture.nativeElement.querySelector('.ereignis-nummer').textContent).toBe('2026-001');
+        expect((fixture.nativeElement as HTMLElement).querySelector('.ereignis-nummer')!.textContent).toBe('2026-001');
     });
 
     it('Statistik-Seite zeigt die Jahre', async () =>
@@ -88,13 +88,13 @@ describe('Seiten', () =>
 
         const fixture = await render(StatisticsPageComponent);
 
-        expect(fixture.nativeElement.textContent).toContain('2024');
+        expect((fixture.nativeElement as HTMLElement).textContent).toContain('2024');
     });
 
     it('Verwaltung zeigt Feuerwehren samt Flaschentabelle und Füllpersonal', async () =>
     {
         const fixture = await render(VerwaltungPageComponent);
-        const element: HTMLElement = fixture.nativeElement;
+        const element = fixture.nativeElement as HTMLElement;
 
         expect(element.textContent).toContain('12345 - FF 12345');
         expect(element.textContent).toContain('Max Muster');
@@ -106,7 +106,7 @@ describe('Seiten', () =>
         await data.saveFeuerwehr(createFeuerwehr(2, ['2000001'], ['2000002']));
 
         const fixture = await render(VerwaltungPageComponent);
-        const element: HTMLElement = fixture.nativeElement;
+        const element = fixture.nativeElement as HTMLElement;
         const zeilen = Array.from(element.querySelectorAll('tr[mat-row]'));
         const quellen = zeilen.map(zeile => zeile.querySelector('.quelle')?.textContent?.trim());
         const bearbeitbar = zeilen.map(zeile => zeile.querySelectorAll('.aktionen button').length);
@@ -126,21 +126,21 @@ describe('Seiten', () =>
         await fixture.componentInstance.addPerson();
         await fixture.whenStable();
 
-        expect(fixture.nativeElement.textContent).toContain('Anna Huber');
+        expect((fixture.nativeElement as HTMLElement).textContent).toContain('Anna Huber');
         expect(fixture.componentInstance.vorname()).toBe('');
     });
 
     it('Einstellungen zeigen den Testmodus nur ohne laufendes Ereignis', async () =>
     {
         let fixture = await render(SettingsPageComponent);
-        await vi.waitFor(() => expect(fixture.nativeElement.textContent).toContain('Test Modus'));
+        await vi.waitFor(() => expect((fixture.nativeElement as HTMLElement).textContent).toContain('Test Modus'));
         fixture.destroy();
 
         await data.saveEreignis(createEreignis());
         fixture = await render(SettingsPageComponent);
         await new Promise(resolve => setTimeout(resolve, 50));
         await fixture.whenStable();
-        expect(fixture.nativeElement.textContent).not.toContain('Test Modus');
+        expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Test Modus');
     });
 
     it('Einstellungen zeigen die Zusammenfassung einer ausgewählten Importdatei', async () =>
@@ -158,9 +158,9 @@ describe('Seiten', () =>
         await fixture.componentInstance.selectFile(new File([JSON.stringify(backup)], 'sicherung.json'));
         await fixture.whenStable();
 
-        expect(fixture.nativeElement.textContent).toContain('1 Feuerwehren mit 2 Flaschen');
-        expect(fixture.nativeElement.textContent).toContain('1 Einsätze & Übungen mit 1 Füllungen');
-        expect(fixture.nativeElement.textContent).toContain('Import durchführen');
+        expect((fixture.nativeElement as HTMLElement).textContent).toContain('1 Feuerwehren mit 2 Flaschen');
+        expect((fixture.nativeElement as HTMLElement).textContent).toContain('1 Einsätze & Übungen mit 1 Füllungen');
+        expect((fixture.nativeElement as HTMLElement).textContent).toContain('Import durchführen');
     });
 
     it('Einstellungen zeigen Probleme einer ungültigen Importdatei', async () =>
@@ -170,7 +170,7 @@ describe('Seiten', () =>
         await fixture.componentInstance.selectFile(new File(['{}'], 'falsch.json'));
         await fixture.whenStable();
 
-        expect(fixture.nativeElement.textContent).toContain('falsch.json kann nicht importiert werden');
-        expect(fixture.nativeElement.textContent).not.toContain('Import durchführen');
+        expect((fixture.nativeElement as HTMLElement).textContent).toContain('falsch.json kann nicht importiert werden');
+        expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Import durchführen');
     });
 });

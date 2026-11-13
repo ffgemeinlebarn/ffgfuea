@@ -39,7 +39,7 @@ describe('AltberichteCardComponent', () =>
     }
 
     const text = (fixture: ComponentFixture<unknown>): string => (fixture.nativeElement as HTMLElement).textContent ?? '';
-    const starten = (fixture: ComponentFixture<unknown>): HTMLButtonElement => fixture.nativeElement.querySelector('button.starten');
+    const starten = (fixture: ComponentFixture<unknown>): HTMLButtonElement => (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button.starten')!;
 
     it('zeigt Titel, Erklärung und Schaltfläche', async () =>
     {
@@ -50,14 +50,14 @@ describe('AltberichteCardComponent', () =>
         expect(text(fixture)).toContain('Vorhandene Dateien werden nicht überschrieben');
         expect(starten(fixture).textContent).toContain('Alte Berichte als PDF erzeugen und ablegen');
         expect(starten(fixture).disabled).toBe(false);
-        expect(fixture.nativeElement.querySelector('.kein-ordner')).toBeNull();
+        expect((fixture.nativeElement as HTMLElement).querySelector('.kein-ordner')).toBeNull();
     });
 
     it('weist ohne Ordner darauf hin, zuerst einen zu wählen', async () =>
     {
         const fixture = await render();
 
-        expect(fixture.nativeElement.querySelector('.kein-ordner')?.textContent).toContain('Bitte zuerst oben unter „PDF-Ablage“ einen Ordner auswählen');
+        expect((fixture.nativeElement as HTMLElement).querySelector('.kein-ordner')?.textContent).toContain('Bitte zuerst oben unter „PDF-Ablage“ einen Ordner auswählen');
         expect(starten(fixture).disabled).toBe(true);
     });
 
@@ -72,11 +72,11 @@ describe('AltberichteCardComponent', () =>
         altberichte.fortschritt.set({ aktuell: 2, gesamt: 8, ereignis: '2026-002 Einsatz in Tulln' });
         await fixture.whenStable();
 
-        expect(fixture.nativeElement.querySelector('.fortschritt p').textContent).toContain('Ereignis 2 von 8: 2026-002 Einsatz in Tulln');
-        expect(fixture.nativeElement.querySelector('mat-progress-bar').getAttribute('aria-valuenow')).toBe('25');
+        expect((fixture.nativeElement as HTMLElement).querySelector('.fortschritt p')!.textContent).toContain('Ereignis 2 von 8: 2026-002 Einsatz in Tulln');
+        expect((fixture.nativeElement as HTMLElement).querySelector('mat-progress-bar')!.getAttribute('aria-valuenow')).toBe('25');
         expect(starten(fixture).disabled).toBe(true);
 
-        fixture.nativeElement.querySelector('button.abbrechen').click();
+        (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button.abbrechen')!.click();
         expect(abbrechen).toHaveBeenCalled();
     });
 
@@ -96,7 +96,7 @@ describe('AltberichteCardComponent', () =>
         });
         await fixture.whenStable();
 
-        const ergebnis: HTMLElement = fixture.nativeElement.querySelector('.ergebnis');
+        const ergebnis = (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('.ergebnis')!;
         expect(ergebnis.textContent).toContain('Abgebrochen');
         expect(ergebnis.querySelector('.erstellt')?.textContent).toContain('9 PDFs erstellt');
         expect(ergebnis.querySelector('.uebersprungen')?.textContent).toContain('2 übersprungen');
@@ -121,8 +121,8 @@ describe('AltberichteCardComponent', () =>
         await vi.waitFor(() => expect(TestBed.inject(AltberichteService).ergebnis()).not.toBeNull());
         await fixture.whenStable();
 
-        expect(fixture.nativeElement.querySelector('.ergebnis').textContent).toContain('Fertig');
-        expect(fixture.nativeElement.querySelector('.erstellt').textContent).toContain('2 PDFs erstellt');
+        expect((fixture.nativeElement as HTMLElement).querySelector('.ergebnis')!.textContent).toContain('Fertig');
+        expect((fixture.nativeElement as HTMLElement).querySelector('.erstellt')!.textContent).toContain('2 PDFs erstellt');
         expect(ordner.pfad('2026', '2026-001_Uebung_Gemeinlebarn')?.dateien.size).toBe(2);
     });
 });

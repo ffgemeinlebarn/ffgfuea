@@ -29,7 +29,7 @@ describe('DialogService', () =>
 
     it('öffnet den Dialog mit einheitlicher Breite und den Daten', () =>
     {
-        service.open(TestDialogComponent, { id: 1 });
+        void service.open(TestDialogComponent, { id: 1 });
         expect(open).toHaveBeenCalledWith(TestDialogComponent, { width: '500px', data: { id: 1 } });
     });
 

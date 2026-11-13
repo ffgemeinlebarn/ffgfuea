@@ -171,7 +171,7 @@ describe('AltberichteService', () =>
 
         expect(ergebnis).toMatchObject({ ereignisse: 3, erstellt: 5, uebersprungen: 0, fehlgeschlagen: 2, abgebrochen: false });
         expect(ergebnis.fehler).toEqual([
-            { ereignis: '2026-002 Einsatz in Tulln', fehler: expect.any(String) },
+            { ereignis: '2026-002 Einsatz in Tulln', fehler: expect.any(String) as string },
             { ereignis: '2026-003 Einsatz in Tulln', datei: '2026-003_Feuerwehr_FF_1.pdf', fehler: 'QuotaExceededError: Datenträger voll' }
         ]);
         expect([...ordner.pfad('2026', '2026-003_Einsatz_Tulln')!.dateien.keys()])

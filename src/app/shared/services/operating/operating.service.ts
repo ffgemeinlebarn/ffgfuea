@@ -49,7 +49,7 @@ export class OperatingService
         if (!this.ereignis()) return;
 
         this.notification.show(`Barcodeeingabe erkannt: ${barcode}`, NotificationDuration.short);
-        this.addFuellungByBarcode(barcode);
+        void this.addFuellungByBarcode(barcode);
     }
 
     public async tryStartOpenEreignis(): Promise<boolean>

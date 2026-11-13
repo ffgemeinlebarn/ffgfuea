@@ -126,7 +126,7 @@ function parseFeuerwehr(item: unknown, label: string, problems: Array<string>): 
         {
             const quelle = isObject(flasche) ? flasche['quelle'] : undefined;
             if (quelle != null && !FLASCHEN_QUELLEN.includes(quelle as FlaschenQuelle))
-                problems.push(`${label}, Flasche ${i + 1}: Unbekannte Quelle "${quelle}".`);
+                problems.push(`${label}, Flasche ${i + 1}: Unbekannte Quelle "${anzeigen(quelle)}".`);
         });
 
     return { ...item, flaschen: (item['flaschen'] ?? []) as Array<IFlasche> } as IFeuerwehr;
@@ -158,7 +158,7 @@ function parseEreignis(item: unknown, label: string, problems: Array<string>): I
         problems.push(`${label}: Ungültige Id.`);
 
     if (!Object.values(EreignisType).includes(item['type'] as EreignisType))
-        problems.push(`${label}: Unbekannte Art "${item['type']}".`);
+        problems.push(`${label}: Unbekannte Art "${anzeigen(item['type'])}".`);
 
     // Ereignisnummer ist optional (ältere Exporte haben keine), wenn vorhanden aber vollständig
     if ((item['jahr'] != null || item['nummer'] != null)
@@ -187,7 +187,7 @@ function parseEreignis(item: unknown, label: string, problems: Array<string>): I
         type: item['type'] as EreignisType,
         datetimeStart: datetimeStart as Date,
         datetimeEnd,
-        personen: Array.isArray(item['personen']) ? item['personen'] : [],
+        personen: Array.isArray(item['personen']) ? item['personen'] as Array<IPerson> : [],
         fuellungen
     };
 }
@@ -210,6 +210,12 @@ function parseDate(value: unknown): Date | null
     if (typeof value !== 'string' && !(value instanceof Date)) return null;
     const date = new Date(value);
     return isNaN(date.getTime()) ? null : date;
+}
+
+/** Wert für Fehlermeldungen: Texte unverändert, alles andere als JSON (statt „[object Object]“) */
+function anzeigen(value: unknown): string
+{
+    return typeof value === 'string' ? value : JSON.stringify(value);
 }
 
 function isPositiveInteger(value: unknown): boolean

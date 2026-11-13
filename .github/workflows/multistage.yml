@@ -48,6 +48,9 @@ jobs:
       - name: Check licenses
         run: npm run check:licenses
 
+      - name: Lint
+        run: npm run lint
+
       # Schwellen je Metrik stehen in angular.json (coverageThresholds); darunter schlägt der Schritt fehl
       - name: Test with coverage
         run: npm run test:coverage

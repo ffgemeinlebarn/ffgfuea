@@ -21,7 +21,7 @@ export class RemoveFuellungComponent
 
     public remove()
     {
-        this.operating.removeFuellung(this.fuellung);
+        void this.operating.removeFuellung(this.fuellung);
         this.dialog.close();
     }
 

@@ -37,7 +37,7 @@ export class StartPageComponent implements OnInit
     {
         if (await this.data.findOpenEreignisId() != null)
         {
-            this.router.navigate(['operating']);
+            void this.router.navigate(['operating']);
         }
     }
 
@@ -46,6 +46,6 @@ export class StartPageComponent implements OnInit
         this.newEreignis.datetimeStart = new Date(this.newEreignis.datetimeStart);
         const id = await this.data.saveEreignis(this.newEreignis);
         console.log('Create Ereignis mit Id', id);
-        this.router.navigate(['/operating']);
+        void this.router.navigate(['/operating']);
     }
 }

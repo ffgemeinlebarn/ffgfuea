@@ -21,7 +21,7 @@ describe('AppComponent', () =>
         const fixture = TestBed.createComponent(AppComponent);
         await fixture.whenStable();
 
-        expect(fixture.nativeElement.textContent).toContain('Einsätze & Übungen');
+        expect((fixture.nativeElement as HTMLElement).textContent).toContain('Einsätze & Übungen');
         expect(TestBed.inject(SyncApi).getLastEdit).toHaveBeenCalled();
     });
 
@@ -31,6 +31,6 @@ describe('AppComponent', () =>
         TestBed.inject(SettingsService).testMode.set(true);
         await fixture.whenStable();
 
-        expect(fixture.nativeElement.textContent).toContain('Der Testmodus ist aktiviert!');
+        expect((fixture.nativeElement as HTMLElement).textContent).toContain('Der Testmodus ist aktiviert!');
     });
 });

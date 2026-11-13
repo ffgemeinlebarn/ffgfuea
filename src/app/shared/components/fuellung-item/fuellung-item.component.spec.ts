@@ -11,7 +11,7 @@ describe('FuellungItemComponent', () =>
         fixture.componentRef.setInput('fuellung', createFuellung(flasche, new Date(2026, 0, 1, 14, 3, 9)));
         await fixture.whenStable();
 
-        const text = fixture.nativeElement.textContent;
+        const text = (fixture.nativeElement as HTMLElement).textContent;
         expect(text).toContain('FF 1 - Nr. 1');
         expect(text).toContain('Barcode: 11111');
         expect(text).toContain('14:03:09 Uhr');
@@ -23,10 +23,10 @@ describe('FuellungItemComponent', () =>
         const fixture = TestBed.createComponent(FuellungItemComponent);
         fixture.componentRef.setInput('fuellung', createFuellung(mat));
         await fixture.whenStable();
-        expect(fixture.nativeElement.textContent).not.toContain('manuell erfasst');
+        expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('manuell erfasst');
 
         fixture.componentRef.setInput('fuellung', createFuellung(manuell));
         await fixture.whenStable();
-        expect(fixture.nativeElement.textContent).toContain('manuell erfasst');
+        expect((fixture.nativeElement as HTMLElement).textContent).toContain('manuell erfasst');
     });
 });

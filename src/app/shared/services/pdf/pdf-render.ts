@@ -214,7 +214,7 @@ function drawKopf(doc: jsPDF, ereignis: IEreignis, titel: string, erstellt: Date
     doc.setFont(SCHRIFT, 'bold');
     doc.setFontSize(10.5);
     // Passt der Titel nicht mehr neben die Überschrift, kommt er in eine eigene Zeile
-    const titelZeilen: Array<string> = doc.splitTextToSize(titel, seite.inhaltBreite);
+    const titelZeilen = doc.splitTextToSize(titel, seite.inhaltBreite) as Array<string>;
     if (zeileBreite + 6 + doc.getTextWidth(titelZeilen[0]) > seite.inhaltBreite || titelZeilen.length > 1)
     {
         y += 6;
@@ -268,7 +268,7 @@ function drawKopf(doc: jsPDF, ereignis: IEreignis, titel: string, erstellt: Date
             }
             else
             {
-                const werte: Array<string> = doc.splitTextToSize(wert, breite);
+                const werte = doc.splitTextToSize(wert, breite) as Array<string>;
                 doc.text(werte, x, y + 6.3);
                 zeilenAnzahl = werte.length;
             }

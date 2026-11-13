@@ -1,6 +1,7 @@
 import { OverlayContainer } from '@angular/cdk/overlay';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { MatDialogRef } from '@angular/material/dialog';
+import type { Mock, MockInstance } from 'vitest';
 import { createEreignis, createFeuerwehr, createFuellung } from 'src/app/testing/test-data';
 import { provideDialog } from 'src/app/testing/dialog';
 import { captureDownloads, FakeDirectoryHandle, installDirectoryPicker, removeDirectoryPicker } from 'src/app/testing/file-system';
@@ -27,10 +28,10 @@ describe('BerichteComponent', () =>
     let fixture: ComponentFixture<BerichteComponent>;
     let component: BerichteComponent;
     let ordner: FakeDirectoryHandle | undefined;
-    let drucken: ReturnType<typeof vi.fn>;
+    let drucken: Mock<PdfDruckService['drucken']>;
     let druckErgebnis: IDruckErgebnis;
-    let show: ReturnType<typeof vi.spyOn>;
-    let showError: ReturnType<typeof vi.spyOn>;
+    let show: MockInstance<NotificationService['show']>;
+    let showError: MockInstance<NotificationService['showError']>;
 
     beforeEach(() =>
     {
@@ -69,14 +70,14 @@ describe('BerichteComponent', () =>
         await fixture.whenStable();
     }
 
-    const element = (selector: string): HTMLElement => fixture.nativeElement.querySelector(selector);
+    const element = (selector: string): HTMLElement | null => (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>(selector);
     const text = (selector: string): string => element(selector)?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
-    const reportCheckboxes = (): Array<HTMLInputElement> => [...fixture.nativeElement.querySelectorAll('.reports input[type=checkbox]')];
-    const alle = (): HTMLInputElement => fixture.nativeElement.querySelector('.alle input[type=checkbox]');
-    const druckenButton = (): HTMLButtonElement => fixture.nativeElement.querySelector('button.drucken');
-    const pdfButton = (): HTMLButtonElement => fixture.nativeElement.querySelector('button.pdf');
-    const buttons = (): Array<string> => [...fixture.nativeElement.querySelectorAll('mat-dialog-actions button')]
-        .map((button: HTMLElement) => button.textContent?.replace(/\s+/g, ' ').replace('picture_as_pdf', '').replace('print', '').trim());
+    const reportCheckboxes = (): Array<HTMLInputElement> => [...(fixture.nativeElement as HTMLElement).querySelectorAll<HTMLInputElement>('.reports input[type=checkbox]')];
+    const alle = (): HTMLInputElement => (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>('.alle input[type=checkbox]')!;
+    const druckenButton = (): HTMLButtonElement => (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button.drucken')!;
+    const pdfButton = (): HTMLButtonElement => (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('button.pdf')!;
+    const buttons = (): Array<string> => [...(fixture.nativeElement as HTMLElement).querySelectorAll('mat-dialog-actions button')]
+        .map(button => button.textContent?.replace(/\s+/g, ' ').replace('picture_as_pdf', '').replace('print', '').trim());
     const selectedIds = () => component.selectedReports().map(r => r.id);
 
     describe('Anzeige und Auswahl', () =>
@@ -85,8 +86,8 @@ describe('BerichteComponent', () =>
 
         it('zeigt Nummer, Art, Ort und Beginn des Ereignisses', () =>
         {
-            const kopf = [...fixture.nativeElement.querySelectorAll('.ereignis > div')]
-                .map((feld: HTMLElement) => [feld.querySelector('dt')?.textContent?.trim(), feld.querySelector('dd')?.textContent?.trim()]);
+            const kopf = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.ereignis > div')]
+                .map(feld => [feld.querySelector('dt')?.textContent?.trim(), feld.querySelector('dd')?.textContent?.trim()]);
             expect(kopf).toEqual([['Nummer', '2026-012'], ['Art', 'Übung'], ['Ort', 'Gemeinlebarn'], ['Beginn', '01.05.2026 10:00 Uhr']]);
         });
 
@@ -97,7 +98,7 @@ describe('BerichteComponent', () =>
                 ['FF 1', '2 Füllungen', 'Hochformat'],
                 ['FF 2', '1 Füllung', 'Hochformat']
             ]);
-            const zeilen = [...fixture.nativeElement.querySelectorAll('.reports li')].map((li: HTMLElement) =>
+            const zeilen = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.reports li')].map(li =>
                 ['.name', '.beschreibung', '.ausrichtung'].map(teil => li.querySelector(teil)?.textContent?.trim()).filter(t => !!t).join(' | ')
                 || li.textContent?.trim());
             expect(zeilen).toEqual([
@@ -131,7 +132,7 @@ describe('BerichteComponent', () =>
 
         it('bietet eine Schnellauswahl im Menü an', async () =>
         {
-            element('button.vorauswahl').click();
+            element('button.vorauswahl')!.click();
             await fixture.whenStable();
             const overlay = TestBed.inject(OverlayContainer).getContainerElement();
             const eintraege = [...overlay.querySelectorAll<HTMLButtonElement>('[mat-menu-item]')];
@@ -192,7 +193,7 @@ describe('BerichteComponent', () =>
 
             expect(sammelPdf).toHaveBeenCalledWith(
                 ereignis, [{ gruppe: component.reports[1].gruppe }, { gruppe: component.reports[2].gruppe }], expect.any(Date), expect.any(Function));
-            const pdf: Blob = drucken.mock.calls[0][0];
+            const pdf = drucken.mock.calls[0][0];
             expect(pdf.type).toBe('application/pdf');
             expect(downloads).toEqual([]);
             expect(show).not.toHaveBeenCalled();

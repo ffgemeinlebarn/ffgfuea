@@ -1,0 +1,7 @@
+# Bewusst akzeptierte Funde des OSV-Scanners (siehe README, Abschnitt „Befunde behandeln“).
+# Jeder Eintrag braucht einen Grund und ein Ablaufdatum.
+
+[[IgnoredVulns]]
+id = "GHSA-g3hv-75wg-m249"
+ignoreUntil = 2027-02-28
+reason = "minimatch < 11.0.1 (DoS über Glob-Muster). Nur in der Dev-Abhängigkeit ESLint/typescript-eslint, die minimatch ^10 verlangen; eine behobene 10.x gibt es nicht. Die Muster stammen ausschließlich aus eslint.config.mjs, nicht aus fremden Eingaben, und nichts davon wird ausgeliefert."

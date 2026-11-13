@@ -154,7 +154,7 @@ export class SettingsPageComponent implements OnInit, OnDestroy
             const result = await this.backup.import(backup, mode);
             const skipped = result.skipped > 0 ? `, ${result.skipped} bereits vorhanden` : '';
             this.notification.show(`Import abgeschlossen: ${result.ereignisse} Ereignisse, ${result.personen} Personen und ${result.feuerwehren} Feuerwehren übernommen${skipped}`, NotificationDuration.long);
-            this.selectFile(undefined);
+            void this.selectFile(undefined);
         }
         catch (error)
         {

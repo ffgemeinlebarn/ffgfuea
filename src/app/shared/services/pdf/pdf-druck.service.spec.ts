@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import type { MockInstance } from 'vitest';
 import { PdfDruckService } from './pdf-druck.service';
 
 describe('PdfDruckService', () =>
@@ -6,7 +7,7 @@ describe('PdfDruckService', () =>
     const pdf = new Blob(['%PDF-1.3'], { type: 'application/pdf' });
     let service: PdfDruckService;
     let urls: number;
-    let open: ReturnType<typeof vi.spyOn>;
+    let open: MockInstance<typeof window.open>;
 
     beforeEach(() =>
     {

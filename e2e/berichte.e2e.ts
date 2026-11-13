@@ -192,7 +192,7 @@ test.describe('Berichte', () =>
         ]);
 
         // Die abgelegten Dateien sind gültige PDFs
-        const gesamtbericht = await page.evaluate(async (pfad) =>
+        const gesamtbericht = await page.evaluate(async pfad =>
         {
             let ordner = await navigator.storage.getDirectory();
             const teile = pfad.split('/');

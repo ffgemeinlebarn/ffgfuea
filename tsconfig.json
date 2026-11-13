@@ -8,6 +8,9 @@
         "src/*": ["./src/*"]
       },
       "outDir": "./dist/out-tsc",
+      // Für IDE und ESLint (Project Service), die diese Datei für alle Dateien unter src/ verwenden.
+      // Build (tsconfig.app.json) und Unit-Tests (tsconfig.spec.json) setzen "types" selbst.
+      "types": ["vitest/globals"],
       "forceConsistentCasingInFileNames": true,
       "esModuleInterop": true,
       "strict": true,

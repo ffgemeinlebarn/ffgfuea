@@ -119,7 +119,7 @@ describe('OperatingService', () =>
     {
         const closed = await service.closeEreignis();
 
-        expect(closed).toMatchObject({ id: ereignisId, datetimeEnd: expect.any(Date) });
+        expect(closed).toMatchObject({ id: ereignisId, datetimeEnd: expect.any(Date) as Date });
         expect(service.ereignis()).toBeNull();
         expect(TestBed.inject(TimingService).ereignisStart()).toBeNull();
         expect((await data.getEreignis(ereignisId)).datetimeEnd).toBeInstanceOf(Date);

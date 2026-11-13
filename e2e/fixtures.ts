@@ -231,11 +231,11 @@ export async function listOpfs(page: Page): Promise<Array<string>>
         {
             for await (const [name, handle] of ordner.entries())
             {
-                if (handle.kind === 'directory') await lesen(handle as Ordner, `${pfad}${name}/`);
+                if (handle.kind === 'directory') await lesen(handle, `${pfad}${name}/`);
                 else pfade.push(`${pfad}${name}`);
             }
         };
-        await lesen(await navigator.storage.getDirectory() as Ordner, '');
+        await lesen(await navigator.storage.getDirectory(), '');
         return pfade.sort();
     });
 }

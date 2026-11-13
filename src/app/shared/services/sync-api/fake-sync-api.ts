@@ -19,6 +19,8 @@ export class FakeSyncApi extends SyncApi
     public async getFeuerwehr(feuerwehrNummer: number): Promise<IMatFeuerwehr | null>
     {
         await delay(500);
+        // Das Eingabefeld in der Verwaltung liefert trotz Typ `number` einen Text
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-conversion
         feuerwehrNummer = Number(feuerwehrNummer);
         const name = `Feuerwehr Nr. ${feuerwehrNummer}`;
 
