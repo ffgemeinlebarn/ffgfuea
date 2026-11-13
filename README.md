@@ -44,6 +44,16 @@ Ist *Beim Abschließen & Drucken automatisch als PDF ablegen* eingeschaltet (Sta
 
 Die Ordnerauswahl nutzt die File System Access API und funktioniert nur in **Chrome und Edge am PC**. Der Ordner wird in einer eigenen IndexedDB (`ffgfuea_dateiablage`) gespeichert, die Schreibberechtigung fragt der Browser bei Bedarf beim Speichern ab. Ohne gewählten Ordner, ohne Berechtigung oder in anderen Browsern werden die PDFs einzeln heruntergeladen – mit denselben Dateinamen, damit sie nach Ereignisnummer sortiert bleiben.
 
+### Altberichte (Übergangslösung)
+
+Unter *Einstellungen → Altberichte* lassen sich einmalig die Berichte aller abgeschlossenen Ereignisse (optional nur eines Jahres) im **alten Layout** des früheren Druckdialogs als PDF erzeugen: A4 hoch, Gesamtbericht und ein Bericht pro Feuerwehr, „Gedruckt“ mit dem Zeitpunkt der Erzeugung und dem Vermerk „(nachträglich erstellt)“. Die PDFs landen mit denselben Ordner- und Dateinamen wie die neuen PDFs im Ordner der PDF-Ablage (im Testmodus im Unterordner `Testmodus`). **Vorhandene Dateien werden nie überschrieben**, sondern übersprungen, ein erneuter Durchlauf erzeugt also nur fehlende PDFs. Ein Ordner muss gewählt sein, ein Download als Ersatz ist nicht vorgesehen.
+
+Entfernen, sobald die alten Berichte übernommen sind:
+
+1. Den Ordner `src/app/altberichte/` löschen.
+2. In `src/app/pages/settings-page/settings-page.component.html` die Zeile `<ffg-altberichte-card></ffg-altberichte-card>` und in `settings-page.component.ts` den Import sowie den Eintrag `AltberichteCardComponent` in `imports` entfernen.
+3. Diesen Abschnitt aus der README löschen.
+
 ## Export & Import
 
 Unter *Einstellungen* lassen sich alle Daten als JSON-Datei herunterladen und wieder importieren – zur Weiterverarbeitung oder als Sicherung. Im Testmodus wird die Testdatenbank exportiert bzw. befüllt.
