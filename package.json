@@ -10,7 +10,8 @@
     "secrets:scan": "bash scripts/gitleaks.sh",
     "check:licenses": "node scripts/check-licenses.mjs",
     "e2e": "playwright test",
-    "e2e:ui": "playwright test --ui"
+    "e2e:ui": "playwright test --ui",
+    "lint": "eslint ."
   },
   "private": true,
   "dependencies": {
@@ -35,13 +36,19 @@
     "@angular/build": "~22.2.3",
     "@angular/cli": "~22.2.3",
     "@angular/compiler-cli": "~22.2.3",
+    "@eslint/js": "10.0.1",
     "@playwright/test": "1.64.1",
+    "@stylistic/eslint-plugin": "5.10.0",
     "@types/node": "^26.6.5",
+    "angular-eslint": "22.6.0",
+    "eslint": "10.13.0",
     "fake-indexeddb": "^6.2.6",
+    "globals": "17.13.0",
     "istanbul-lib-instrument": "^6.0.3",
     "jsdom": "^30.1.3",
     "pdf-lib": "1.17.1",
     "typescript": "~6.0.3",
+    "typescript-eslint": "8.72.0",
     "vitest": "^5.0.0"
   }
 }
