@@ -1,0 +1,16 @@
+/* TypeScript-Konfiguration der Playwright E2E-Tests, getrennt von App (tsconfig.app.json) und Unit-Tests (tsconfig.spec.json) */
+{
+    "extends": "../tsconfig.json",
+    "compilerOptions": {
+        "rootDir": "..",
+        "outDir": "../out-tsc/e2e",
+        "module": "esnext",
+        "noEmit": true,
+        "types": ["node"]
+    },
+    "include": [
+        "./**/*.ts",
+        "../playwright.config.ts"
+    ],
+    "exclude": []
+}

@@ -1,6 +1,8 @@
 /* To learn more about this file see: https://angular.io/config/tsconfig. */
 {
     "compileOnSave": false,
+    // Die E2E-Tests haben eine eigene Konfiguration (e2e/tsconfig.json)
+    "exclude": ["e2e", "playwright.config.ts", "node_modules", "dist"],
     "compilerOptions": {
       "paths": {
         "src/*": ["./src/*"]
