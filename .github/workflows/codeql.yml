@@ -2,7 +2,7 @@ name: CodeQL
 
 on:
   push:
-    branches: [ main, refactoring ]
+    branches: [ main ]
   pull_request:
   schedule:
     # Montag 04:23 UTC – findet neue Abfragen auch ohne Code-Änderung

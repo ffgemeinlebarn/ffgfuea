@@ -9,7 +9,7 @@ name: OSV-Scanner
 
 on:
   push:
-    branches: [ main, refactoring ]
+    branches: [ main ]
   pull_request:
   schedule:
     - cron: '41 4 * * 1'
