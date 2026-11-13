@@ -4,7 +4,7 @@
   <dl class="ereignis">
     <div>
       <dt>Nummer</dt>
-      <dd>{{ (data | ereignisNummer) || '–' }}</dd>
+      <dd>{{ (ereignis | ereignisNummer) || '–' }}</dd>
     </div>
     <div>
       <dt>Art</dt>
@@ -12,11 +12,11 @@
     </div>
     <div>
       <dt>Ort</dt>
-      <dd>{{ data.ort || '–' }}</dd>
+      <dd>{{ ereignis.ort || '–' }}</dd>
     </div>
     <div>
       <dt>Beginn</dt>
-      <dd>{{ data.datetimeStart | date: 'dd.MM.yyyy HH:mm' }} Uhr</dd>
+      <dd>{{ ereignis.datetimeStart | date: 'dd.MM.yyyy HH:mm' }} Uhr</dd>
     </div>
   </dl>
 
@@ -63,14 +63,21 @@
     }
   </ul>
 
-  <div class="ablage">
-    <mat-icon>{{ zielPfad() ? 'folder' : 'download' }}</mat-icon>
-    @if (zielPfad(); as pfad) {
-      <span>Jedes erzeugte PDF wird abgelegt in <strong class="pfad">{{ pfad }}</strong></span>
-    } @else {
-      <span>Kein Ablageordner gewählt: <em>Als PDF speichern</em> lädt die PDFs herunter</span>
-    }
-  </div>
+  @if (!ablage.ordnerName()) {
+    <div class="ablage">
+      <mat-icon>folder_off</mat-icon>
+      <span>
+        @if (ablage.unterstuetzt) {
+          Kein Ablageordner gewählt, die PDFs werden nicht abgelegt. Ordner auswählen unter <em>Einstellungen</em> → <em>PDF-Ablage</em>.
+        } @else {
+          Dieser Browser kann PDFs nicht in einem Ordner ablegen.
+        }
+        @if (pdfSpeichern) {
+          <em>Als PDF speichern</em> lädt die PDFs herunter.
+        }
+      </span>
+    </div>
+  }
 
   @if (status(); as text) {
     <div class="status" role="status">
@@ -88,11 +95,13 @@
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-  <button mat-button (click)="close()" [disabled]="busy()">Schließen</button>
-  <button mat-stroked-button class="pdf" (click)="savePdf()" [disabled]="noneSelected() || busy()">
-    <mat-icon>picture_as_pdf</mat-icon>
-    Als PDF speichern
-  </button>
+  @if (pdfSpeichern) {
+    <button mat-button class="pdf" (click)="savePdf()" [disabled]="noneSelected() || busy()">
+      <mat-icon>picture_as_pdf</mat-icon>
+      Als PDF speichern
+    </button>
+  }
+  <button mat-button class="schliessen" (click)="close()" [disabled]="busy()">Schließen</button>
   <button mat-flat-button color="primary" class="drucken" (click)="print()" [disabled]="noneSelected() || busy()" cdkFocusInitial>
     <mat-icon>print</mat-icon>
     Drucken

@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises';
-import { Download, Page } from '@playwright/test';
+import { Download, Locator, Page } from '@playwright/test';
 import { PDFDocument } from 'pdf-lib';
 import {
     abschliessen, addPerson, barcode, expect, fuellen, gotoApp, JAHR, listOpfs, navigate, seedFeuerwehr, setConfirmFuellung,
@@ -20,6 +20,18 @@ async function ereignisMitFuellungen(page: Page): Promise<string>
     await fuellen(page, barcode(12345, 2), false);
     await fuellen(page, barcode(23456, 1), false);
     return nummer;
+}
+
+/** Öffnet die Berichte eines Ereignisses unter "Einsätze & Übungen", nur dort gibt es "Als PDF speichern" */
+async function berichteAusListe(page: Page, nummer: string): Promise<Locator>
+{
+    await navigate(page, 'Einsätze & Übungen');
+    const panel = page.locator('mat-expansion-panel').filter({ hasText: nummer });
+    await panel.locator('mat-expansion-panel-header').click();
+    await panel.getByRole('button', { name: 'Berichte' }).click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByRole('heading', { name: 'Berichte' })).toBeVisible();
+    return dialog;
 }
 
 async function seiten(download: Download): Promise<Array<{ breite: number; hoehe: number }>>
@@ -45,6 +57,12 @@ test.describe('Berichte', () =>
         await expect(dialog.getByRole('heading', { name: 'Berichte' })).toBeVisible();
         await expect(dialog.locator('.ereignis')).toContainText(nummer);
         await expect(dialog.locator('.ereignis')).toContainText('Gemeinlebarn');
+
+        // Im Füllbetrieb nur Schließen und Drucken, der Hinweis erwähnt keinen Download
+        await expect(dialog.getByRole('button', { name: 'Als PDF speichern' })).toHaveCount(0);
+        await expect(dialog.locator('.ablage')).toContainText('Kein Ablageordner gewählt');
+        await expect(dialog.locator('.ablage')).toContainText('Einstellungen → PDF-Ablage');
+        await expect(dialog.locator('.ablage')).not.toContainText('herunter');
 
         const anzahl = dialog.locator('.anzahl');
         const gesamtbericht = dialog.getByRole('checkbox', { name: /Gesamtbericht/ });
@@ -80,13 +98,12 @@ test.describe('Berichte', () =>
         await fw2.uncheck();
         await expect(anzahl).toHaveText('1 von 3 ausgewählt');
 
-        // "Alle" ab- und anwählen, ohne Auswahl sind Drucken und Speichern gesperrt
+        // "Alle" ab- und anwählen, ohne Auswahl ist Drucken gesperrt
         await alle.check();
         await expect(anzahl).toHaveText('3 von 3 ausgewählt');
         await alle.uncheck();
         await expect(anzahl).toHaveText('0 von 3 ausgewählt');
         await expect(dialog.getByRole('button', { name: 'Drucken' })).toBeDisabled();
-        await expect(dialog.getByRole('button', { name: 'Als PDF speichern' })).toBeDisabled();
 
         await schnellauswahl('Alle Berichte');
         await expect(anzahl).toHaveText('3 von 3 ausgewählt');
@@ -99,9 +116,9 @@ test.describe('Berichte', () =>
     test('Als PDF speichern lädt die PDFs ohne Ordner herunter', async ({ page }) =>
     {
         const nummer = await ereignisMitFuellungen(page);
-        await tile(page, 'Berichte').click();
-        const dialog = page.getByRole('dialog');
-        await expect(dialog).toContainText('Kein Ablageordner gewählt');
+        const dialog = await berichteAusListe(page, nummer);
+        await expect(dialog.locator('.ablage')).toContainText('Kein Ablageordner gewählt');
+        await expect(dialog.locator('.ablage')).toContainText('Als PDF speichern lädt die PDFs herunter');
 
         const downloads: Array<Download> = [];
         page.on('download', download => downloads.push(download));
@@ -131,8 +148,9 @@ test.describe('Berichte', () =>
     test('nur den Gesamtbericht als PDF speichern', async ({ page }) =>
     {
         const nummer = await ereignisMitFuellungen(page);
-        await tile(page, 'Berichte').click();
-        const dialog = page.getByRole('dialog');
+        const dialog = await berichteAusListe(page, nummer);
+        await dialog.getByRole('checkbox', { name: 'Alle' }).uncheck();
+        await expect(dialog.getByRole('button', { name: 'Als PDF speichern' })).toBeDisabled();
         await dialog.getByRole('button', { name: 'Schnellauswahl' }).click();
         await page.getByRole('menuitem', { name: 'Nur Gesamtbericht' }).click();
 
@@ -163,7 +181,8 @@ test.describe('Berichte', () =>
         // Der Berichte-Dialog öffnet erst, nachdem alle PDFs abgelegt sind
         const dialog = page.getByRole('dialog');
         await expect(dialog.getByRole('heading', { name: 'Berichte' })).toBeVisible();
-        await expect(dialog.locator('.ablage')).toContainText(`Jedes erzeugte PDF wird abgelegt in ${ordner}`);
+        // Mit gewähltem Ordner kein Hinweis
+        await expect(dialog.locator('.ablage')).toHaveCount(0);
         await expect(snackbar(page, `3 PDFs gespeichert in ${ordner}`)).toBeVisible();
 
         expect(await listOpfs(page)).toEqual([

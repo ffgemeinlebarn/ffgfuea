@@ -9,7 +9,7 @@ import { OrdnerStore } from '../../services/pdf-ablage/ordner-store';
 import { PdfAblageService } from '../../services/pdf-ablage/pdf-ablage.service';
 import { IDruckErgebnis, PdfDruckService } from '../../services/pdf/pdf-druck.service';
 import { PdfService } from '../../services/pdf/pdf.service';
-import { BerichteComponent } from './berichte.component';
+import { BerichteComponent, IBerichteDaten } from './berichte.component';
 
 describe('BerichteComponent', () =>
 {
@@ -23,6 +23,7 @@ describe('BerichteComponent', () =>
     const ereignisPfad = ['2026', '2026-012_Uebung_Gemeinlebarn'];
     const alleDateien = ['2026-012_Gesamtbericht.pdf', '2026-012_Feuerwehr_FF_1.pdf', '2026-012_Feuerwehr_FF_2.pdf'];
 
+    let daten: IBerichteDaten;
     let fixture: ComponentFixture<BerichteComponent>;
     let component: BerichteComponent;
     let ordner: FakeDirectoryHandle | undefined;
@@ -34,12 +35,13 @@ describe('BerichteComponent', () =>
     beforeEach(() =>
     {
         ordner = undefined;
+        daten = { ereignis };
         druckErgebnis = { art: 'druckdialog', url: 'blob:sammel' };
         drucken = vi.fn(async () => druckErgebnis);
         installDirectoryPicker(async () => ordner);
         TestBed.configureTestingModule({
             providers: [
-                ...provideDialog(ereignis),
+                ...provideDialog(daten),
                 { provide: OrdnerStore, useValue: { get: async () => ordner?.asHandle(), set: vi.fn(), delete: vi.fn() } },
                 { provide: PdfDruckService, useValue: { drucken } }
             ]
@@ -54,10 +56,11 @@ describe('BerichteComponent', () =>
         vi.restoreAllMocks();
     });
 
-    /** Öffnet den Dialog, mit ordner als gewähltem Ablageordner */
-    async function erstellen(ablageOrdner?: FakeDirectoryHandle): Promise<void>
+    /** Öffnet den Dialog, mit ordner als gewähltem Ablageordner und optional mit „Als PDF speichern“ */
+    async function erstellen(ablageOrdner?: FakeDirectoryHandle, pdfSpeichern?: boolean): Promise<void>
     {
         ordner = ablageOrdner;
+        daten.pdfSpeichern = pdfSpeichern;
         const ablage = TestBed.inject(PdfAblageService);
         ablage.downloadPause = 0;
         await ablage.geladen;
@@ -72,6 +75,8 @@ describe('BerichteComponent', () =>
     const alle = (): HTMLInputElement => fixture.nativeElement.querySelector('.alle input[type=checkbox]');
     const druckenButton = (): HTMLButtonElement => fixture.nativeElement.querySelector('button.drucken');
     const pdfButton = (): HTMLButtonElement => fixture.nativeElement.querySelector('button.pdf');
+    const buttons = (): Array<string> => [...fixture.nativeElement.querySelectorAll('mat-dialog-actions button')]
+        .map((button: HTMLElement) => button.textContent?.replace(/\s+/g, ' ').replace('picture_as_pdf', '').replace('print', '').trim());
     const selectedIds = () => component.selectedReports().map(r => r.id);
 
     describe('Anzeige und Auswahl', () =>
@@ -122,7 +127,6 @@ describe('BerichteComponent', () =>
             expect(component.noneSelected()).toBe(true);
             expect(reportCheckboxes().map(c => c.checked)).toEqual([false, false, false]);
             expect(druckenButton().disabled).toBe(true);
-            expect(pdfButton().disabled).toBe(true);
         });
 
         it('bietet eine Schnellauswahl im Menü an', async () =>
@@ -144,10 +148,16 @@ describe('BerichteComponent', () =>
             expect(component.allSelected()).toBe(true);
         });
 
-        it('weist ohne Ordner darauf hin, dass PDFs heruntergeladen werden', () =>
+        it('bietet nur Schließen und Drucken an', () =>
         {
-            expect(text('.ablage')).toContain('Kein Ablageordner gewählt');
-            expect(text('.ablage')).toContain('lädt die PDFs herunter');
+            expect(buttons()).toEqual(['Schließen', 'Drucken']);
+            expect(pdfButton()).toBeNull();
+        });
+
+        it('weist ohne Ordner auf die Ablage in den Einstellungen hin, ohne Download zu erwähnen', () =>
+        {
+            expect(text('.ablage')).toBe('folder_off Kein Ablageordner gewählt, die PDFs werden nicht abgelegt. '
+                + 'Ordner auswählen unter Einstellungen → PDF-Ablage.');
         });
 
         it('verändert die Daten des Ereignisses nicht', () =>
@@ -160,7 +170,7 @@ describe('BerichteComponent', () =>
     it('zeigt ohne Füllungen nur den Gesamtbericht', async () =>
     {
         TestBed.resetTestingModule();
-        TestBed.configureTestingModule({ providers: [...provideDialog(createEreignis()), { provide: PdfDruckService, useValue: { drucken } }] });
+        TestBed.configureTestingModule({ providers: [...provideDialog({ ereignis: createEreignis() }), { provide: PdfDruckService, useValue: { drucken } }] });
         await erstellen();
 
         expect(component.reports.map(r => r.name)).toEqual(['Gesamtbericht']);
@@ -193,7 +203,7 @@ describe('BerichteComponent', () =>
         {
             const berichte = new FakeDirectoryHandle('Berichte');
             await erstellen(berichte);
-            expect(text('.ablage')).toContain('Jedes erzeugte PDF wird abgelegt in Berichte/2026/2026-012_Uebung_Gemeinlebarn');
+            expect(element('.ablage')).toBeNull();
             component.toggle(component.reports[2], false);
 
             await component.print();
@@ -247,7 +257,7 @@ describe('BerichteComponent', () =>
 
         it('zeigt den Fortschritt und sperrt den Dialog, solange gearbeitet wird', async () =>
         {
-            await erstellen(new FakeDirectoryHandle('Berichte'));
+            await erstellen(new FakeDirectoryHandle('Berichte'), true);
             let fertig!: () => void;
             drucken.mockImplementation(() => new Promise(resolve => fertig = () => resolve(druckErgebnis)));
             const dialogRef = TestBed.inject(MatDialogRef);
@@ -329,11 +339,37 @@ describe('BerichteComponent', () =>
 
     describe('Als PDF speichern', () =>
     {
+        it('bietet den Button dezent neben Schließen und Drucken an, gesperrt ohne Auswahl', async () =>
+        {
+            await erstellen(undefined, true);
+
+            expect(buttons()).toEqual(['Als PDF speichern', 'Schließen', 'Drucken']);
+            expect(pdfButton().hasAttribute('mat-button')).toBe(true);
+            component.selectAll(false);
+            await fixture.whenStable();
+            expect(pdfButton().disabled).toBe(true);
+        });
+
+        it('weist ohne Ordner zusätzlich auf den Download hin', async () =>
+        {
+            await erstellen(undefined, true);
+
+            expect(text('.ablage')).toContain('Kein Ablageordner gewählt');
+            expect(text('.ablage')).toContain('Als PDF speichern lädt die PDFs herunter.');
+        });
+
+        it('zeigt mit Ordner keinen Hinweis', async () =>
+        {
+            await erstellen(new FakeDirectoryHandle('Berichte'), true);
+
+            expect(element('.ablage')).toBeNull();
+        });
+
         it('legt die ausgewählten Berichte im Ordner ab, ohne zu drucken', async () =>
         {
             const downloads = captureDownloads();
             const berichte = new FakeDirectoryHandle('Berichte');
-            await erstellen(berichte);
+            await erstellen(berichte, true);
             component.vorauswahl('gesamt');
 
             pdfButton().click();
@@ -348,7 +384,7 @@ describe('BerichteComponent', () =>
         it('lädt die PDFs ohne Ordner herunter', async () =>
         {
             const downloads = captureDownloads();
-            await erstellen();
+            await erstellen(undefined, true);
 
             await component.savePdf();
 
@@ -363,7 +399,7 @@ describe('BerichteComponent', () =>
             const berichte = new FakeDirectoryHandle('Berichte');
             berichte.berechtigung = 'denied';
             berichte.anfrageErgebnis = 'denied';
-            await erstellen(berichte);
+            await erstellen(berichte, true);
 
             await component.savePdf();
 
@@ -373,7 +409,7 @@ describe('BerichteComponent', () =>
 
         it('meldet Fehler beim Speichern', async () =>
         {
-            await erstellen();
+            await erstellen(undefined, true);
             vi.spyOn(TestBed.inject(PdfAblageService), 'speichern').mockRejectedValue(new Error('Datenträger voll'));
 
             await component.savePdf();
