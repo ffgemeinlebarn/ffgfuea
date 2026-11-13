@@ -174,8 +174,9 @@ export class BackupService
             const item = (value ?? {}) as Record<string, unknown>;
             if (!Array.isArray(item['fuellungen'])) return item;
 
-            const fuellungen = item['fuellungen'].map((fuellung, j) =>
+            const fuellungen = item['fuellungen'].map((wert: unknown, j) =>
             {
+                const fuellung = wert as { datetime?: unknown; flaschenBarcode?: unknown } | null | undefined;
                 try
                 {
                     return { datetime: fuellung?.datetime, flasche: this.data.getFlascheByBarcode(String(fuellung?.flaschenBarcode)) };

@@ -49,7 +49,7 @@ describe('Einstellungen: PDF-Ablage', () =>
         return fixture;
     }
 
-    const card = (fixture: ComponentFixture<unknown>): HTMLElement => fixture.nativeElement.querySelector('.pdf-ablage');
+    const card = (fixture: ComponentFixture<unknown>): HTMLElement => (fixture.nativeElement as HTMLElement).querySelector<HTMLElement>('.pdf-ablage')!;
     const button = (fixture: ComponentFixture<unknown>, selector: string): HTMLButtonElement | null => card(fixture).querySelector(selector);
 
     it('wählt einen Ordner aus und zeigt seinen Namen', async () =>

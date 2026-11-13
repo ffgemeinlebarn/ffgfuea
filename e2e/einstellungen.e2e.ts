@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import type { IBackup } from '../src/app/shared/services/backup/backup-format';
 import {
     abschliessen, addPerson, barcode, ereignisNummer, expect, feuerwehrPanel, fuellen, gotoApp, navigate, personCard, seedFeuerwehr,
     JAHR, listOpfs, setConfirmFuellung, snackbar, startEreignis, stubDirectoryPicker, test
@@ -27,7 +28,7 @@ test.describe('Einstellungen', () =>
 
         const pfad = testInfo.outputPath(exportDatei.suggestedFilename());
         await exportDatei.saveAs(pfad);
-        const backup = JSON.parse(await readFile(pfad, 'utf-8'));
+        const backup = JSON.parse(await readFile(pfad, 'utf-8')) as IBackup;
         expect(backup).toMatchObject({ format: 'ffgfuea-export', version: 1, testMode: false });
         expect(backup.feuerwehren).toHaveLength(1);
         expect(backup.feuerwehren[0].flaschen).toHaveLength(12);

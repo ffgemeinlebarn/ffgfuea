@@ -113,7 +113,7 @@ describe('Dialog-Aktionen', () =>
             expect(flaschenVon(2)[1]).toEqual({
                 barcode: '22229', karteiNr: 4, flaschennummer: 'F-4', typenBezeichnung: 'Stahl 6L', typenInfo1: '300 bar',
                 typenInfo2: undefined, typenInfo3: undefined, baujahr: 2015, pruefdatum: '2025-03-01',
-                lastEdit: expect.any(Date), quelle: 'manuell', feuerwehr: ref
+                lastEdit: expect.any(Date) as Date, quelle: 'manuell', feuerwehr: ref
             });
             expect(close).toHaveBeenCalledWith(true);
         });

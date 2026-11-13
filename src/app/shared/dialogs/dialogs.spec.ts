@@ -46,7 +46,7 @@ describe('Dialoge', () =>
             const fixture = TestBed.createComponent(component);
             await fixture.whenStable();
 
-            expect(fixture.nativeElement.textContent).toContain(expectedText);
+            expect((fixture.nativeElement as HTMLElement).textContent).toContain(expectedText);
         });
     }
 
@@ -56,7 +56,7 @@ describe('Dialoge', () =>
         const fixture = TestBed.createComponent(ConfirmFuellungComponent);
         await fixture.whenStable();
 
-        expect(fixture.nativeElement.textContent).not.toContain('Manuell');
+        expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Manuell');
     });
 
     it('Abschluss-Dialog liefert die Entscheidung zurück', () =>

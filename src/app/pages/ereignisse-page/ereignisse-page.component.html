@@ -2,7 +2,7 @@
 @for (ereignis of data.ereignisse(); track ereignis.id) {
 <mat-expansion-panel>
     <mat-expansion-panel-header>
-        <mat-panel-title><span class="ereignis-nummer">{{ ereignis | ereignisNummer }}</span>{{ ereignis?.type == EreignisType.Uebung ? 'Übung' : 'Einsatz' }}{{ ereignis?.ort ? ' in '+
+        <mat-panel-title><span class="ereignis-nummer">{{ ereignis | ereignisNummer }}</span>{{ ereignis?.type === EreignisType.Uebung ? 'Übung' : 'Einsatz' }}{{ ereignis?.ort ? ' in '+
             ereignis?.ort : '' }}</mat-panel-title>
         <mat-panel-description>{{ ereignis.datetimeStart | date: 'dd.MM.yyyy' }}</mat-panel-description>
     </mat-expansion-panel-header>
@@ -20,7 +20,7 @@
                     </tr>
                     <tr>
                         <th>Type:</th>
-                        <td>{{ ereignis.type == EreignisType.Uebung ? 'Übung' : 'Einsatz' }}</td>
+                        <td>{{ ereignis.type === EreignisType.Uebung ? 'Übung' : 'Einsatz' }}</td>
                     </tr>
                     <tr>
                         <th>Ort:</th>

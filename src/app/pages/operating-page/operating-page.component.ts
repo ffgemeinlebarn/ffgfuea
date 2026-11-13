@@ -46,7 +46,7 @@ export class OperatingPageComponent implements OnInit
     {
         if (!await this.operating.tryStartOpenEreignis())
         {
-            this.router.navigate(['/']);
+            void this.router.navigate(['/']);
         }
     }
 
@@ -62,7 +62,7 @@ export class OperatingPageComponent implements OnInit
 
     public openSearchFlasche()
     {
-        this.dialogs.open(SearchFlascheComponent);
+        void this.dialogs.open(SearchFlascheComponent);
     }
 
     public async openEditEreignis()
@@ -85,13 +85,13 @@ export class OperatingPageComponent implements OnInit
 
     public openFuellungContext(fuellung: IFuellung)
     {
-        this.dialogs.open(RemoveFuellungComponent, fuellung);
+        void this.dialogs.open(RemoveFuellungComponent, fuellung);
     }
 
     public openBerichte()
     {
         const ereignis = this.operating.ereignis();
-        if (ereignis) this.dialogs.open(BerichteComponent, { ereignis } satisfies IBerichteDaten);
+        if (ereignis) void this.dialogs.open(BerichteComponent, { ereignis } satisfies IBerichteDaten);
     }
 
     public async confirmCloseEreignis()
@@ -111,7 +111,7 @@ export class OperatingPageComponent implements OnInit
 
         // Alle Berichte ablegen, bevor der Berichte-Dialog zum Drucken öffnet
         if (ziel) await this.pdfAblegen(ereignis, ziel);
-        this.dialogs.open(BerichteComponent, { ereignis } satisfies IBerichteDaten);
+        void this.dialogs.open(BerichteComponent, { ereignis } satisfies IBerichteDaten);
     }
 
     private async pdfAblegen(ereignis: IEreignis, ziel: IAblageZiel)

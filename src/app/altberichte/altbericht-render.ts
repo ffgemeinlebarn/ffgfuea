@@ -124,7 +124,7 @@ function absatz(doc: jsPDF, text: string, groesse: number, zeile: number, y: num
 {
     doc.setFont(SCHRIFT, stil);
     doc.setFontSize(groesse * PT);
-    const zeilen: Array<string> = doc.splitTextToSize(text, breite);
+    const zeilen = doc.splitTextToSize(text, breite) as Array<string>;
     zeilen.forEach((inhalt, i) => doc.text(inhalt, RAND.left, y + i * zeile + zeile / 2, { baseline: 'middle' }));
     return y + zeilen.length * zeile;
 }

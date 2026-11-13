@@ -21,7 +21,8 @@ const config = JSON.parse(readFileSync(join(root, 'license-check.json'), 'utf8')
 const allowed = new Set(config.allowed);
 const exceptions = new Map(Object.entries(config.exceptions ?? {}));
 
-function licenseOf(path, entry) {
+function licenseOf(path, entry)
+{
     if (entry.license) return entry.license;
     const manifest = join(root, path, 'package.json');
     if (!existsSync(manifest)) return 'UNKNOWN';
@@ -29,16 +30,18 @@ function licenseOf(path, entry) {
     if (typeof pkg.license === 'string') return pkg.license;
     if (pkg.license?.type) return pkg.license.type;
     // Old format: "licenses": [{ "type": "MIT" }, ...]
-    if (Array.isArray(pkg.licenses)) return pkg.licenses.map((l) => l.type ?? l).join(' OR ');
+    if (Array.isArray(pkg.licenses)) return pkg.licenses.map(l => l.type ?? l).join(' OR ');
     return 'UNKNOWN';
 }
 
 /** All packages of the lockfile, split into production and development (dev: true) */
-function scan() {
+function scan()
+{
     const lock = JSON.parse(readFileSync(join(root, 'package-lock.json'), 'utf8'));
     const production = {};
     const development = {};
-    for (const [path, entry] of Object.entries(lock.packages ?? {})) {
+    for (const [path, entry] of Object.entries(lock.packages ?? {}))
+    {
         // '' is the project itself; links point to workspace folders
         if (!path || entry.link) continue;
         // Optional platform-specific binaries (e.g. fsevents on macOS) are often not installed
@@ -52,35 +55,43 @@ function scan() {
 }
 
 // Minimal SPDX expression evaluator (OR, AND, parentheses, WITH exceptions ignored).
-function isAllowed(expression) {
-    const tokens = expression.replace(/[()]/g, (p) => ` ${p} `).trim().split(/\s+/);
+function isAllowed(expression)
+{
+    const tokens = expression.replace(/[()]/g, p => ` ${p} `).trim().split(/\s+/);
     let pos = 0;
-    const parseOr = () => {
+    const parseOr = () =>
+    {
         let value = parseAnd();
-        while (tokens[pos] === 'OR') {
+        while (tokens[pos] === 'OR')
+        {
             pos++;
             const right = parseAnd();
             value = value || right;
         }
         return value;
     };
-    const parseAnd = () => {
+    const parseAnd = () =>
+    {
         let value = parseAtom();
-        while (tokens[pos] === 'AND') {
+        while (tokens[pos] === 'AND')
+        {
             pos++;
             const right = parseAtom();
             value = value && right;
         }
         return value;
     };
-    const parseAtom = () => {
+    const parseAtom = () =>
+    {
         const token = tokens[pos++];
-        if (token === '(') {
+        if (token === '(')
+        {
             const value = parseOr();
             pos++; // ')'
             return value;
         }
-        if (tokens[pos] === 'WITH') {
+        if (tokens[pos] === 'WITH')
+        {
             pos += 2;
         }
         return allowed.has(token);
@@ -89,27 +100,33 @@ function isAllowed(expression) {
     return pos === tokens.length && result;
 }
 
-function evaluate(packages) {
+function evaluate(packages)
+{
     const violations = [];
     const usedExceptions = new Set();
-    for (const [id, info] of Object.entries(packages)) {
+    for (const [id, info] of Object.entries(packages))
+    {
         const name = id.slice(0, id.lastIndexOf('@'));
         const license = Array.isArray(info.licenses) ? info.licenses.join(' OR ') : String(info.licenses ?? 'UNKNOWN');
-        const exceptionKey = [id, name].find((key) => exceptions.has(key));
-        if (exceptionKey) {
+        const exceptionKey = [id, name].find(key => exceptions.has(key));
+        if (exceptionKey)
+        {
             usedExceptions.add(exceptionKey);
             continue;
         }
-        if (!isAllowed(license)) {
+        if (!isAllowed(license))
+        {
             violations.push({ id, license, repository: info.repository ?? '' });
         }
     }
     return { violations, usedExceptions, total: Object.keys(packages).length };
 }
 
-function print(title, { violations, total }) {
+function print(title, { violations, total })
+{
     console.log(`${title}: ${total} packages, ${violations.length} not on the allowlist`);
-    for (const v of violations.sort((a, b) => a.id.localeCompare(b.id))) {
+    for (const v of violations.sort((a, b) => a.id.localeCompare(b.id)))
+    {
         console.log(`  ${v.id.padEnd(50)} ${v.license.padEnd(28)} ${v.repository}`);
     }
 }
@@ -122,11 +139,13 @@ print('Production dependencies', production);
 print('Development dependencies (warning only)', development);
 
 const used = new Set([...production.usedExceptions, ...development.usedExceptions]);
-for (const [key, { reason }] of exceptions) {
+for (const [key, { reason }] of exceptions)
+{
     console.log(`${used.has(key) ? 'Exception' : 'Unused exception (remove it?)'}: ${key} – ${reason}`);
 }
 
-if (production.violations.length > 0) {
+if (production.violations.length > 0)
+{
     console.error('\nLicense check failed: add an allowed license or a justified exception in license-check.json.');
     process.exit(1);
 }

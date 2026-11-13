@@ -33,7 +33,7 @@ export class VerwaltungPageComponent
     private notification = inject(NotificationService);
     data = inject(DataService);
 
-    public displayedColumns: string[] = ['karteiNr', 'geraeteNr', 'flaschennummer', 'barcode', 'typenBezeichnung', 'typenInformation', 'lastEdit', 'quelle', 'aktionen'];
+    public displayedColumns: Array<string> = ['karteiNr', 'geraeteNr', 'flaschennummer', 'barcode', 'typenBezeichnung', 'typenInformation', 'lastEdit', 'quelle', 'aktionen'];
     public feuerwehrNummerToSync: number | null = null;
     public readonly vorname = signal('');
     public readonly nachname = signal('');
@@ -41,12 +41,12 @@ export class VerwaltungPageComponent
     public addFeuerwehrToSync(feuerwehrNummer: number | null)
     {
         if (feuerwehrNummer == null) return;
-        this.sync.addFeuerwehr(feuerwehrNummer);
+        void this.sync.addFeuerwehr(feuerwehrNummer);
     }
 
     public openRemoveFeuerwehr(feuerwehr: IFeuerwehr)
     {
-        this.dialogs.open(RemoveFeuerwehrComponent, feuerwehr);
+        void this.dialogs.open(RemoveFeuerwehrComponent, feuerwehr);
     }
 
     public isManuell(flasche: IFlasche): boolean
@@ -98,11 +98,11 @@ export class VerwaltungPageComponent
 
     public editPerson(person: IPerson)
     {
-        this.dialogs.open(EditPersonComponent, { ...person });
+        void this.dialogs.open(EditPersonComponent, { ...person });
     }
 
     public removePerson(person: IPerson)
     {
-        this.data.removePerson(person);
+        void this.data.removePerson(person);
     }
 }
