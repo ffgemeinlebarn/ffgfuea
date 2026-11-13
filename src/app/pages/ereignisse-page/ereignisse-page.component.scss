@@ -16,6 +16,12 @@ mat-expansion-panel {
         mat-panel-title {
             width: 30%;
             align-items: center;
+
+            .ereignis-nummer:not(:empty) {
+                margin-right: 12px;
+                font-variant-numeric: tabular-nums;
+                font-weight: 500;
+            }
         }
 
         mat-panel-description {

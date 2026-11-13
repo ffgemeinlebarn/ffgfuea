@@ -10,12 +10,13 @@ import { MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle, Mat
 import { MatButton } from '@angular/material/button';
 import { MatList } from '@angular/material/list';
 import { FuellungItemComponent } from '../../shared/components/fuellung-item/fuellung-item.component';
+import { EreignisNummerPipe } from '../../shared/pipes/ereignis-nummer/ereignis-nummer.pipe';
 
 @Component({
     selector: 'ffg-ereignisse-page',
     templateUrl: './ereignisse-page.component.html',
     styleUrls: ['./ereignisse-page.component.scss'],
-    imports: [MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle, MatExpansionPanelDescription, MatButton, MatList, FuellungItemComponent, DatePipe]
+    imports: [MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle, MatExpansionPanelDescription, MatButton, MatList, FuellungItemComponent, DatePipe, EreignisNummerPipe]
 })
 export class EreignissePageComponent
 {
