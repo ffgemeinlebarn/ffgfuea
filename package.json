@@ -5,7 +5,8 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
-    "test": "ng test"
+    "test": "ng test",
+    "secrets:scan": "bash scripts/gitleaks.sh"
   },
   "private": true,
   "dependencies": {
