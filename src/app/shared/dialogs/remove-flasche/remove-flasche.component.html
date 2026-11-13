@@ -1,0 +1,20 @@
+<h2 mat-dialog-title>Flasche löschen</h2>
+
+<div mat-dialog-content>
+    <p><strong>Soll die Flasche mit dem Barcode {{ flasche.barcode }} wirklich gelöscht werden?</strong></p>
+    <p>
+        Feuerwehr: {{ flasche.feuerwehr.name }}
+        @if (flasche.karteiNr != null) {
+            | Nr. {{ flasche.karteiNr }}
+        }
+        @if (flasche.typenBezeichnung) {
+            ({{ flasche.typenBezeichnung }})
+        }
+    </p>
+    <p>Die Flasche steht danach nicht mehr zur Füllung zur Verfügung. Bereits erfasste Füllungen bleiben erhalten.</p>
+</div>
+
+<div class="actions" mat-dialog-actions>
+    <button mat-button (click)="close()">Abbrechen</button>
+    <button mat-raised-button color="warn" (click)="confirm()">Löschen</button>
+</div>

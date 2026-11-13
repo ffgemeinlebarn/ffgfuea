@@ -17,6 +17,12 @@ Pull Requests und Pushes auf `main` werden von GitHub Actions getestet und gebau
 
 Alternativ in GitHub unter *Actions → Build & Deploy → Run workflow* von `main` manuell starten. Die Option „Clean slate“ löscht vorher alle Dateien am Server (z. B. beim ersten Deploy, um alte Builds zu entfernen).
 
+## Flaschen
+
+Flaschen kommen aus der MAT Synchronisierung oder werden unter *Verwaltung* je Feuerwehr manuell erfasst (`quelle`: `mat` bzw. `manuell`, Flaschen ohne `quelle` stammen aus MAT). Nur manuelle Flaschen können bearbeitet und gelöscht werden. Der Barcode einer manuellen Flasche besteht nur aus Ziffern (mindestens 5) und muss über alle Feuerwehren eindeutig sein.
+
+Die Synchronisierung ersetzt die MAT Flaschen einer Feuerwehr und behält ihre manuellen Flaschen. Liefert MAT eine Flasche mit dem Barcode einer manuellen Flasche – egal bei welcher Feuerwehr – gewinnt MAT: Die manuelle Flasche wird entfernt und darüber informiert. Bereits erfasste Füllungen bleiben unverändert.
+
 ## Export & Import
 
 Unter *Einstellungen* lassen sich alle Daten als JSON-Datei herunterladen und wieder importieren – zur Weiterverarbeitung oder als Sicherung. Im Testmodus wird die Testdatenbank exportiert bzw. befüllt.

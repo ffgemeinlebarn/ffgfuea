@@ -1,7 +1,7 @@
 import { EreignisType } from '../../enums/ereignis-type';
 import { IEreignis } from '../../interfaces/i-ereignis';
 import { IFeuerwehr } from '../../interfaces/i-feuerwehr';
-import { IFlasche } from '../../interfaces/i-flasche';
+import { FlaschenQuelle, IFlasche } from '../../interfaces/i-flasche';
 import { IFuellung } from '../../interfaces/i-fuellung';
 import { IPerson } from '../../interfaces/i-person';
 
@@ -9,6 +9,8 @@ export const BACKUP_FORMAT = 'ffgfuea-export';
 export const BACKUP_VERSION = 1;
 /** Altes Import-Format aus dem README: nur Ereignisse mit Flaschen-Barcodes */
 export const LEGACY_VERSION = 0;
+
+const FLASCHEN_QUELLEN: Array<FlaschenQuelle> = ['mat', 'manuell'];
 
 export interface IBackup
 {
@@ -113,6 +115,15 @@ function parseFeuerwehr(item: unknown, label: string, problems: Array<string>): 
 
     if (item['flaschen'] != null && !Array.isArray(item['flaschen']))
         problems.push(`${label}: "flaschen" ist keine Liste.`);
+
+    // quelle fehlt bei älteren Exporten (= MAT) und wird sonst unverändert übernommen
+    if (Array.isArray(item['flaschen']))
+        item['flaschen'].forEach((flasche, i) =>
+        {
+            const quelle = isObject(flasche) ? flasche['quelle'] : undefined;
+            if (quelle != null && !FLASCHEN_QUELLEN.includes(quelle as FlaschenQuelle))
+                problems.push(`${label}, Flasche ${i + 1}: Unbekannte Quelle "${quelle}".`);
+        });
 
     return { ...item, flaschen: (item['flaschen'] ?? []) as Array<IFlasche> } as IFeuerwehr;
 }

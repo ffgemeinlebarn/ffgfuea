@@ -1,0 +1,57 @@
+<h1 mat-dialog-title>{{ isNew ? 'Flasche hinzufügen' : 'Flasche bearbeiten' }}</h1>
+<p class="feuerwehr">Feuerwehr {{ input.feuerwehr.name }} ({{ input.feuerwehr.feuerwehrNummer }}) - manuell erfasste Flasche</p>
+<form class="content" mat-dialog-content [formGroup]="form">
+    <mat-form-field appearance="fill">
+        <mat-label>Barcode</mat-label>
+        <input type="text" inputmode="numeric" matInput formControlName="barcode" required>
+        <mat-hint>Nur Ziffern, eindeutig über alle Feuerwehren</mat-hint>
+        @if (form.controls.barcode.errors?.['barcode']; as fehler) {
+            <mat-error>{{ fehler }}</mat-error>
+        }
+    </mat-form-field>
+    <div class="row">
+        <mat-form-field appearance="fill">
+            <mat-label>Nr. (Kartei)</mat-label>
+            <input type="number" matInput formControlName="karteiNr">
+        </mat-form-field>
+        <mat-form-field appearance="fill">
+            <mat-label>Flaschen Nr.</mat-label>
+            <input type="text" matInput formControlName="flaschennummer">
+        </mat-form-field>
+    </div>
+    <mat-form-field appearance="fill">
+        <mat-label>Typen Bezeichnung</mat-label>
+        <input type="text" matInput formControlName="typenBezeichnung">
+    </mat-form-field>
+    <div class="row">
+        <mat-form-field appearance="fill">
+            <mat-label>Typen Info 1</mat-label>
+            <input type="text" matInput formControlName="typenInfo1">
+        </mat-form-field>
+        <mat-form-field appearance="fill">
+            <mat-label>Typen Info 2</mat-label>
+            <input type="text" matInput formControlName="typenInfo2">
+        </mat-form-field>
+        <mat-form-field appearance="fill">
+            <mat-label>Typen Info 3</mat-label>
+            <input type="text" matInput formControlName="typenInfo3">
+        </mat-form-field>
+    </div>
+    <div class="row">
+        <mat-form-field appearance="fill">
+            <mat-label>Baujahr</mat-label>
+            <input type="number" matInput formControlName="baujahr">
+            @if (form.controls.baujahr.invalid) {
+                <mat-error>Ungültiges Baujahr</mat-error>
+            }
+        </mat-form-field>
+        <mat-form-field appearance="fill">
+            <mat-label>Prüfdatum</mat-label>
+            <input type="date" matInput formControlName="pruefdatum">
+        </mat-form-field>
+    </div>
+</form>
+<div mat-dialog-actions>
+    <button mat-button (click)="close()">Abbrechen</button>
+    <button mat-raised-button color="primary" (click)="save()">Speichern</button>
+</div>

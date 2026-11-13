@@ -4,19 +4,20 @@ import { IFeuerwehr } from '../shared/interfaces/i-feuerwehr';
 import { IFlasche } from '../shared/interfaces/i-flasche';
 import { IFuellung } from '../shared/interfaces/i-fuellung';
 
-export function createFeuerwehr(feuerwehrNummer: number, barcodes: Array<string> = []): IFeuerwehr
+/**
+ * Flaschen aus barcodes haben (wie vor Einführung manueller Flaschen gespeicherte) keine quelle,
+ * Flaschen aus manuelleBarcodes sind manuell erfasst
+ */
+export function createFeuerwehr(feuerwehrNummer: number, barcodes: Array<string> = [], manuelleBarcodes: Array<string> = []): IFeuerwehr
 {
     const name = `FF ${feuerwehrNummer}`;
+    const feuerwehr = { feuerwehrNummer, eigentuemerId: feuerwehrNummer, name };
     return {
-        feuerwehrNummer,
-        eigentuemerId: feuerwehrNummer,
-        name,
-        flaschen: barcodes.map((barcode, i) => ({
-            karteiNr: i + 1,
-            barcode,
-            typenBezeichnung: 'Typ',
-            feuerwehr: { feuerwehrNummer, eigentuemerId: feuerwehrNummer, name }
-        }))
+        ...feuerwehr,
+        flaschen: [
+            ...barcodes.map((barcode, i) => ({ karteiNr: i + 1, barcode, typenBezeichnung: 'Typ', feuerwehr })),
+            ...manuelleBarcodes.map((barcode, i) => ({ karteiNr: 100 + i, barcode, typenBezeichnung: 'Manuell', quelle: 'manuell' as const, feuerwehr }))
+        ]
     };
 }
 

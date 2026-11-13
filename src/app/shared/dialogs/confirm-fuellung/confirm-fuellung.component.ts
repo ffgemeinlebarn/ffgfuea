@@ -1,5 +1,6 @@
 import { Component, inject } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { isManuelleFlasche } from '../../interfaces/i-flasche';
 import { IFuellung } from '../../interfaces/i-fuellung';
 import { MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
@@ -14,6 +15,7 @@ export class ConfirmFuellungComponent
 {
     private dialog = inject<MatDialogRef<ConfirmFuellungComponent, boolean>>(MatDialogRef);
     fuellungToConfirm = inject<IFuellung>(MAT_DIALOG_DATA);
+    public readonly manuell = this.fuellungToConfirm?.flasche != null && isManuelleFlasche(this.fuellungToConfirm.flasche);
 
     public close(): void
     {

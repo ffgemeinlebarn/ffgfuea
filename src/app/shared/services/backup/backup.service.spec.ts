@@ -52,6 +52,17 @@ describe('BackupService', () =>
         expect(backup.ereignisse[0].fuellungen[0].datetime).toEqual(new Date(2026, 4, 1, 10, 30));
     });
 
+    it('behält die Quelle der Flaschen', async () =>
+    {
+        const gemischt = createFeuerwehr(2, ['22221'], ['29999']);
+        await data.saveFeuerwehr(gemischt);
+
+        const backup = await exportAndRead();
+
+        expect(backup.feuerwehren).toEqual([gemischt]);
+        expect(backup.feuerwehren[0].flaschen.map(f => f.quelle)).toEqual([undefined, 'manuell']);
+    });
+
     it('schreibt einen Datensatz pro Zeile', async () =>
     {
         await seed();
@@ -215,7 +226,7 @@ describe('BackupService', () =>
         {
             const problems = problemsOf({
                 ...valid,
-                feuerwehren: [{ name: 'ohne Nummer' }],
+                feuerwehren: [{ name: 'ohne Nummer' }, { feuerwehrNummer: 2, flaschen: [{ barcode: '22221', quelle: 'mat' }, { barcode: '22222', quelle: 'irgendwo' }] }],
                 personen: [{ id: 1, vorname: 'Max', nachname: 'Muster' }, { id: 1, vorname: 'Anna', nachname: 'Huber' }],
                 ereignisse: [
                     { type: 'ausflug', datetimeStart: 'gestern', fuellungen: [{ datetime: '2026-01-01T10:00:00Z' }] },
@@ -225,6 +236,7 @@ describe('BackupService', () =>
 
             expect(problems).toEqual([
                 'Feuerwehr 1: Feuerwehrnummer fehlt.',
+                'Feuerwehr 2, Flasche 2: Unbekannte Quelle "irgendwo".',
                 'Ereignis 1: Unbekannte Art "ausflug".',
                 'Ereignis 1: Ungültiger Beginn.',
                 'Ereignis 1, Füllung 1: Flasche fehlt.',

@@ -4,6 +4,10 @@
         <span>{{ fuellung().flasche.typenBezeichnung }}</span>
         <span> | </span>
         <span>Barcode: {{ fuellung().flasche.barcode }}</span>
+        @if (manuell()) {
+            <span> | </span>
+            <span class="manuell" title="Flasche wurde in der Verwaltung manuell erfasst">manuell erfasst</span>
+        }
     </p>
 </div>
 <mat-chip-set>
