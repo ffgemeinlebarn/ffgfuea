@@ -5,7 +5,10 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
-    "test": "ng test"
+    "test": "ng test",
+    "sast:codeql": "bash scripts/codeql.sh",
+    "secrets:scan": "bash scripts/gitleaks.sh",
+    "check:licenses": "node scripts/check-licenses.mjs"
   },
   "private": true,
   "dependencies": {
@@ -34,6 +37,7 @@
     "fake-indexeddb": "^6.2.6",
     "istanbul-lib-instrument": "^6.0.3",
     "jsdom": "^30.1.3",
+    "license-checker-rseidelsohn": "5.0.1",
     "typescript": "~6.0.3",
     "vitest": "^5.0.0"
   }
