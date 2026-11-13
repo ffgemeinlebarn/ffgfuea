@@ -7,6 +7,24 @@ FF Gemeinlebarn Füllapplikation
 - `npm start` – Entwicklungsserver. Verwendet Beispieldaten statt des lokalen MAT Sync-Services (`fakeSyncApi` in `src/environments/environment.development.ts`).
 - `npm test` – Unit-Tests mit Vitest
 - `npm run build` – Produktions-Build nach `dist/ffgfuea/browser`
+- `npm run e2e` – E2E-Tests mit Playwright, siehe unten
+
+## E2E-Tests
+
+Die End-to-End-Tests in `e2e/` (`*.e2e.ts`) laufen mit [Playwright](https://playwright.dev) in Chromium gegen den Entwicklungsserver mit der FakeSyncApi: Eine synchronisierte Feuerwehr Nr. N hat 12 Flaschen mit den Barcodes `N01` bis `N12`. Jeder Test startet mit einem neuen Browser-Kontext und damit einer leeren Datenbank. Gemeinsame Schritte (Feuerwehr synchronisieren, Personal anlegen, Ereignis starten, Barcode scannen, auf die Synchronisierung beim Start warten, Ordnerauswahl im Origin Private File System) liegen in `e2e/fixtures.ts`.
+
+```bash
+npx playwright install chromium   # einmalig, CI: --with-deps
+npm run e2e                       # alle Tests, startet `ng serve --port 4300` (läuft er schon, wird er verwendet)
+npm run e2e:ui                    # interaktiver UI-Modus
+npx playwright show-report        # HTML-Bericht der letzten Ausführung
+```
+
+- `PW_CHROMIUM_PATH=/usr/bin/chromium npm run e2e` verwendet ein vorhandenes Chromium statt des von Playwright installierten.
+- `PW_WORKERS=4 npm run e2e` ändert die Anzahl paralleler Browser (Standard 2).
+- Bei Fehlern liegen Trace, Screenshot und Video in `test-results/` (`npx playwright show-trace <trace.zip>`).
+
+In GitHub Actions laufen die Tests bei jedem Pull Request und bei Pushes auf `main` und `refactoring` (`.github/workflows/e2e.yml`); der HTML-Bericht und bei Fehlern die Traces werden als Artefakte hochgeladen.
 
 ## Release
 
