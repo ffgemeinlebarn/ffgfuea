@@ -1,0 +1,50 @@
+name: OSV-Scanner
+
+# Prüft package-lock.json gegen die OSV-Datenbank (https://osv.dev).
+# - Pull Requests: schlägt nur fehl, wenn der PR NEUE Schwachstellen einführt.
+# - Push / wöchentlich: vollständiger Scan. Bekannte Funde landen als Alerts unter
+#   Security → Code scanning und lassen den Lauf nicht fehlschlagen (sonst wäre der
+#   Push-Lauf bis zum nächsten Update dauerhaft rot).
+# Bewusst akzeptierte Funde: begründet in osv-scanner.toml eintragen (siehe README).
+
+on:
+  push:
+    branches: [ main, refactoring ]
+  pull_request:
+  schedule:
+    - cron: '41 4 * * 1'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    name: Scan
+    if: github.event_name != 'pull_request'
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@32d3cd482bdadfb38b186c0ad1b031902d55d932 # v2.7.1
+    with:
+      fail-on-vuln: false
+      scan-args: |-
+        --recursive
+        ./
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+  scan-pr:
+    name: Scan PR
+    if: github.event_name == 'pull_request'
+    uses: google/osv-scanner-action/.github/workflows/osv-scanner-reusable-pr.yml@32d3cd482bdadfb38b186c0ad1b031902d55d932 # v2.7.1
+    with:
+      scan-args: |-
+        --recursive
+        ./
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
