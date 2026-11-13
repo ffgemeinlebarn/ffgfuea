@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { AddMangelComponent } from 'src/app/shared/dialogs/add-mangel/add-mangel.component';
-import { ConfirmEreignisAbschlussComponent } from 'src/app/shared/dialogs/confirm-ereignis-abschluss/confirm-ereignis-abschluss.component';
+import { ConfirmEreignisAbschlussComponent, EreignisAbschluss } from 'src/app/shared/dialogs/confirm-ereignis-abschluss/confirm-ereignis-abschluss.component';
 import { EditEreignisComponent } from 'src/app/shared/dialogs/edit-ereignis/edit-ereignis.component';
 import { PrintReportsComponent } from 'src/app/shared/dialogs/print-reports/print-reports.component';
 import { RemoveFuellungComponent } from 'src/app/shared/dialogs/remove-fuellung/remove-fuellung.component';
@@ -87,9 +87,14 @@ export class OperatingPageComponent implements OnInit
 
     public async confirmCloseEreignis()
     {
-        if (!await this.dialogs.confirm(ConfirmEreignisAbschlussComponent)) return;
+        const abschluss = await this.dialogs.open<EreignisAbschluss>(ConfirmEreignisAbschlussComponent);
+        if (!abschluss) return;
 
-        await this.operating.closeEreignis();
+        // Erst speichern, das Drucken lädt die Seite danach neu
+        const ereignis = await this.operating.closeEreignis();
         await this.router.navigate(['/']);
+
+        if (ereignis && abschluss === 'abschliessenUndDrucken')
+            this.dialogs.open(PrintReportsComponent, ereignis);
     }
 }

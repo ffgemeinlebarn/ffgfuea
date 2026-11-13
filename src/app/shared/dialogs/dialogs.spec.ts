@@ -21,7 +21,7 @@ describe('Dialoge', () =>
 
     const dialogs: Array<[Type<unknown>, unknown, string]> = [
         [AddMangelComponent, createEreignis(), 'Mangel hinzufügen'],
-        [ConfirmEreignisAbschlussComponent, null, 'Ereignis abschließen'],
+        [ConfirmEreignisAbschlussComponent, null, 'Abschließen & Berichte drucken'],
         [ConfirmFuellungComponent, fuellung, 'Barcode: 11111'],
         [ConfirmImportComponent, { feuerwehren: 2, personen: 3, ereignisse: 40, testMode: true }, '40 Einsätze & Übungen, 3 Personen und 2 Feuerwehren der Testdatenbank'],
         [EditEreignisComponent, createEreignis({ ort: 'Tulln' }), 'Übung in Tulln'],
@@ -50,9 +50,12 @@ describe('Dialoge', () =>
         const close = TestBed.inject(MatDialogRef).close;
 
         fixture.componentInstance.confirm();
-        expect(close).toHaveBeenLastCalledWith(true);
+        expect(close).toHaveBeenLastCalledWith('abschliessen');
+
+        fixture.componentInstance.confirm(true);
+        expect(close).toHaveBeenLastCalledWith('abschliessenUndDrucken');
 
         fixture.componentInstance.close();
-        expect(close).toHaveBeenLastCalledWith(false);
+        expect(close).toHaveBeenLastCalledWith();
     });
 });

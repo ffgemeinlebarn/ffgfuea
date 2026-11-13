@@ -3,6 +3,9 @@ import { MatDialogRef } from '@angular/material/dialog';
 import { MatButton } from '@angular/material/button';
 import { MatIcon } from '@angular/material/icon';
 
+/** Gewählte Aktion, undefined beim Abbrechen */
+export type EreignisAbschluss = 'abschliessen' | 'abschliessenUndDrucken';
+
 @Component({
     selector: 'ffg-confirm-ereignis-abschluss',
     templateUrl: './confirm-ereignis-abschluss.component.html',
@@ -11,15 +14,15 @@ import { MatIcon } from '@angular/material/icon';
 })
 export class ConfirmEreignisAbschlussComponent
 {
-    private dialog = inject<MatDialogRef<ConfirmEreignisAbschlussComponent, boolean>>(MatDialogRef);
+    private dialog = inject<MatDialogRef<ConfirmEreignisAbschlussComponent, EreignisAbschluss>>(MatDialogRef);
 
     public close(): void
     {
-        this.dialog.close(false);
+        this.dialog.close();
     }
 
-    public confirm(): void
+    public confirm(drucken = false): void
     {
-        this.dialog.close(true);
+        this.dialog.close(drucken ? 'abschliessenUndDrucken' : 'abschliessen');
     }
 }

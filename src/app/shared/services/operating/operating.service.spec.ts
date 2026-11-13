@@ -117,8 +117,9 @@ describe('OperatingService', () =>
 
     it('schließt das Ereignis ab', async () =>
     {
-        await service.closeEreignis();
+        const closed = await service.closeEreignis();
 
+        expect(closed).toMatchObject({ id: ereignisId, datetimeEnd: expect.any(Date) });
         expect(service.ereignis()).toBeNull();
         expect(TestBed.inject(TimingService).ereignisStart()).toBeNull();
         expect((await data.getEreignis(ereignisId)).datetimeEnd).toBeInstanceOf(Date);
