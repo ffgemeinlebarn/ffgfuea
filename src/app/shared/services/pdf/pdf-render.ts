@@ -82,7 +82,7 @@ export function renderGesamtbericht(ereignis: IEreignis, erstellt: Date, ziel?: 
             // Summe und Unterschriftsfeld bleiben zumindest bei der letzten Füllung
             foot: [
                 [summenZelle(`Summe ${name}: ${anzahlFuellungen(gruppe.fuellungen.length)}`)],
-                [unterschriftZelle(`Übernommen von Feuerwehr ${name}`)]
+                [unterschriftZelle(name)]
             ],
             willDrawCell: zeitZelleLeeren,
             didDrawCell: data => drawZelle(data)
