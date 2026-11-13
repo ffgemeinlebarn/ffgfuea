@@ -19,12 +19,13 @@ import { FormsModule } from '@angular/forms';
 import { MatFormField } from '@angular/material/form-field';
 import { MatInput } from '@angular/material/input';
 import { MatRadioButton, MatRadioGroup } from '@angular/material/radio';
+import { AltberichteCardComponent } from 'src/app/altberichte/altberichte-card/altberichte-card.component';
 
 @Component({
     selector: 'ffg-settings-page',
     templateUrl: './settings-page.component.html',
     styleUrls: ['./settings-page.component.scss'],
-    imports: [MatButton, MatCard, MatSlideToggle, FormsModule, MatFormField, MatInput, MatRadioGroup, MatRadioButton, DatePipe]
+    imports: [MatButton, MatCard, MatSlideToggle, FormsModule, MatFormField, MatInput, MatRadioGroup, MatRadioButton, DatePipe, AltberichteCardComponent]
 })
 export class SettingsPageComponent implements OnInit, OnDestroy
 {

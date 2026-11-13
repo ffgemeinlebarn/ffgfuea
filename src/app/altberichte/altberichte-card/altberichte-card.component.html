@@ -1,0 +1,65 @@
+<mat-card class="altberichte">
+  <h2>Altberichte (Übergangslösung)</h2>
+  <p>Erzeugt für alle abgeschlossenen Einsätze & Übungen die Berichte im bisherigen Layout (Gesamtbericht und ein
+    Bericht pro Feuerwehr) als PDF und legt sie im Ordner der PDF-Ablage ab – mit denselben Ordner- und Dateinamen
+    wie die neuen PDFs. <strong>Vorhandene Dateien werden nicht überschrieben, sondern übersprungen.</strong> Ein
+    laufendes Ereignis wird nicht berücksichtigt. Als Druckzeitpunkt steht in den Berichten der Zeitpunkt der
+    Erzeugung mit dem Vermerk „nachträglich erstellt“.
+    @if (database.testMode) {
+      Im Testmodus landen die PDFs im Unterordner <code>Testmodus</code>.
+    }
+  </p>
+  <p class="hinweis">Nur für die einmalige Übernahme der alten Berichte gedacht, diese Funktion wird wieder entfernt.</p>
+
+  @if (!ablage.unterstuetzt) {
+    <p class="kein-ordner"><strong>Dieser Browser unterstützt keine Ordnerauswahl (nur Chrome und Edge am PC).</strong></p>
+  } @else if (!ablage.ordnerName()) {
+    <p class="kein-ordner"><strong>Bitte zuerst oben unter „PDF-Ablage“ einen Ordner auswählen.</strong></p>
+  }
+
+  <div class="aktionen">
+    <mat-form-field class="jahr" subscriptSizing="dynamic">
+      <mat-label>Jahr</mat-label>
+      <mat-select [ngModel]="jahr()" (ngModelChange)="jahr.set($event)" [disabled]="altberichte.laeuft()">
+        <mat-option [value]="0">Alle Jahre</mat-option>
+        @for (eintrag of jahre(); track eintrag.jahr) {
+          <mat-option [value]="eintrag.jahr">{{ eintrag.jahr }} ({{ eintrag.anzahl }})</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+    <button mat-raised-button class="starten" [disabled]="!ablage.ordnerName() || altberichte.laeuft()" (click)="starten()">
+      Alte Berichte als PDF erzeugen und ablegen
+    </button>
+  </div>
+
+  @if (altberichte.hinweis(); as hinweis) {
+    <p class="problem">{{ hinweis }}</p>
+  }
+
+  @if (altberichte.fortschritt(); as fortschritt) {
+    <div class="fortschritt">
+      <p>Ereignis {{ fortschritt.aktuell }} von {{ fortschritt.gesamt }}: {{ fortschritt.ereignis }}</p>
+      <mat-progress-bar mode="determinate" [value]="fortschritt.aktuell / fortschritt.gesamt * 100"></mat-progress-bar>
+      <button mat-stroked-button class="abbrechen" (click)="altberichte.abbrechen()">Abbrechen</button>
+    </div>
+  }
+
+  @if (altberichte.ergebnis(); as ergebnis) {
+    <div class="ergebnis" [class.mit-fehlern]="ergebnis.fehler.length > 0">
+      <p><strong>{{ ergebnis.abgebrochen ? 'Abgebrochen' : 'Fertig' }}:</strong>
+        {{ ergebnis.ereignisse }} {{ ergebnis.ereignisse === 1 ? 'Ereignis' : 'Ereignisse' }} in <code>{{ ergebnis.pfad }}</code></p>
+      <ul>
+        <li class="erstellt">{{ ergebnis.erstellt }} PDFs erstellt</li>
+        <li class="uebersprungen">{{ ergebnis.uebersprungen }} übersprungen (bereits vorhanden)</li>
+        <li class="fehlgeschlagen">{{ ergebnis.fehlgeschlagen }} fehlgeschlagen</li>
+      </ul>
+      @if (ergebnis.fehler.length > 0) {
+        <ul class="fehler">
+          @for (fehler of ergebnis.fehler; track $index) {
+            <li>{{ fehler.ereignis }}{{ fehler.datei ? ' – ' + fehler.datei : '' }}: {{ fehler.fehler }}</li>
+          }
+        </ul>
+      }
+    </div>
+  }
+</mat-card>
