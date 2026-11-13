@@ -126,13 +126,13 @@
     </mat-grid-tile>
     <mat-grid-tile colspan="4" rowspan="1">
       <div class="tile-wrapper">
-        <mat-card matRipple [class.tile-active]="operating.barcodeInputActive()" (click)="toggleScannerInput()">
+        <mat-card matRipple [class.tile-active]="scanner.active()" (click)="toggleScannerInput()">
           <div class="card-wrapper card-wrapper--center input-method">
             <mat-icon>document_scanner</mat-icon>
             <h1>Die Barcodescanner-Eingabe ist
-              <strong>{{ operating.barcodeInputActive() ? 'aktiviert' : 'deaktiviert' }}</strong>!</h1>
-              <p [hidden]="!operating.barcodeInputActive()">Der Barcode-Scanner kann verwendet werden</p>
-              <p [hidden]="operating.barcodeInputActive()">Hier drücken, um die Scanner-Eingabe zu verwenden</p>
+              <strong>{{ scanner.active() ? 'aktiviert' : 'deaktiviert' }}</strong>!</h1>
+              <p [hidden]="!scanner.active()">Der Barcode-Scanner kann verwendet werden</p>
+              <p [hidden]="scanner.active()">Hier drücken, um die Scanner-Eingabe zu verwenden</p>
             </div>
           </mat-card>
         </div>

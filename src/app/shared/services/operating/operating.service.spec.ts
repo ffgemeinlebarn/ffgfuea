@@ -1,9 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { MatDialog } from '@angular/material/dialog';
-import { Router, provideRouter } from '@angular/router';
+import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { createEreignis, createFeuerwehr } from 'src/app/testing/test-data';
+import { BarcodeScannerService } from '../barcode-scanner/barcode-scanner.service';
 import { DataService } from '../data/data.service';
+import { NotificationService } from '../notification/notification.service';
 import { TimingService } from '../timing/timing.service';
 import { OperatingService } from './operating.service';
 
@@ -96,17 +98,17 @@ describe('OperatingService', () =>
             expect(service.ereignis()!.fuellungen[0].flasche.barcode).toBe('11112');
         });
 
-        it('ignoriert zu kurze Eingaben und Eingaben mit anderen Zeichen', async () =>
+        it('ignoriert Barcodes ohne laufendes Ereignis', async () =>
         {
-            pressKeys('1', '1', '1', '1', 'Enter');
-            pressKeys('1', '1', 'a', '1', '1', '1', 'Enter');
+            await service.closeEreignis();
+            pressKeys('1', '1', '1', '1', '1', 'Enter');
             await new Promise(resolve => setTimeout(resolve, 50));
-            expect(service.ereignis()!.fuellungen).toEqual([]);
+            expect((await savedFuellungen()).length).toBe(0);
         });
 
-        it('ist deaktivierbar', async () =>
+        it('ist über den Scanner deaktivierbar', async () =>
         {
-            service.barcodeInputActive.set(false);
+            TestBed.inject(BarcodeScannerService).active.set(false);
             pressKeys('1', '1', '1', '1', '1', 'Enter');
             await new Promise(resolve => setTimeout(resolve, 50));
             expect(service.ereignis()!.fuellungen).toEqual([]);
@@ -115,12 +117,32 @@ describe('OperatingService', () =>
 
     it('schließt das Ereignis ab', async () =>
     {
-        const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
-
         await service.closeEreignis();
 
         expect(service.ereignis()).toBeNull();
+        expect(TestBed.inject(TimingService).ereignisStart()).toBeNull();
         expect((await data.getEreignis(ereignisId)).datetimeEnd).toBeInstanceOf(Date);
-        expect(navigate).toHaveBeenCalledWith(['/']);
+    });
+
+    it('lädt das laufende Ereignis neu und aktiviert den Scanner', async () =>
+    {
+        const scanner = TestBed.inject(BarcodeScannerService);
+        scanner.active.set(false);
+        await data.saveEreignis({ ...service.ereignis()!, ort: 'Tulln' });
+
+        await service.reload();
+
+        expect(service.ereignis()!.ort).toBe('Tulln');
+        expect(scanner.active()).toBe(true);
+    });
+
+    it('meldet unbekannte Barcodes', async () =>
+    {
+        const show = vi.spyOn(TestBed.inject(NotificationService), 'show');
+
+        await service.addFuellungByBarcode('99999');
+
+        expect(show).toHaveBeenCalledWith('Keine Flasche für den Barcode 99999 gefunden!', expect.any(Number));
+        expect(service.ereignis()!.fuellungen).toEqual([]);
     });
 });

@@ -7,6 +7,7 @@ import { PrintReportsComponent } from 'src/app/shared/dialogs/print-reports/prin
 import { RemoveFuellungComponent } from 'src/app/shared/dialogs/remove-fuellung/remove-fuellung.component';
 import { SearchFlascheComponent } from 'src/app/shared/dialogs/search-flasche/search-flasche.component';
 import { IFuellung } from 'src/app/shared/interfaces/i-fuellung';
+import { BarcodeScannerService } from '../../shared/services/barcode-scanner/barcode-scanner.service';
 import { DialogService } from '../../shared/services/dialog/dialog.service';
 import { OperatingService } from '../../shared/services/operating/operating.service';
 import { TimingService } from '../../shared/services/timing/timing.service';
@@ -30,6 +31,7 @@ export class OperatingPageComponent implements OnInit
     private router = inject(Router);
     private dialogs = inject(DialogService);
     timing = inject(TimingService);
+    scanner = inject(BarcodeScannerService);
     operating = inject(OperatingService);
 
     public async ngOnInit(): Promise<void>
@@ -42,7 +44,7 @@ export class OperatingPageComponent implements OnInit
 
     public toggleScannerInput()
     {
-        this.operating.barcodeInputActive.update(active => !active);
+        this.scanner.active.update(active => !active);
     }
 
     public toggleConfirmFuellung()
@@ -58,19 +60,19 @@ export class OperatingPageComponent implements OnInit
     public async openEditEreignis()
     {
         const ereignis = this.operating.ereignis();
-        if (ereignis?.id == null) return;
+        if (!ereignis) return;
 
         await this.dialogs.open(EditEreignisComponent, structuredClone(ereignis));
-        await this.operating.reloadEreignis(ereignis.id);
+        await this.operating.reload();
     }
 
     public async openAddMangel()
     {
         const ereignis = this.operating.ereignis();
-        if (ereignis?.id == null) return;
+        if (!ereignis) return;
 
         await this.dialogs.open(AddMangelComponent, ereignis);
-        await this.operating.reloadEreignis(ereignis.id);
+        await this.operating.reload();
     }
 
     public openFuellungContext(fuellung: IFuellung)
@@ -85,7 +87,9 @@ export class OperatingPageComponent implements OnInit
 
     public async confirmCloseEreignis()
     {
-        if (await this.dialogs.confirm(ConfirmEreignisAbschlussComponent))
-            await this.operating.closeEreignis();
+        if (!await this.dialogs.confirm(ConfirmEreignisAbschlussComponent)) return;
+
+        await this.operating.closeEreignis();
+        await this.router.navigate(['/']);
     }
 }

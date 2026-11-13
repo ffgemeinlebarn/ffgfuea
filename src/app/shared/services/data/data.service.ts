@@ -122,7 +122,8 @@ export class DataService
     /** Id des noch nicht abgeschlossenen Ereignisses */
     public async findOpenEreignisId(): Promise<number | null>
     {
-        const ereignisse = await this.database.db.ereignisse.toArray();
-        return ereignisse.find(item => item.datetimeEnd == null)?.id ?? null;
+        // datetimeEnd ist nicht indiziert, null-Werte könnte IndexedDB ohnehin nicht indizieren
+        const offen = await this.database.db.ereignisse.filter(item => item.datetimeEnd == null).first();
+        return offen?.id ?? null;
     }
 }

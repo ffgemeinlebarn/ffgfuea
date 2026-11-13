@@ -14,25 +14,37 @@ export class DatabaseService
 {
     private settings = inject(SettingsService);
 
-    public db!: Database;
-    /** Ob die geöffnete Datenbank die Testdatenbank ist (unabhängig von noch nicht gespeicherten Einstellungen) */
-    public testMode = false;
+    private database!: Database;
+    private openedInTestMode = false;
 
     constructor()
     {
         this.refresh();
     }
 
+    /** Die geöffnete Datenbank, wechselt mit refresh() */
+    public get db(): Database
+    {
+        return this.database;
+    }
+
+    /** Ob die geöffnete Datenbank die Testdatenbank ist (unabhängig von noch nicht gespeicherten Einstellungen) */
+    public get testMode(): boolean
+    {
+        return this.openedInTestMode;
+    }
+
+    /** Öffnet die Datenbank passend zum gespeicherten Testmodus */
     public refresh()
     {
-        this.db?.close();
-        this.testMode = this.settings.testMode();
-        const name = environment.database.name + (this.testMode ? '_test' : '');
-        this.db = new Database(name);
+        this.database?.close();
+        this.openedInTestMode = this.settings.testMode();
+        const name = environment.database.name + (this.openedInTestMode ? '_test' : '');
+        this.database = new Database(name);
     }
 }
 
-class Database extends Dexie
+export class Database extends Dexie
 {
     public feuerwehren!: Table<IFeuerwehr, number>;
     public maengel!: Table<IMangel, number>;

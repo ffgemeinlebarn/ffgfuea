@@ -9,6 +9,7 @@ import { EditPersonComponent } from '../shared/dialogs/edit-person/edit-person.c
 import { PrintReportsComponent } from '../shared/dialogs/print-reports/print-reports.component';
 import { RemoveFeuerwehrComponent } from '../shared/dialogs/remove-feuerwehr/remove-feuerwehr.component';
 import { EreignisType } from '../shared/enums/ereignis-type';
+import { BarcodeScannerService } from '../shared/services/barcode-scanner/barcode-scanner.service';
 import { DataService } from '../shared/services/data/data.service';
 import { OperatingService } from '../shared/services/operating/operating.service';
 import { SyncApi } from '../shared/services/sync-api/sync-api';
@@ -75,14 +76,15 @@ describe('Seiten-Aktionen', () =>
 
         it('bearbeitet eine Kopie des Ereignisses und lädt danach neu', async () =>
         {
-            const reload = vi.spyOn(operating, 'reloadEreignis');
+            const reload = vi.spyOn(operating, 'reload');
 
-            page.openEditEreignis();
+            await page.openEditEreignis();
 
             openedWith(EditEreignisComponent);
             expect(openedData()).toEqual(operating.ereignis());
             expect(openedData()).not.toBe(operating.ereignis());
-            await vi.waitFor(() => expect(reload).toHaveBeenCalledWith(id));
+            expect(reload).toHaveBeenCalled();
+            expect(operating.ereignis()!.id).toBe(id);
         });
 
         it('schließt das Ereignis nur nach Bestätigung ab', async () =>
@@ -95,16 +97,19 @@ describe('Seiten-Aktionen', () =>
             await new Promise(resolve => setTimeout(resolve));
             expect(closeEreignis).not.toHaveBeenCalled();
 
+            expect(navigate).not.toHaveBeenCalled();
+
             dialogResult = true;
-            page.confirmCloseEreignis();
-            await vi.waitFor(() => expect(closeEreignis).toHaveBeenCalled());
+            await page.confirmCloseEreignis();
+            expect(closeEreignis).toHaveBeenCalled();
+            expect(navigate).toHaveBeenCalledWith(['/']);
         });
 
         it('schaltet Scanner und Bestätigung um', () =>
         {
             page.toggleScannerInput();
             page.toggleConfirmFuellung();
-            expect(operating.barcodeInputActive()).toBe(false);
+            expect(TestBed.inject(BarcodeScannerService).active()).toBe(false);
             expect(operating.confirmFuellungActive()).toBe(false);
         });
 

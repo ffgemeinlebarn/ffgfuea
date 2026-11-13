@@ -1,14 +1,18 @@
-import { DOCUMENT, DestroyRef, Injectable, computed, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
+import { Injectable, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ConfirmFuellungComponent } from '../../dialogs/confirm-fuellung/confirm-fuellung.component';
 import { IEreignis } from '../../interfaces/i-ereignis';
 import { IFlasche } from '../../interfaces/i-flasche';
 import { IFuellung } from '../../interfaces/i-fuellung';
+import { BarcodeScannerService } from '../barcode-scanner/barcode-scanner.service';
 import { DataService } from '../data/data.service';
 import { DialogService } from '../dialog/dialog.service';
 import { NotificationDuration, NotificationService } from '../notification/notification.service';
 import { TimingService } from '../timing/timing.service';
 
+/**
+ * Das laufende Ereignis und das Erfassen seiner Füllungen
+ */
 @Injectable({
     providedIn: 'root'
 })
@@ -16,21 +20,17 @@ export class OperatingService
 {
     private data = inject(DataService);
     private timing = inject(TimingService);
+    private scanner = inject(BarcodeScannerService);
     private dialogs = inject(DialogService);
-    private router = inject(Router);
     private notification = inject(NotificationService);
 
-    private readonly minBarcodeZeichen = 5;
-    private barcodeInputBuffer = '';
-
-    public readonly barcodeInputActive = signal(true);
     public readonly confirmFuellungActive = signal(true);
 
     /** Das aktuell laufende Ereignis */
     public readonly ereignis = signal<IEreignis | null>(null);
 
     public readonly ereignisAnzahlFeuerwehren = computed(() =>
-        new Set(this.ereignis()?.fuellungen?.map(fuellung => fuellung.flasche?.feuerwehr?.feuerwehrNummer)).size
+        new Set(this.ereignis()?.fuellungen.map(fuellung => fuellung.flasche?.feuerwehr?.feuerwehrNummer)).size
     );
 
     // Mängel sind noch nicht umgesetzt
@@ -38,53 +38,39 @@ export class OperatingService
 
     public constructor()
     {
-        const body = inject(DOCUMENT).body;
-        const listener = (event: KeyboardEvent) => this.onScannerInputEnter(event);
-        body.addEventListener('keydown', listener);
-        inject(DestroyRef).onDestroy(() => body.removeEventListener('keydown', listener));
+        // Gescannt wird auf allen Seiten, solange ein Ereignis läuft
+        this.scanner.barcodes
+            .pipe(takeUntilDestroyed())
+            .subscribe(barcode => this.onBarcodeScanned(barcode));
     }
 
-    private onScannerInputEnter(event: KeyboardEvent)
+    private onBarcodeScanned(barcode: string)
     {
-        if (this.barcodeInputActive() && this.ereignis())
-        {
-            // Number Input
-            if (event.key !== 'Enter' && this.isDigit(event.key))
-            {
-                this.barcodeInputBuffer += event.key;
-            }
+        if (!this.ereignis()) return;
 
-            // Enter
-            if (event.key === 'Enter' && this.barcodeInputBuffer.length >= this.minBarcodeZeichen)
-            {
-                this.notification.show(`Barcodeeingabe erkannt: ${this.barcodeInputBuffer}`, NotificationDuration.short);
-
-                this.addFuellungByBarcode(this.barcodeInputBuffer);
-                this.barcodeInputBuffer = '';
-            }
-
-            // Reset Buffer on no Digit or Enter
-            if (!this.isDigit(event.key) && event.key !== 'Enter')
-            {
-                this.barcodeInputBuffer = '';
-            }
-        }
+        this.notification.show(`Barcodeeingabe erkannt: ${barcode}`, NotificationDuration.short);
+        this.addFuellungByBarcode(barcode);
     }
-
-    private isDigit = (val: string) => /^\d+$/.test(val);
 
     public async tryStartOpenEreignis(): Promise<boolean>
     {
         const id = await this.data.findOpenEreignisId();
         if (id == null) return false;
 
-        await this.reloadEreignis(id);
+        await this.load(id);
         return true;
     }
 
-    public async reloadEreignis(id: number): Promise<void>
+    /** Lädt das laufende Ereignis neu, z. B. nachdem es bearbeitet wurde */
+    public async reload(): Promise<void>
     {
-        this.barcodeInputActive.set(true);
+        const id = this.ereignis()?.id;
+        if (id != null) await this.load(id);
+    }
+
+    private async load(id: number): Promise<void>
+    {
+        this.scanner.active.set(true);
         const ereignis = await this.data.getEreignis(id);
         this.ereignis.set(ereignis);
         this.timing.ereignisStart.set(ereignis.datetimeStart);
@@ -127,7 +113,7 @@ export class OperatingService
         this.notification.show('Füllung entfernt!');
     }
 
-    public async closeEreignis()
+    public async closeEreignis(): Promise<void>
     {
         const ereignis = this.ereignis();
         if (!ereignis) return;
@@ -135,7 +121,6 @@ export class OperatingService
         this.ereignis.set(null);
         this.timing.ereignisStart.set(null);
         await this.data.saveEreignis({ ...ereignis, datetimeEnd: new Date() });
-        this.router.navigate(['/']);
     }
 
     private async updateFuellungen(update: (fuellungen: Array<IFuellung>) => Array<IFuellung>)
