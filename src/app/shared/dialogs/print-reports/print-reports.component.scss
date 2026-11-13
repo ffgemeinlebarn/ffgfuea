@@ -1,29 +1,74 @@
-:host{
-    padding: 2em;
+:host
+{
     display: block;
 }
 
-@media screen {
-    .print {
-        display: none;
+.ereignis
+{
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1.5fr) minmax(0, 1fr);
+    gap: 12px;
+    margin: 0 0 12px;
+
+    dt
+    {
+        font-size: 12px;
+        color: rgba(0, 0, 0, 0.6);
+    }
+
+    dd
+    {
+        margin: 0;
+        font-weight: 500;
+        overflow-wrap: anywhere;
     }
 }
 
-.content {
-    width: 100%;
+.alle
+{
+    display: block;
+    margin: 8px 0 4px;
+    font-weight: 500;
+}
 
-    mat-list {
-        mat-list-item {
-            span {
-                height: 48px;
-                width: 100%;
-                display: flex;
-                align-items: center;
-            }
-        }
+.reports
+{
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0 16px;
+
+    li
+    {
+        padding: 2px 0;
+    }
+
+    mat-checkbox
+    {
+        display: block;
     }
 }
 
-[mat-dialog-actions] {
-    margin-top: 40px;
+.name,
+.beschreibung
+{
+    display: block;
+    overflow-wrap: anywhere;
+}
+
+.beschreibung
+{
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.6);
+}
+
+mat-dialog-actions
+{
+    gap: 8px;
+}
+
+.auswahl
+{
+    margin-right: auto;
+    font-size: 12px;
+    color: rgba(0, 0, 0, 0.6);
 }

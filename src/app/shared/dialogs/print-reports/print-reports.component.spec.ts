@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { createEreignis, createFeuerwehr, createFuellung } from 'src/app/testing/test-data';
 import { provideDialog } from 'src/app/testing/dialog';
 import { PrintReportsComponent } from './print-reports.component';
@@ -11,23 +11,98 @@ describe('PrintReportsComponent', () =>
         fuellungen: [createFuellung(ff1.flaschen[0]), createFuellung(ff2.flaschen[0]), createFuellung(ff1.flaschen[1])]
     });
 
-    beforeEach(() => TestBed.configureTestingModule({ providers: provideDialog(ereignis) }));
+    let fixture: ComponentFixture<PrintReportsComponent>;
+    let component: PrintReportsComponent;
 
-    it('erstellt einen Gesamtbericht und einen Bericht pro Feuerwehr', async () =>
+    beforeEach(async () =>
     {
-        const fixture = TestBed.createComponent(PrintReportsComponent);
+        TestBed.configureTestingModule({ providers: provideDialog(ereignis) });
+        fixture = TestBed.createComponent(PrintReportsComponent);
+        component = fixture.componentInstance;
+        await fixture.whenStable();
+    });
+
+    const printContent = (): HTMLElement => fixture.nativeElement.querySelector('.print-content');
+    const reportCheckboxes = (): Array<HTMLInputElement> =>
+        [...fixture.nativeElement.querySelectorAll('.reports input[type=checkbox]')];
+
+    it('erstellt einen Gesamtbericht und einen Bericht pro Feuerwehr', () =>
+    {
+        expect(component.reports.map(r => r.name)).toEqual(['Gesamtbericht', 'Bericht für die Feuerwehr FF 1', 'Bericht für die Feuerwehr FF 2']);
+        expect(component.reports[1].gruppe?.fuellungen.length).toBe(2);
+        expect(component.reports.map(r => r.beschreibung)).toEqual([
+            'Übersicht aller Feuerwehren · 3 Füllungen · Querformat',
+            '2 Füllungen · Hochformat',
+            '1 Füllung · Hochformat'
+        ]);
+    });
+
+    it('zeigt das Ereignis und alle Berichte ausgewählt an', () =>
+    {
+        expect(fixture.nativeElement.querySelector('.ereignis').textContent).toContain('Übung in Gemeinlebarn');
+        expect(reportCheckboxes().map(c => c.checked)).toEqual([true, true, true]);
+        expect(fixture.nativeElement.querySelector('.reports').textContent).toContain('Bericht für die Feuerwehr FF 2');
+    });
+
+    it('rendert alle ausgewählten Berichte versteckt in den Druckinhalt', () =>
+    {
+        const content = printContent();
+        expect(content.hidden).toBe(true);
+        expect(content.querySelectorAll('ffg-gesamtbericht').length).toBe(1);
+        expect(content.querySelectorAll('ffg-feuerwehrbericht').length).toBe(2);
+    });
+
+    it('druckt nur die ausgewählten Berichte', async () =>
+    {
+        reportCheckboxes()[0].click();
         await fixture.whenStable();
 
-        const reports = fixture.componentInstance.reports;
-        expect(reports.map(r => r.name)).toEqual(['Gesamtbericht', 'Bericht für die Feuerwehr FF 1', 'Bericht für die Feuerwehr FF 2']);
-        expect(reports[1].data[0].fuellungen.length).toBe(2);
-        expect(fixture.nativeElement.querySelectorAll('.inner-report').length).toBe(3);
+        expect(component.selectedReports().map(r => r.id)).toEqual(['feuerwehr-1', 'feuerwehr-2']);
+        expect(printContent().querySelectorAll('ffg-gesamtbericht').length).toBe(0);
+        expect(printContent().querySelectorAll('ffg-feuerwehrbericht').length).toBe(2);
+        expect(fixture.nativeElement.querySelector('.auswahl').textContent).toContain('2 von 3 ausgewählt');
+    });
+
+    it('wählt alle oder keine Berichte aus', async () =>
+    {
+        const alle = (): HTMLInputElement => fixture.nativeElement.querySelector('.alle input[type=checkbox]');
+        const drucken = (): HTMLButtonElement =>
+            [...fixture.nativeElement.querySelectorAll('button')].find((b: HTMLButtonElement) => b.textContent?.includes('Drucken'));
+
+        expect(alle().checked).toBe(true);
+
+        alle().click();
+        await fixture.whenStable();
+        expect(component.noneSelected()).toBe(true);
+        expect(reportCheckboxes().map(c => c.checked)).toEqual([false, false, false]);
+        expect(printContent().children.length).toBe(0);
+        expect(drucken().disabled).toBe(true);
+
+        component.toggle(component.reports[2], true);
+        await fixture.whenStable();
+        expect(alle().indeterminate).toBe(true);
+        expect(drucken().disabled).toBe(false);
+
+        alle().click();
+        await fixture.whenStable();
+        expect(component.allSelected()).toBe(true);
+        expect(reportCheckboxes().map(c => c.checked)).toEqual([true, true, true]);
+    });
+
+    it('druckt nichts, wenn kein Bericht ausgewählt ist', () =>
+    {
+        const print = vi.spyOn(window, 'print').mockImplementation(() => undefined);
+        component.selectAll(false);
+
+        component.print();
+
+        expect(print).not.toHaveBeenCalled();
+        print.mockRestore();
     });
 
     it('verändert die Daten des Ereignisses nicht', () =>
     {
-        TestBed.createComponent(PrintReportsComponent);
-
         expect(ereignis.fuellungen[0].flasche.feuerwehr).not.toHaveProperty('fuellungen');
+        expect(ereignis.fuellungen.map(f => f.flasche.barcode)).toEqual(['11111', '22221', '11112']);
     });
 });
