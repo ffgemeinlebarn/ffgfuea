@@ -67,7 +67,6 @@ Pull Requests nach `main` brauchen ein Review von @jakob-fyi (`.github/CODEOWNER
 | Workflows: Syntax (actionlint) und Sicherheit (zizmor) | `npm run lint:actions` | **Workflows (actionlint, zizmor)** (CI) | Pflicht über **CI ok** | wie oben |
 | CodeQL (SAST, Suite `security-extended`) für App und Workflows | `npm run sast:codeql` | **Analyze (javascript-typescript)**, **Analyze (actions)** (CodeQL) | Pflicht, zusätzlich *Code scanning results* im Ruleset | Push auf `main`, jeder PR, montags |
 | Neu eingeführte Schwachstellen in Abhängigkeiten (OSV-Scanner) | – (siehe unten) | **Scan PR / osv-scan** (OSV-Scanner) | Pflicht | jeder PR |
-| Coverage zu GitHub Code Quality (Kommentar im PR, Ruleset *Restrict code coverage*) | – | **Coverage-Upload (optional)** (CI) | optional; die Coverage-Regel im Ruleset wertet das Ergebnis aus | Push auf `main`, PRs aus diesem Repo |
 | Mutation-Testing der Fachlogik (Stryker) | `npm run mutation` | **Stryker** (Mutation) | optional, nur Bericht | montags, manuell |
 | npm audit (nur Produktionsabhängigkeiten, ab *high*) | `npm audit --omit=dev --audit-level=high` | **npm audit (optional)** (CI) | optional: kann ohne Zutun des PRs rot werden | wie **Lint** |
 | Alle bekannten Schwachstellen (OSV-Scanner) | – | **Scan / osv-scan** (OSV-Scanner) | optional, nur Alerts | Push auf `main`, montags |
@@ -100,7 +99,7 @@ Alle Actions sind per Commit-SHA gepinnt (Kommentar mit Version dahinter), Depen
 
 - **CodeQL / OSV-Scanner / Scorecard:** GitHub → *Security → Code scanning*. Jeder Alert zeigt Regel, Fundstelle und bei CodeQL den Datenfluss (*Show paths*). Lokal: Ausgabe von `npm run sast:codeql` oder `reports/codeql.sarif` z. B. mit der VS-Code-Erweiterung *SARIF Viewer* öffnen.
 - **Im PR:** ESLint-, Knip-, actionlint- und zizmor-Befunde sowie fehlgeschlagene Unit- und E2E-Tests erscheinen als Annotation direkt an der Codezeile (*Files changed*). Jeder Lauf von **CI** hat eine Zusammenfassung (*Checks → CI → Summary*) mit ESLint-Befunden, Coverage je Metrik gegen die Schwellen, E2E-Ergebnis, bei Fehlern Knip- und Architektur-Befunden und der Tabelle der Pflicht-Jobs von **CI ok**. Coverage-Bericht, Playwright-Bericht und Traces liegen als Artefakte beim Lauf.
-- **Coverage im PR:** Nach dem **Coverage-Upload** kommentiert `github-code-quality[bot]` die Gesamt- und Datei-Coverage und markiert nicht abgedeckte Zeilen im Diff. Die Regel *Restrict code coverage* im Ruleset wertet diese Werte aus (GitHub prüft dabei nur die Zeilen-Coverage).
+- **Coverage:** Tabelle je Metrik gegen die Schwellen in der Zusammenfassung von **Unit-Tests & Coverage**, vollständiger HTML-Bericht im Artefakt `coverage`. GitHub Code Quality (kostenpflichtig) wird bewusst nicht verwendet; das Gate sind die Schwellen in `angular.json`.
 - **Mutation-Testing:** *Actions → Mutation → letzter Lauf → Summary* (Score je Datei); überlebende Mutanten mit Fundstelle im Artefakt `mutation-report`.
 - **Im Terminal:** `npm run pr:status` (siehe oben).
 - **gitleaks:** Ausgabe im Log des Checks **Secrets (gitleaks)** (Datei, Zeile, Regel, Commit; das Secret selbst ist geschwärzt).
@@ -142,7 +141,7 @@ Diese Einstellungen kann nur ein Admin der Organisation bzw. des Repos setzen:
    - **Dependabot alerts** und **Dependabot security updates** aktivieren (*Dependabot version updates* kommen aus `.github/dependabot.yml`).
    - **Private vulnerability reporting** aktivieren (für `SECURITY.md`).
    - **Code scanning**: kein *Default setup* aktivieren, der Workflow `codeql.yml` ist das *Advanced setup* (beides gleichzeitig ist nicht möglich).
-   - **Code Quality** aktivieren (nötig für den Coverage-Upload; *Code coverage* dort nicht auf automatisches Setup stellen, der Upload kommt aus `ci.yml`).
+   - **Code Quality** nicht aktivieren (kostenpflichtig pro Committer); Coverage prüft die CI selbst.
 2. *Settings → Actions → General*: *Workflow permissions* auf **Read repository contents and packages permissions** stellen; *Allow GitHub Actions to create and approve pull requests* aus.
 3. *Settings → Rules → Rulesets* → neues Branch-Ruleset für `main` (Default branch):
    - *Restrict deletions*, *Block force pushes*, *Require a pull request before merging* (nur Squash) mit *Required approvals* 1, *Require review from Code Owners*, *Dismiss stale pull request approvals when new commits are pushed* und *Require approval of the most recent reviewable push*.
@@ -153,7 +152,7 @@ Diese Einstellungen kann nur ein Admin der Organisation bzw. des Repos setzen:
      - `Analyze (actions)`
      - `Scan PR / osv-scan`
    - *Require code scanning results*: Tool **CodeQL**, Schwelle *Security alerts: High or higher*, *Alerts: Errors*.
-   - *Restrict code coverage* (Preview): mindestens 80 %, höchstens 3 Prozentpunkte Rückgang. Greift erst, wenn für `main` ein Coverage-Upload vorliegt.
+   - Keine Regeln *Require code quality results* und *Restrict code coverage*: beide setzen GitHub Code Quality voraus.
    - Die Checks erscheinen in der Auswahl erst, nachdem die Workflows einmal gelaufen sind.
 4. Optional: *Environments → production* auf *Deployment branches and tags*: `main` und Tags `v*` beschränken und ggf. *Required reviewers* setzen.
 

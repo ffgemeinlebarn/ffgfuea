@@ -1,8 +1,0 @@
-# Konfiguration für actionlint (scripts/actions-lint.sh, CI-Job "Workflows (actionlint, zizmor)").
-# Jede Ausnahme mit Begründung.
-paths:
-  .github/workflows/**/*.{yml,yaml}:
-    ignore:
-      # Die Berechtigung code-quality (Coverage-Upload zu GitHub Code Quality, 2026) kennt
-      # actionlint 1.7.12 noch nicht. Entfernen, sobald actionlint sie unterstützt.
-      - 'unknown permission scope "code-quality"'
