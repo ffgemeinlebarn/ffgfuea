@@ -42,7 +42,8 @@ updates:
           - "@angular-devkit/*"
 
   - package-ecosystem: github-actions
-    directory: /
+    # Workflows und die lokale Composite-Action (.github/actions/setup)
+    directories: [ "/", "/.github/actions/*" ]
     schedule:
       interval: weekly
       day: monday

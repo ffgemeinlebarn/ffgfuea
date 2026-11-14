@@ -1,7 +1,8 @@
 # FFGFÜA
 
-[![Build & Deploy](https://github.com/ffgemeinlebarn/ffgfuea/actions/workflows/multistage.yml/badge.svg)](https://github.com/ffgemeinlebarn/ffgfuea/actions/workflows/multistage.yml)
+[![CI](https://github.com/ffgemeinlebarn/ffgfuea/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ffgemeinlebarn/ffgfuea/actions/workflows/ci.yml?query=branch%3Amain)
 [![CodeQL](https://github.com/ffgemeinlebarn/ffgfuea/actions/workflows/codeql.yml/badge.svg)](https://github.com/ffgemeinlebarn/ffgfuea/actions/workflows/codeql.yml)
+[![OSV-Scanner](https://github.com/ffgemeinlebarn/ffgfuea/actions/workflows/osv-scanner.yml/badge.svg?branch=main)](https://github.com/ffgemeinlebarn/ffgfuea/actions/workflows/osv-scanner.yml)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/ffgemeinlebarn/ffgfuea/badge)](https://scorecard.dev/viewer/?uri=github.com/ffgemeinlebarn/ffgfuea)
 
 FF Gemeinlebarn Füllapplikation
@@ -11,6 +12,8 @@ FF Gemeinlebarn Füllapplikation
 - `npm start` – Entwicklungsserver. Verwendet Beispieldaten statt des lokalen MAT Sync-Services (`fakeSyncApi` in `src/environments/environment.development.ts`).
 - `npm test` – Unit-Tests mit Vitest, `npm run test:coverage` einmalig mit Coverage-Schwelle
 - `npm run lint` – ESLint für das ganze Projekt, `npx eslint <datei>` für einzelne Dateien
+- `npm run typecheck` – Typecheck von App (inkl. Templates), Unit-Tests und E2E
+- `npm run check` – alle Pflicht-Checks der CI lokal mit Übersicht, siehe [Qualität & Sicherheit](#qualität--sicherheit)
 - `npm run build` – Produktions-Build nach `dist/ffgfuea/browser`
 - `npm run e2e` – E2E-Tests mit Playwright, siehe unten
 
@@ -29,7 +32,7 @@ npx playwright show-report        # HTML-Bericht der letzten Ausführung
 - `PW_WORKERS=4 npm run e2e` ändert die Anzahl paralleler Browser (Standard 2).
 - Bei Fehlern liegen Trace, Screenshot und Video in `test-results/` (`npx playwright show-trace <trace.zip>`).
 
-In GitHub Actions laufen die Tests bei jedem Pull Request und bei Pushes auf `main` (`.github/workflows/e2e.yml`); der HTML-Bericht und bei Fehlern die Traces werden als Artefakte hochgeladen.
+In GitHub Actions laufen die Tests bei jedem Pull Request und bei Pushes auf `main` (Job **E2E (Playwright)** in `.github/workflows/ci.yml`). Fehlgeschlagene Tests erscheinen als Annotation im PR und als Tabelle in der Job-Zusammenfassung (`e2e/summary-reporter.ts`); der HTML-Bericht und bei Fehlern die Traces werden als Artefakte hochgeladen.
 
 ## Release
 
@@ -38,25 +41,38 @@ Pull Requests und Pushes auf `main` werden von GitHub Actions getestet und gebau
 1. Version in `package.json` und `src/environments/environment.ts` anheben
 2. Tag pushen, z. B. `git tag v1.4.0 && git push origin v1.4.0`
 
-Alternativ in GitHub unter *Actions → Build & Deploy → Run workflow* von `main` manuell starten. Die Option „Clean slate“ löscht vorher alle Dateien am Server (z. B. beim ersten Deploy, um alte Builds zu entfernen).
+Alternativ in GitHub unter *Actions → CI → Run workflow* von `main` manuell starten. Die Option „Clean slate“ löscht vorher alle Dateien am Server (z. B. beim ersten Deploy, um alte Builds zu entfernen).
 
 ## Qualität & Sicherheit
 
 ### Was läuft wo
 
-| Prüfung | Lokal | CI (Workflow → Check) | Wann in CI |
-| --- | --- | --- | --- |
-| Unit-Tests mit Coverage-Schwelle & Build | `npm run test:coverage`, `npm run build` | `multistage.yml` → **Test & Build** | Push auf `main`, `v*`-Tags, jeder PR |
-| ESLint (Code-Stil und typ-informierte Regeln) | `npm run lint` | Schritt in **Test & Build** | wie oben |
-| npm audit (nur Produktionsabhängigkeiten, ab *high*) | `npm audit --omit=dev --audit-level=high` | Schritt in **Test & Build** | wie oben |
-| Lizenzen der Abhängigkeiten | `npm run check:licenses` | Schritt in **Test & Build** | wie oben |
-| CodeQL (SAST, Suite `security-extended`) für App und Workflows | `npm run sast:codeql` | `codeql.yml` → **Analyze (javascript-typescript)**, **Analyze (actions)** | Push auf `main`, jeder PR, montags |
-| Secrets im Code und in der Git-Historie (gitleaks) | `npm run secrets:scan` | `secrets.yml` → **gitleaks** | Push auf `main`, jeder PR |
-| Bekannte Schwachstellen in Abhängigkeiten (OSV-Scanner) | – (siehe unten) | `osv-scanner.yml` → **Scan PR / osv-scan** bzw. **Scan / osv-scan** | PR bzw. Push auf `main` und montags |
-| OpenSSF Scorecard (Supply-Chain-Praktiken) | – | `scorecard.yml` → **Scorecard analysis** | Push auf `main`, montags |
-| Updates von npm-Paketen und Actions | – | Dependabot (`.github/dependabot.yml`) | montags |
+Pull Requests nach `main` brauchen ein Review von @jakob-fyi (`.github/CODEOWNERS`) und grüne **Pflicht-Checks**. Die Pflicht-Jobs in `ci.yml` laufen parallel und werden vom Job **CI ok** zusammengefasst; im Ruleset ist nur dieser eingetragen, neue Pflicht-Jobs kommen unter `needs` von **CI ok**. **Optionale** Checks werden angezeigt, blockieren aber nicht.
 
-Lokal laufen zusätzlich Git-Hooks über [lefthook](https://lefthook.dev) (`lefthook.yml`, installiert bei `npm ci`/`npm install`): vor jedem Commit gitleaks und ESLint auf die gestagten Dateien, vor jedem Push Typecheck und Unit-Tests. Für Claude Code prüft ein Hook in `.claude/settings.json` jede bearbeitete Datei mit ESLint und gitleaks (`scripts/claude-hook-check.mjs`). Im Notfall überspringen: `LEFTHOOK=0 git commit …`.
+| Prüfung | Lokal | CI-Check (Workflow) | Art | Wann in CI |
+| --- | --- | --- | --- | --- |
+| ESLint (Code-Stil und typ-informierte Regeln) | `npm run lint` | **Lint** (CI) | Pflicht über **CI ok** | Push auf `main`, `v*`-Tags, jeder PR |
+| Typecheck App inkl. Templates, Unit-Tests, E2E | `npm run typecheck` | **Typecheck** (CI) | Pflicht über **CI ok** | wie oben |
+| Unit-Tests mit Coverage-Schwelle | `npm run test:coverage` | **Unit-Tests & Coverage** (CI) | Pflicht über **CI ok** | wie oben |
+| Produktions-Build | `npm run build` | **Build** (CI) | Pflicht über **CI ok** | wie oben |
+| Lizenzen der Abhängigkeiten | `npm run check:licenses` | **Lizenzen** (CI) | Pflicht über **CI ok** | wie oben |
+| Secrets im Code und in der Git-Historie (gitleaks) | `npm run secrets:scan` | **Secrets (gitleaks)** (CI) | Pflicht über **CI ok** | wie oben |
+| E2E-Tests (Playwright) | `npm run e2e` | **E2E (Playwright)** (CI) | Pflicht über **CI ok** | wie oben |
+| CodeQL (SAST, Suite `security-extended`) für App und Workflows | `npm run sast:codeql` | **Analyze (javascript-typescript)**, **Analyze (actions)** (CodeQL) | Pflicht, zusätzlich *Code scanning results* im Ruleset | Push auf `main`, jeder PR, montags |
+| Neu eingeführte Schwachstellen in Abhängigkeiten (OSV-Scanner) | – (siehe unten) | **Scan PR / osv-scan** (OSV-Scanner) | Pflicht | jeder PR |
+| npm audit (nur Produktionsabhängigkeiten, ab *high*) | `npm audit --omit=dev --audit-level=high` | **npm audit (optional)** (CI) | optional: kann ohne Zutun des PRs rot werden | wie **Lint** |
+| Alle bekannten Schwachstellen (OSV-Scanner) | – | **Scan / osv-scan** (OSV-Scanner) | optional, nur Alerts | Push auf `main`, montags |
+| OpenSSF Scorecard (Supply-Chain-Praktiken) | – | **Scorecard analysis** (Scorecard) | optional, nur Alerts | Push auf `main`, montags |
+| Updates von npm-Paketen und Actions | – | Dependabot (`.github/dependabot.yml`) | – | montags |
+
+Deployt wird nur, wenn **CI ok** grün ist (Job **Deploy via FTP**, siehe [Release](#release)).
+
+### Lokal: Hooks und Übersicht
+
+- `npm run check` führt die Pflicht-Checks wie in CI nacheinander aus (ohne E2E, ~30 s) und zeigt am Ende eine Übersicht mit dem jeweiligen CI-Check; Ausgaben gibt es nur bei Fehlern. `npm run check -- --all` nimmt E2E und CodeQL dazu, `npm run check -- typecheck unit` nur einzelne Checks.
+- **Git-Hooks** über [lefthook](https://lefthook.dev) (`lefthook.yml`, installiert bei `npm ci`/`npm install`): vor jedem Commit gitleaks und ESLint auf die gestagten Dateien, vor jedem Push Typecheck und Unit-Tests. Im Notfall überspringen: `LEFTHOOK=0 git commit …`.
+- **Claude Code** (`.claude/settings.json`): Nach jedem Bearbeiten prüft `scripts/claude-hook-check.mjs` die Datei mit ESLint und gitleaks, vor dem Ende jeder Antwort prüft `scripts/claude-stop-check.mjs` bei uncommitteten Code-Änderungen Typecheck und Unit-Tests. Befunde gehen direkt an Claude zurück, Claude behebt sie, bevor es weitergeht.
+- `npm run pr:status` zeigt für den PR des aktuellen Branches Pflicht- und optionale Checks, die Logs fehlgeschlagener Jobs, offene Code-Scanning-Alerts (CodeQL, OSV) und den Review-Stand; `-- --watch` wartet, bis alle Checks fertig sind.
 
 Alle Actions sind per Commit-SHA gepinnt (Kommentar mit Version dahinter), Dependabot hält sie aktuell. Workflows haben nur die nötigen Rechte (`permissions`), neue Pushes auf einen PR brechen ältere Läufe ab.
 
@@ -72,8 +88,10 @@ Alle Actions sind per Commit-SHA gepinnt (Kommentar mit Version dahinter), Depen
 ### Ergebnisse lesen
 
 - **CodeQL / OSV-Scanner / Scorecard:** GitHub → *Security → Code scanning*. Jeder Alert zeigt Regel, Fundstelle und bei CodeQL den Datenfluss (*Show paths*). Lokal: Ausgabe von `npm run sast:codeql` oder `reports/codeql.sarif` z. B. mit der VS-Code-Erweiterung *SARIF Viewer* öffnen.
-- **gitleaks:** Ausgabe im Log des Checks **gitleaks** (Datei, Zeile, Regel, Commit; das Secret selbst ist geschwärzt).
-- **npm audit / Lizenzen:** Log des Checks **Test & Build**.
+- **Im PR:** ESLint-Befunde und fehlgeschlagene Unit- und E2E-Tests erscheinen als Annotation direkt an der Codezeile (*Files changed*). Jeder Lauf von **CI** hat eine Zusammenfassung (*Checks → CI → Summary*) mit ESLint-Befunden, Coverage je Metrik gegen die Schwellen, E2E-Ergebnis und der Tabelle der Pflicht-Jobs von **CI ok**. Coverage-Bericht, Playwright-Bericht und Traces liegen als Artefakte beim Lauf.
+- **Im Terminal:** `npm run pr:status` (siehe oben).
+- **gitleaks:** Ausgabe im Log des Checks **Secrets (gitleaks)** (Datei, Zeile, Regel, Commit; das Secret selbst ist geschwärzt).
+- **npm audit / Lizenzen:** Log der Checks **npm audit (optional)** bzw. **Lizenzen**.
 
 ### Fehlalarme und bewusste Ausnahmen
 
@@ -109,12 +127,12 @@ Diese Einstellungen kann nur ein Admin der Organisation bzw. des Repos setzen:
    - **Code scanning**: kein *Default setup* aktivieren, der Workflow `codeql.yml` ist das *Advanced setup* (beides gleichzeitig ist nicht möglich).
 2. *Settings → Actions → General*: *Workflow permissions* auf **Read repository contents and packages permissions** stellen; *Allow GitHub Actions to create and approve pull requests* aus.
 3. *Settings → Rules → Rulesets* → neues Branch-Ruleset für `main` (Default branch):
-   - *Restrict deletions*, *Block force pushes*, *Require a pull request before merging*.
-   - *Require status checks to pass* mit genau diesen Checks:
-     - `Test & Build`
+   - *Restrict deletions*, *Block force pushes*, *Require a pull request before merging* (nur Squash) mit *Required approvals* 1, *Require review from Code Owners*, *Dismiss stale pull request approvals when new commits are pushed* und *Require approval of the most recent reviewable push*.
+   - *Bypass list*: Rolle *Repository admin* mit *For pull requests only*, damit eigene PRs von @jakob-fyi (ohne zweiten Reviewer) gemergt werden können.
+   - *Require status checks to pass* mit genau diesen Checks (Quelle GitHub Actions), *Require branches to be up to date* aus:
+     - `CI ok`
      - `Analyze (javascript-typescript)`
      - `Analyze (actions)`
-     - `gitleaks`
      - `Scan PR / osv-scan`
    - *Require code scanning results*: Tool **CodeQL**, Schwelle *Security alerts: High or higher*, *Alerts: Errors*.
    - Die Checks erscheinen in der Auswahl erst, nachdem die Workflows einmal gelaufen sind.

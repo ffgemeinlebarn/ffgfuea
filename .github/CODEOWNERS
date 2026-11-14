@@ -1,0 +1,3 @@
+# Jakob reviewt jeden Pull Request. GitHub fordert das Review automatisch an;
+# verpflichtend wird es über das Ruleset "Main" (Require review from Code Owners).
+* @jakob-fyi

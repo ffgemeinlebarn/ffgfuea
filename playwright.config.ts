@@ -22,7 +22,7 @@ export default defineConfig({
     timeout: 60_000,
     expect: { timeout: 10_000 },
     reporter: isCI
-        ? [['github'], ['list'], ['html', { open: 'never' }]]
+        ? [['github'], ['list'], ['html', { open: 'never' }], ['./e2e/summary-reporter.ts']]
         : [['list'], ['html', { open: 'never' }]],
 
     use: {

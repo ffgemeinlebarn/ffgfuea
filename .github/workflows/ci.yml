@@ -1,0 +1,257 @@
+name: CI
+
+# Pflicht-Checks für Pull Requests laufen als einzelne Jobs parallel. Der Job "CI ok"
+# sammelt sie ein und ist der einzige Check dieses Workflows, der in der Branch-Regel
+# (Ruleset "Main") als required eingetragen ist. Neue Pflicht-Jobs also nur unter
+# "needs" von "CI ok" ergänzen, nicht im Ruleset.
+#
+# Optionale Checks (blockieren nicht): "npm audit (optional)".
+# Deploy nur bei Release-Tags (v*) oder manuell von main, und nur wenn "CI ok" grün ist.
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      clean_slate:
+        description: 'Vor dem Upload ALLE Dateien am Server löschen (z. B. beim ersten Deploy, um alte Builds zu entfernen)'
+        type: boolean
+        default: false
+
+permissions: {}
+
+# Neuere Pushes auf einen Pull Request brechen ältere Läufe ab. Alle anderen Läufe
+# (Pushes, Tags, manueller Deploy) bekommen eine eigene Gruppe und laufen immer durch.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+
+      # Befunde als Annotationen direkt im PR-Diff und als Tabelle in der Job-Zusammenfassung
+      - name: ESLint
+        run: npx eslint . --format ./scripts/eslint-github-formatter.mjs
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+
+      # App inkl. Templates (strictTemplates), Unit-Tests und E2E. Vitest selbst prüft keine Typen.
+      - name: Typecheck
+        run: npm run typecheck
+
+  unit:
+    name: Unit-Tests & Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+
+      # Schwellen je Metrik stehen in angular.json (coverageThresholds); darunter schlägt der Schritt fehl.
+      # github-actions: fehlgeschlagene Tests als Annotation an der Testzeile
+      - name: Test with coverage
+        run: npm run test:coverage -- --reporters=default --reporters=github-actions
+
+      - name: Coverage summary
+        if: ${{ !cancelled() }}
+        run: node scripts/coverage-summary.mjs
+
+      - name: Upload coverage report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 14
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+
+      - name: Build
+        run: npx ng build
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: FFGFUEA
+          path: dist/ffgfuea/browser/
+          include-hidden-files: true
+
+  licenses:
+    name: Lizenzen
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+
+      - name: Check licenses
+        run: npm run check:licenses
+
+  secrets:
+    name: Secrets (gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Pinned gitleaks release, checksum-verified by the script (no gitleaks-action:
+      # it needs a paid license for organizations). Findings are printed redacted.
+      - name: Scan git history
+        run: bash scripts/gitleaks.sh --history
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      # Startet über playwright.config.ts selbst einen Entwicklungsserver (FakeSyncApi) auf Port 4300.
+      # In CI: Annotationen an fehlgeschlagenen Tests und Tabelle in der Job-Zusammenfassung.
+      - name: Run E2E Tests
+        run: npx playwright test
+
+      - name: Upload HTML Report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+
+      - name: Upload Traces
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 14
+
+  # Optional: meldet bekannte Schwachstellen in Produktionsabhängigkeiten (ab high). Kann ohne
+  # Zutun des PRs rot werden, sobald eine neue Meldung erscheint, deshalb nicht blockierend.
+  # Neu eingeführte Schwachstellen blockiert der Pflicht-Check "Scan PR / osv-scan".
+  audit:
+    name: npm audit (optional)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    continue-on-error: true
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
+  ok:
+    name: CI ok
+    if: ${{ always() }}
+    needs: [ lint, typecheck, unit, build, licenses, secrets, e2e ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Ergebnis der Pflicht-Checks
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: |
+          {
+            echo '### Pflicht-Checks'
+            echo ''
+            echo '| Job | Ergebnis |'
+            echo '| --- | --- |'
+            echo "$NEEDS" | jq -r 'to_entries[] | "| \(.key) | \(if .value.result == "success" then "✅" elif .value.result == "skipped" then "⏭️" else "❌" end) \(.value.result) |"'
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "$NEEDS" | jq -e 'all(.[]; .result == "success")' > /dev/null
+
+  deploy:
+    name: Deploy via FTP
+    runs-on: ubuntu-latest
+    needs: [ ok ]
+    # Nur Release-Tags (v*) oder manuell gestartet von main bzw. einem Tag
+    if: startsWith(github.ref, 'refs/tags/v') || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    environment: production
+    permissions:
+      contents: read
+
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: FFGFUEA
+          path: deploy
+
+      # Lädt nur geänderte Dateien hoch und entfernt veraltete; der Stand liegt in .ftp-deploy-sync-state.json am Server
+      - name: Deploy in Stage 'Production' via FTP
+        uses: SamKirkland/FTP-Deploy-Action@110f9186c050f71550953127052e77650219c287 # v4.4.0
+        with:
+          server: ${{ secrets.FTP_DEPLOY_HOST }}
+          username: ${{ secrets.FTP_DEPLOY_USERNAME }}
+          password: ${{ secrets.FTP_DEPLOY_PASSWORD }}
+          local-dir: ./deploy/
+          server-dir: ./
+          dangerous-clean-slate: ${{ github.event.inputs.clean_slate == 'true' }}

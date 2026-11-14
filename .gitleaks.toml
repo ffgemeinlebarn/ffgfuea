@@ -1,5 +1,5 @@
 # gitleaks configuration (https://github.com/gitleaks/gitleaks)
-# Used by scripts/gitleaks.sh (npm run secrets:scan) and .github/workflows/secrets.yml.
+# Used by scripts/gitleaks.sh (npm run secrets:scan) and .github/workflows/ci.yml (job "secrets").
 
 title = "ffgfuea"
 

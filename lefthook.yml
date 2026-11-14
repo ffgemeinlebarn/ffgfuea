@@ -20,7 +20,7 @@ pre-push:
   jobs:
     # Typecheck inkl. Templates (strictTemplates): ngc für App und Unit-Tests, tsc für E2E
     - name: typecheck
-      run: npx --no -- ngc -p tsconfig.app.json --noEmit && npx --no -- ngc -p tsconfig.spec.json --noEmit && npx --no -- tsc --noEmit -p e2e/tsconfig.json
+      run: npm run --silent typecheck
 
     - name: unit-tests
       run: npx --no -- ng test --watch=false
