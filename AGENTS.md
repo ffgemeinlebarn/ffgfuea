@@ -19,7 +19,9 @@ FFGFÜA ist die PWA der Atemluftfüllstelle der FF Gemeinlebarn: Atemschutzflasc
 | Unit-Tests | `npx ng test --watch=false` |
 | Unit-Tests mit Coverage-Schwelle (CI-Gate) | `npm run test:coverage` |
 | Typecheck (App inkl. Templates, Specs, E2E) | `npm run typecheck` |
-| Alle Pflicht-Checks lokal mit Übersicht (ohne E2E/CodeQL) | `npm run check` (`-- --all` mit E2E und CodeQL) |
+| Alle Pflicht-Checks lokal mit Übersicht (ohne E2E/CodeQL) | `npm run check` (`-- --all` mit E2E, CodeQL und Mutation) |
+| Ungenutzter Code / Architekturregeln / Workflows | `npm run knip` / `npm run depcruise` / `npm run lint:actions` |
+| Mutation-Testing der Fachlogik (Bericht `reports/mutation/index.html`) | `npm run mutation` |
 | Stand des PRs: Checks, Fehlerlogs, Code-Scanning-Alerts, Review | `npm run pr:status` (`-- --watch` wartet auf CI) |
 | Lint (ganzes Projekt / eine Datei) | `npm run lint` / `npx eslint <datei>` |
 | Build | `npx ng build` |
@@ -29,7 +31,7 @@ FFGFÜA ist die PWA der Atemluftfüllstelle der FF Gemeinlebarn: Atemschutzflasc
 | SAST (CodeQL, lädt beim 1. Mal ~550 MB) | `npm run sast:codeql` |
 | Git-Hooks von Hand | `npx lefthook run pre-commit` / `npx lefthook run pre-push` |
 
-Vor jedem Commit: `npm run check` grün. Bei Änderungen an Abläufen in der UI zusätzlich `npm run e2e`, bei Änderungen an Datenfluss, Dateisystem, PDF-Erzeugung oder Workflows zusätzlich `npm run sast:codeql`.
+Vor jedem Commit: `npm run check` grün. Bei Änderungen an Abläufen in der UI zusätzlich `npm run e2e` (enthält die Barrierefreiheitsprüfung), bei Änderungen an Datenfluss, Dateisystem, PDF-Erzeugung oder Workflows zusätzlich `npm run sast:codeql`, bei Änderungen an der Fachlogik in `stryker.config.mjs` zusätzlich `npm run mutation` und überlebende Mutanten mit Tests abdecken. PRs folgen `.github/pull_request_template.md`.
 
 ## Konventionen
 
@@ -38,13 +40,15 @@ Vor jedem Commit: `npm run check` grün. Bei Änderungen an Abläufen in der UI 
 - **TypeScript:** `strict: true` und `strictTemplates`. Kein `any`, `!` nur wenn wirklich garantiert.
 - **Dialoge** nur über `DialogService` (`open()` liefert ein Promise mit dem Ergebnis, `confirm()` ein `boolean`), **Meldungen** nur über `NotificationService`. `MatDialog`/`MatSnackBar` nicht direkt verwenden.
 - **Modelle** in `src/app/shared/interfaces/`: Pflichtfelder sind Pflicht. Rohdaten von MAT sind `IMatFeuerwehr`/`IMatFlasche`.
+- **Architektur:** Die Regeln in `.dependency-cruiser.cjs` sind verbindlich (keine Laufzeit-Zyklen, Altberichte nur über die Einstellungsseite, `shared/` kennt keine Seiten, `report-data.ts` ohne Angular, kein Testcode im Build). Ungenutzte Exporte/Dateien meldet Knip; nur exportieren, was außerhalb der Datei gebraucht wird.
+- **Barrierefreiheit:** Buttons nur mit Icon brauchen `aria-label`. Neue Seiten und Dialoge in `e2e/barrierefreiheit.e2e.ts` aufnehmen.
 - **Tests:** Verhalten testen, nicht Implementierung. Testdaten über `src/app/testing/test-data.ts`, Dialog-Provider über `src/app/testing/dialog.ts`, Dateisystem-Fakes über `src/app/testing/file-system.ts`. Unit-Specs heißen `*.spec.ts`, E2E-Specs `e2e/*.e2e.ts`.
 
 ## Hooks und Gates
 
-- **lefthook** (`lefthook.yml`, installiert über `prepare` bei `npm ci`/`npm install`): pre-commit gitleaks auf die gestagten Änderungen und ESLint auf die gestagten Dateien, pre-push `npm run typecheck` und Unit-Tests. In CI, ohne `.git` und in Git-Worktrees installiert `prepare` nichts; die Hooks aus dem Haupt-Repo gelten auch in Worktrees.
-- **Claude-Code-Hooks** (`.claude/settings.json`): Nach jedem Edit/Write prüft `scripts/claude-hook-check.mjs` die geänderte Datei mit ESLint und gitleaks. Vor dem Ende jeder Antwort prüft `scripts/claude-stop-check.mjs` Typecheck und Unit-Tests, wenn sich uncommitteter Code geändert hat (gleicher Stand wird nicht doppelt geprüft). Befunde kommen als Hook-Feedback zurück und sind sofort zu beheben.
-- **Pull Requests:** Review von @jakob-fyi (CODEOWNERS) und grüne Pflicht-Checks: `CI ok` (fasst Lint, Typecheck, Unit-Tests & Coverage, Build, Lizenzen, Secrets und E2E aus `ci.yml` zusammen), `Analyze (javascript-typescript)`, `Analyze (actions)`, `Scan PR / osv-scan`. Optional: `npm audit (optional)`. Neue Pflicht-Jobs in `ci.yml` unter `needs` von `CI ok` eintragen. CodeQL läuft lokal nicht automatisch: Nach jedem Push `npm run pr:status -- --watch` ausführen und Befunde (fehlgeschlagene Checks, Code-Scanning-Alerts) beheben, bevor der PR als fertig gemeldet wird.
+- **lefthook** (`lefthook.yml`, installiert über `prepare` bei `npm ci`/`npm install`): pre-commit gitleaks auf die gestagten Änderungen, ESLint auf die gestagten Dateien und actionlint/zizmor bei Änderungen unter `.github/`, pre-push `npm run typecheck`, Unit-Tests, Knip und Architekturregeln. In CI, ohne `.git` und in Git-Worktrees installiert `prepare` nichts; die Hooks aus dem Haupt-Repo gelten auch in Worktrees.
+- **Claude-Code-Hooks** (`.claude/settings.json`): Nach jedem Edit/Write prüft `scripts/claude-hook-check.mjs` die geänderte Datei mit ESLint und gitleaks (unter `.github/` zusätzlich actionlint und zizmor). Vor dem Ende jeder Antwort prüft `scripts/claude-stop-check.mjs` Typecheck, Unit-Tests, Knip und Architekturregeln, wenn sich uncommitteter Code geändert hat (gleicher Stand wird nicht doppelt geprüft). Befunde kommen als Hook-Feedback zurück und sind sofort zu beheben.
+- **Pull Requests:** Review von @jakob-fyi (CODEOWNERS) und grüne Pflicht-Checks: `CI ok` (fasst Lint, Typecheck, Unit-Tests & Coverage, Build, Lizenzen, Secrets, E2E, Knip, Architektur und Workflows aus `ci.yml` zusammen), `Analyze (javascript-typescript)`, `Analyze (actions)`, `Scan PR / osv-scan`. Optional: `npm audit (optional)`, `Coverage-Upload (optional)`, wöchentlich `Mutation`. Die Coverage-Regel des Rulesets bewertet die hochgeladene Zeilen-Coverage. Neue Pflicht-Jobs in `ci.yml` unter `needs` von `CI ok` eintragen. CodeQL läuft lokal nicht automatisch: Nach jedem Push `npm run pr:status -- --watch` ausführen und Befunde (fehlgeschlagene Checks, Code-Scanning-Alerts) beheben, bevor der PR als fertig gemeldet wird.
 - **Notfall:** `LEFTHOOK=0 git commit …` (oder `--no-verify`) überspringt die Git-Hooks. Nur ausnahmsweise, CI prüft dasselbe.
 - **Coverage-Schwelle:** `npm run test:coverage` ist CI-Gate, die Schwellen stehen in `angular.json` (`coverageThresholds`). Neuer Code bringt Tests mit, Schwellen nicht senken.
 

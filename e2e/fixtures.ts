@@ -1,4 +1,5 @@
-import { expect, Locator, Page, test as base } from '@playwright/test';
+import AxeBuilder from '@axe-core/playwright';
+import { expect, Locator, Page, test as base, TestInfo } from '@playwright/test';
 
 export { expect } from '@playwright/test';
 
@@ -30,7 +31,7 @@ export async function reloadApp(page: Page): Promise<void>
 }
 
 /** Führt eine Aktion aus, die die App (neu) lädt, und wartet, bis die Synchronisierung beendet und das Overlay weg ist */
-export async function waitForSync(page: Page, action: () => Promise<unknown>): Promise<void>
+async function waitForSync(page: Page, action: () => Promise<unknown>): Promise<void>
 {
     // Nach einer erfolgreichen Synchronisierung merkt sich die App den Stand (syncLastEdit) im LocalStorage.
     // Die FakeSyncApi liefert dafür den aktuellen Zeitpunkt, der Stand ist also jünger als der Start der Aktion.
@@ -264,3 +265,25 @@ export const test = base.extend<IFixtures>({
         expect(errors, 'Unbehandelte Fehler in der App').toEqual([]);
     }, { auto: true }]
 });
+
+/** WCAG-Stufen, gegen die axe prüft (A und AA bis WCAG 2.2) */
+const WCAG_TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
+
+/**
+ * Prüft die aktuelle Seite (oder einen Ausschnitt) mit axe-core auf Verstöße gegen WCAG A/AA.
+ * Das vollständige Ergebnis hängt als JSON am Test (HTML-Bericht), die Meldung listet Regel, Hilfe-Link und Elemente.
+ */
+export async function expectBarrierefrei(page: Page, testInfo: TestInfo, name: string, bereich?: string): Promise<void>
+{
+    // Ein- und Ausblend-Animationen (Dialoge, Snackbar) abwarten, sonst misst axe Kontraste bei halber Deckkraft
+    await page.waitForFunction(() => document.getAnimations().every(animation => animation.playState !== 'running'));
+    let builder = new AxeBuilder({ page }).withTags(WCAG_TAGS);
+    if (bereich) builder = builder.include(bereich);
+    const ergebnis = await builder.analyze();
+    await testInfo.attach(`axe-${name}.json`, { body: JSON.stringify(ergebnis.violations, null, 2), contentType: 'application/json' });
+    const verstoesse = ergebnis.violations.map(v =>
+        `${v.impact ?? '?'} ${v.id}: ${v.help} (${v.helpUrl})\n` + v.nodes.slice(0, 5).map(n => `    ${n.target.join(' ')}`).join('\n')
+    );
+    // soft: ein Lauf meldet die Verstöße aller geprüften Seiten, nicht nur der ersten
+    expect.soft(verstoesse, `Barrierefreiheit (axe, WCAG A/AA): ${name}`).toEqual([]);
+}

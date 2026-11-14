@@ -15,7 +15,9 @@ FF Gemeinlebarn Füllapplikation
 - `npm run typecheck` – Typecheck von App (inkl. Templates), Unit-Tests und E2E
 - `npm run check` – alle Pflicht-Checks der CI lokal mit Übersicht, siehe [Qualität & Sicherheit](#qualität--sicherheit)
 - `npm run build` – Produktions-Build nach `dist/ffgfuea/browser`
-- `npm run e2e` – E2E-Tests mit Playwright, siehe unten
+- `npm run e2e` – E2E-Tests mit Playwright inkl. Barrierefreiheit, siehe unten
+- `npm run knip` / `npm run depcruise` / `npm run lint:actions` – ungenutzter Code, Architekturregeln, Workflows
+- `npm run mutation` – Mutation-Testing der Fachlogik mit Stryker (~15 min beim ersten Lauf, danach inkrementell)
 
 ## E2E-Tests
 
@@ -31,6 +33,8 @@ npx playwright show-report        # HTML-Bericht der letzten Ausführung
 - `PW_CHROMIUM_PATH=/usr/bin/chromium npm run e2e` verwendet ein vorhandenes Chromium statt des von Playwright installierten.
 - `PW_WORKERS=4 npm run e2e` ändert die Anzahl paralleler Browser (Standard 2).
 - Bei Fehlern liegen Trace, Screenshot und Video in `test-results/` (`npx playwright show-trace <trace.zip>`).
+
+**Barrierefreiheit:** `e2e/barrierefreiheit.e2e.ts` prüft alle Seiten mit Daten und den Berichte-Dialog mit [axe-core](https://github.com/dequelabs/axe-core) gegen WCAG 2.2 A/AA (`expectBarrierefrei()` in `e2e/fixtures.ts`). Ein Verstoß nennt Regel, Hilfe-Link und Elemente; das vollständige Ergebnis hängt als `axe-<seite>.json` am Test im HTML-Bericht. Neue Seiten oder Dialoge dort ergänzen.
 
 In GitHub Actions laufen die Tests bei jedem Pull Request und bei Pushes auf `main` (Job **E2E (Playwright)** in `.github/workflows/ci.yml`). Fehlgeschlagene Tests erscheinen als Annotation im PR und als Tabelle in der Job-Zusammenfassung (`e2e/summary-reporter.ts`); der HTML-Bericht und bei Fehlern die Traces werden als Artefakte hochgeladen.
 
@@ -57,9 +61,14 @@ Pull Requests nach `main` brauchen ein Review von @jakob-fyi (`.github/CODEOWNER
 | Produktions-Build | `npm run build` | **Build** (CI) | Pflicht über **CI ok** | wie oben |
 | Lizenzen der Abhängigkeiten | `npm run check:licenses` | **Lizenzen** (CI) | Pflicht über **CI ok** | wie oben |
 | Secrets im Code und in der Git-Historie (gitleaks) | `npm run secrets:scan` | **Secrets (gitleaks)** (CI) | Pflicht über **CI ok** | wie oben |
-| E2E-Tests (Playwright) | `npm run e2e` | **E2E (Playwright)** (CI) | Pflicht über **CI ok** | wie oben |
+| E2E-Tests (Playwright) inkl. Barrierefreiheit (axe, WCAG 2.2 A/AA) | `npm run e2e` | **E2E (Playwright)** (CI) | Pflicht über **CI ok** | wie oben |
+| Ungenutzte Dateien, Exporte, Abhängigkeiten (Knip) | `npm run knip` | **Knip (ungenutzter Code)** (CI) | Pflicht über **CI ok** | wie oben |
+| Architekturregeln der Imports (dependency-cruiser) | `npm run depcruise` | **Architektur (dependency-cruiser)** (CI) | Pflicht über **CI ok** | wie oben |
+| Workflows: Syntax (actionlint) und Sicherheit (zizmor) | `npm run lint:actions` | **Workflows (actionlint, zizmor)** (CI) | Pflicht über **CI ok** | wie oben |
 | CodeQL (SAST, Suite `security-extended`) für App und Workflows | `npm run sast:codeql` | **Analyze (javascript-typescript)**, **Analyze (actions)** (CodeQL) | Pflicht, zusätzlich *Code scanning results* im Ruleset | Push auf `main`, jeder PR, montags |
 | Neu eingeführte Schwachstellen in Abhängigkeiten (OSV-Scanner) | – (siehe unten) | **Scan PR / osv-scan** (OSV-Scanner) | Pflicht | jeder PR |
+| Coverage zu GitHub Code Quality (Kommentar im PR, Ruleset *Restrict code coverage*) | – | **Coverage-Upload (optional)** (CI) | optional; die Coverage-Regel im Ruleset wertet das Ergebnis aus | Push auf `main`, PRs aus diesem Repo |
+| Mutation-Testing der Fachlogik (Stryker) | `npm run mutation` | **Stryker** (Mutation) | optional, nur Bericht | montags, manuell |
 | npm audit (nur Produktionsabhängigkeiten, ab *high*) | `npm audit --omit=dev --audit-level=high` | **npm audit (optional)** (CI) | optional: kann ohne Zutun des PRs rot werden | wie **Lint** |
 | Alle bekannten Schwachstellen (OSV-Scanner) | – | **Scan / osv-scan** (OSV-Scanner) | optional, nur Alerts | Push auf `main`, montags |
 | OpenSSF Scorecard (Supply-Chain-Praktiken) | – | **Scorecard analysis** (Scorecard) | optional, nur Alerts | Push auf `main`, montags |
@@ -69,9 +78,9 @@ Deployt wird nur, wenn **CI ok** grün ist (Job **Deploy via FTP**, siehe [Relea
 
 ### Lokal: Hooks und Übersicht
 
-- `npm run check` führt die Pflicht-Checks wie in CI nacheinander aus (ohne E2E, ~30 s) und zeigt am Ende eine Übersicht mit dem jeweiligen CI-Check; Ausgaben gibt es nur bei Fehlern. `npm run check -- --all` nimmt E2E und CodeQL dazu, `npm run check -- typecheck unit` nur einzelne Checks.
-- **Git-Hooks** über [lefthook](https://lefthook.dev) (`lefthook.yml`, installiert bei `npm ci`/`npm install`): vor jedem Commit gitleaks und ESLint auf die gestagten Dateien, vor jedem Push Typecheck und Unit-Tests. Im Notfall überspringen: `LEFTHOOK=0 git commit …`.
-- **Claude Code** (`.claude/settings.json`): Nach jedem Bearbeiten prüft `scripts/claude-hook-check.mjs` die Datei mit ESLint und gitleaks, vor dem Ende jeder Antwort prüft `scripts/claude-stop-check.mjs` bei uncommitteten Code-Änderungen Typecheck und Unit-Tests. Befunde gehen direkt an Claude zurück, Claude behebt sie, bevor es weitergeht.
+- `npm run check` führt die Pflicht-Checks wie in CI nacheinander aus (ohne E2E, ~45 s) und zeigt am Ende eine Übersicht mit dem jeweiligen CI-Check; Ausgaben gibt es nur bei Fehlern. `npm run check -- --all` nimmt E2E, CodeQL und Mutation-Testing dazu, `npm run check -- typecheck unit` nur einzelne Checks.
+- **Git-Hooks** über [lefthook](https://lefthook.dev) (`lefthook.yml`, installiert bei `npm ci`/`npm install`): vor jedem Commit gitleaks und ESLint auf die gestagten Dateien, bei gestagten Dateien unter `.github/` actionlint und zizmor; vor jedem Push Typecheck, Unit-Tests, Knip und Architekturregeln. Im Notfall überspringen: `LEFTHOOK=0 git commit …`.
+- **Claude Code** (`.claude/settings.json`): Nach jedem Bearbeiten prüft `scripts/claude-hook-check.mjs` die Datei mit ESLint und gitleaks (Dateien unter `.github/` zusätzlich mit actionlint und zizmor), vor dem Ende jeder Antwort prüft `scripts/claude-stop-check.mjs` bei uncommitteten Code-Änderungen Typecheck, Unit-Tests, Knip und Architekturregeln. Befunde gehen direkt an Claude zurück, Claude behebt sie, bevor es weitergeht.
 - `npm run pr:status` zeigt für den PR des aktuellen Branches Pflicht- und optionale Checks, die Logs fehlgeschlagener Jobs, offene Code-Scanning-Alerts (CodeQL, OSV) und den Review-Stand; `-- --watch` wartet, bis alle Checks fertig sind.
 
 Alle Actions sind per Commit-SHA gepinnt (Kommentar mit Version dahinter), Dependabot hält sie aktuell. Workflows haben nur die nötigen Rechte (`permissions`), neue Pushes auf einen PR brechen ältere Läufe ab.
@@ -83,12 +92,16 @@ Alle Actions sind per Commit-SHA gepinnt (Kommentar mit Version dahinter), Depen
 - `npm run test:coverage` misst die Coverage (Bericht in `coverage/`) und schlägt fehl, wenn eine der Schwellen in `angular.json` (`coverageThresholds`) unterschritten wird.
 - `npx lefthook run pre-commit` bzw. `pre-push` führt die Git-Hooks von Hand aus. In CI (`CI` gesetzt), ohne Git-Repository und in Git-Worktrees installiert `npm ci` keine Hooks; die im Haupt-Repo installierten gelten auch für Worktrees.
 - `npm run check:licenses` prüft die Lizenzen aller installierten Pakete gegen `license-check.json`.
+- `npm run lint:actions` lädt die gepinnten Releases von actionlint und zizmor (Prüfsummen im Skript) nach `~/.cache/ffgfuea/` und prüft `.github/`. Mit gesetztem `GH_TOKEN` macht zizmor zusätzlich Online-Prüfungen (z. B. bekannte Schwachstellen in verwendeten Actions).
+- `npm run mutation` schreibt den Bericht nach `reports/mutation/index.html` und merkt sich die Ergebnisse in `reports/stryker-incremental.json`; spätere Läufe prüfen nur Mutanten in geändertem Code oder mit geänderten Tests. Welche Dateien mutiert werden, steht in `stryker.config.mjs`.
 - `reports/` ist in `.gitignore`.
 
 ### Ergebnisse lesen
 
 - **CodeQL / OSV-Scanner / Scorecard:** GitHub → *Security → Code scanning*. Jeder Alert zeigt Regel, Fundstelle und bei CodeQL den Datenfluss (*Show paths*). Lokal: Ausgabe von `npm run sast:codeql` oder `reports/codeql.sarif` z. B. mit der VS-Code-Erweiterung *SARIF Viewer* öffnen.
-- **Im PR:** ESLint-Befunde und fehlgeschlagene Unit- und E2E-Tests erscheinen als Annotation direkt an der Codezeile (*Files changed*). Jeder Lauf von **CI** hat eine Zusammenfassung (*Checks → CI → Summary*) mit ESLint-Befunden, Coverage je Metrik gegen die Schwellen, E2E-Ergebnis und der Tabelle der Pflicht-Jobs von **CI ok**. Coverage-Bericht, Playwright-Bericht und Traces liegen als Artefakte beim Lauf.
+- **Im PR:** ESLint-, Knip-, actionlint- und zizmor-Befunde sowie fehlgeschlagene Unit- und E2E-Tests erscheinen als Annotation direkt an der Codezeile (*Files changed*). Jeder Lauf von **CI** hat eine Zusammenfassung (*Checks → CI → Summary*) mit ESLint-Befunden, Coverage je Metrik gegen die Schwellen, E2E-Ergebnis, bei Fehlern Knip- und Architektur-Befunden und der Tabelle der Pflicht-Jobs von **CI ok**. Coverage-Bericht, Playwright-Bericht und Traces liegen als Artefakte beim Lauf.
+- **Coverage im PR:** Nach dem **Coverage-Upload** kommentiert `github-code-quality[bot]` die Gesamt- und Datei-Coverage und markiert nicht abgedeckte Zeilen im Diff. Die Regel *Restrict code coverage* im Ruleset wertet diese Werte aus (GitHub prüft dabei nur die Zeilen-Coverage).
+- **Mutation-Testing:** *Actions → Mutation → letzter Lauf → Summary* (Score je Datei); überlebende Mutanten mit Fundstelle im Artefakt `mutation-report`.
 - **Im Terminal:** `npm run pr:status` (siehe oben).
 - **gitleaks:** Ausgabe im Log des Checks **Secrets (gitleaks)** (Datei, Zeile, Regel, Commit; das Secret selbst ist geschwärzt).
 - **npm audit / Lizenzen:** Log der Checks **npm audit (optional)** bzw. **Lizenzen**.
@@ -110,6 +123,10 @@ Jede Ausnahme bekommt eine Begründung – im Code-Kommentar, in der Konfigurati
 
   Der PR-Check schlägt nur bei Schwachstellen fehl, die der PR neu einführt; der Lauf auf `main` meldet alle bekannten als Alerts, ohne fehlzuschlagen.
 - **npm audit:** Geprüft werden nur Produktionsabhängigkeiten ab *high*. Lässt sich ein Fund nicht sofort beheben, `overrides` in `package.json` prüfen oder das Paket aktualisieren.
+- **Knip:** Ungenutztes entfernen. Wird etwas nur über Konfiguration eingebunden (z. B. `angular.json`, `.claude/settings.json`), in `knip.jsonc` unter `entry` eintragen; Pakete, die nur per CLI laufen, unter `ignoreDependencies`.
+- **dependency-cruiser:** Import umbauen. Ist eine Regel selbst falsch, in `.dependency-cruiser.cjs` anpassen (jede Regel hat einen `comment` mit Begründung).
+- **actionlint / zizmor:** Befund beheben. Ausnahmen in `.github/actionlint.yaml` bzw. `.github/zizmor.yml` (Regel) oder als `# zizmor: ignore[<regel>]` in der Zeile, jeweils mit Begründung.
+- **Barrierefreiheit (axe):** Im Template beheben (z. B. `aria-label`, Kontrast). Echte Fehlalarme gezielt mit `AxeBuilder.disableRules()` bzw. `exclude()` in `expectBarrierefrei()` ausnehmen, mit Kommentar.
 - **Lizenzen:** Neue Lizenz zur `allowed`-Liste in `license-check.json` hinzufügen, wenn sie für eine ausgelieferte Web-App unproblematisch ist; sonst eine Ausnahme je Paket unter `exceptions` mit `reason`. Entwicklungsabhängigkeiten werden nicht ausgeliefert und erzeugen nur Warnungen.
 
 ### CodeQL-Lizenz und LICENSE-Datei
@@ -125,6 +142,7 @@ Diese Einstellungen kann nur ein Admin der Organisation bzw. des Repos setzen:
    - **Dependabot alerts** und **Dependabot security updates** aktivieren (*Dependabot version updates* kommen aus `.github/dependabot.yml`).
    - **Private vulnerability reporting** aktivieren (für `SECURITY.md`).
    - **Code scanning**: kein *Default setup* aktivieren, der Workflow `codeql.yml` ist das *Advanced setup* (beides gleichzeitig ist nicht möglich).
+   - **Code Quality** aktivieren (nötig für den Coverage-Upload; *Code coverage* dort nicht auf automatisches Setup stellen, der Upload kommt aus `ci.yml`).
 2. *Settings → Actions → General*: *Workflow permissions* auf **Read repository contents and packages permissions** stellen; *Allow GitHub Actions to create and approve pull requests* aus.
 3. *Settings → Rules → Rulesets* → neues Branch-Ruleset für `main` (Default branch):
    - *Restrict deletions*, *Block force pushes*, *Require a pull request before merging* (nur Squash) mit *Required approvals* 1, *Require review from Code Owners*, *Dismiss stale pull request approvals when new commits are pushed* und *Require approval of the most recent reviewable push*.
@@ -135,6 +153,7 @@ Diese Einstellungen kann nur ein Admin der Organisation bzw. des Repos setzen:
      - `Analyze (actions)`
      - `Scan PR / osv-scan`
    - *Require code scanning results*: Tool **CodeQL**, Schwelle *Security alerts: High or higher*, *Alerts: Errors*.
+   - *Restrict code coverage* (Preview): mindestens 80 %, höchstens 3 Prozentpunkte Rückgang. Greift erst, wenn für `main` ein Coverage-Upload vorliegt.
    - Die Checks erscheinen in der Auswahl erst, nachdem die Workflows einmal gelaufen sind.
 4. Optional: *Environments → production* auf *Deployment branches and tags*: `main` und Tags `v*` beschränken und ggf. *Required reviewers* setzen.
 

@@ -15,6 +15,11 @@ pre-commit:
       # Von ESLint ignorierte Dateien (dist/, .claude/worktrees/ …) ohne Warnung überspringen
       run: npx --no -- eslint --no-warn-ignored {staged_files}
 
+    # Workflows, Composite-Action und Dependabot: actionlint und zizmor
+    - name: actions-lint
+      glob: ".github/**/*.{yml,yaml}"
+      run: bash scripts/actions-lint.sh
+
 pre-push:
   piped: true
   jobs:
@@ -24,3 +29,10 @@ pre-push:
 
     - name: unit-tests
       run: npx --no -- ng test --watch=false
+
+    # Ungenutzter Code und Architekturregeln (wie die CI-Jobs "Knip" und "Architektur")
+    - name: knip
+      run: npm run --silent knip
+
+    - name: architektur
+      run: npm run --silent depcruise

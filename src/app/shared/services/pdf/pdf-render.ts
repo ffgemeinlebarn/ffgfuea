@@ -519,21 +519,21 @@ function pad(zahl: number): string
 }
 
 /** z.B. 01.05.2026 */
-export function formatDatum(wert: Date | string): string
+function formatDatum(wert: Date | string): string
 {
     const datum = new Date(wert);
     return `${pad(datum.getDate())}.${pad(datum.getMonth() + 1)}.${datum.getFullYear()}`;
 }
 
 /** z.B. 10:00 Uhr */
-export function formatUhrzeit(wert: Date | string): string
+function formatUhrzeit(wert: Date | string): string
 {
     const datum = new Date(wert);
     return `${pad(datum.getHours())}:${pad(datum.getMinutes())} Uhr`;
 }
 
 /** z.B. 01.05.2026 10:00 Uhr */
-export function datumZeitText(wert: Date | string): string
+function datumZeitText(wert: Date | string): string
 {
     return `${formatDatum(wert)} ${formatUhrzeit(wert)}`;
 }

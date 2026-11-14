@@ -108,7 +108,7 @@
                             "src/**/*.spec.ts",
                             "src/app/testing/**"
                         ],
-                        "coverageReporters": ["text-summary", "html", "lcovonly", "json-summary"],
+                        "coverageReporters": ["text-summary", "html", "lcovonly", "json-summary", "cobertura"],
                         "coverageThresholds": {
                             "statements": 90,
                             "branches": 83,

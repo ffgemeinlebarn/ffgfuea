@@ -106,7 +106,7 @@
               <span>{{ person.vorname }} {{ person.nachname }}{{ last ? '' : ', ' }}</span>
             }</strong></p>
             <mat-card-actions class="bearbeiten-button">
-              <button mat-fab color="basic" (click)="openEditEreignis()">
+              <button mat-fab color="basic" (click)="openEditEreignis()" aria-label="Ereignis bearbeiten">
                 <mat-icon>settings</mat-icon>
               </button>
             </mat-card-actions>

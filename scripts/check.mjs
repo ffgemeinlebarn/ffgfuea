@@ -2,7 +2,8 @@
 // Ausgaben werden mitgeschnitten und nur bei Fehlern gezeigt (letzte Zeilen).
 //
 //   npm run check                        Pflicht-Checks wie "CI ok" ohne E2E, plus npm audit (optional)
-//   npm run check -- --all               zusätzlich E2E und CodeQL (dauert, CodeQL lädt beim 1. Mal ~550 MB)
+//   npm run check -- --all               zusätzlich E2E (inkl. Barrierefreiheit), CodeQL und Mutation-Testing
+//                                        (dauert, CodeQL lädt beim 1. Mal ~550 MB)
 //   npm run check -- typecheck unit      nur bestimmte Checks (Namen siehe Tabelle unten)
 //
 // Exit 1, wenn ein Pflicht-Check fehlschlägt. Optionale Checks werden nur angezeigt.
@@ -24,6 +25,16 @@ function coverageDetail()
     return `Anw. ${t.statements.pct} %, Zweige ${t.branches.pct} %, Fkt. ${t.functions.pct} %, Zeilen ${t.lines.pct} %`;
 }
 
+function mutationDetail()
+{
+    const datei = join(root, 'reports', 'mutation', 'mutation.json');
+    if (!existsSync(datei)) return '';
+    const mutanten = Object.values(JSON.parse(readFileSync(datei, 'utf8')).files ?? {}).flatMap(f => f.mutants);
+    const getoetet = mutanten.filter(m => m.status === 'Killed' || m.status === 'Timeout').length;
+    const zaehlend = mutanten.filter(m => ['Killed', 'Timeout', 'Survived', 'NoCoverage'].includes(m.status)).length;
+    return zaehlend === 0 ? '' : `Score ${(getoetet / zaehlend * 100).toFixed(1)} %, Bericht reports/mutation/index.html`;
+}
+
 /** name: Kurzname für die Kommandozeile, ci: entsprechender Check in GitHub */
 const checks = [
     { name: 'lint', titel: 'Lint (ESLint)', ci: 'Lint', befehl: [npx, '--no', '--', 'eslint', '.'] },
@@ -32,9 +43,13 @@ const checks = [
     { name: 'build', titel: 'Build', ci: 'Build', befehl: [npx, '--no', '--', 'ng', 'build'] },
     { name: 'licenses', titel: 'Lizenzen', ci: 'Lizenzen', befehl: [npm, 'run', '--silent', 'check:licenses'] },
     { name: 'secrets', titel: 'Secrets (gitleaks)', ci: 'Secrets (gitleaks)', befehl: ['bash', 'scripts/gitleaks.sh'] },
+    { name: 'knip', titel: 'Knip (ungenutzter Code)', ci: 'Knip (ungenutzter Code)', befehl: [npm, 'run', '--silent', 'knip'] },
+    { name: 'depcruise', titel: 'Architektur', ci: 'Architektur (dependency-cruiser)', befehl: [npm, 'run', '--silent', 'depcruise'] },
+    { name: 'actions', titel: 'Workflows', ci: 'Workflows (actionlint, zizmor)', befehl: ['bash', 'scripts/actions-lint.sh'] },
     { name: 'audit', titel: 'npm audit', ci: 'npm audit (optional)', befehl: [npm, 'audit', '--omit=dev', '--audit-level=high'], optional: true },
     { name: 'e2e', titel: 'E2E (Playwright)', ci: 'E2E (Playwright)', befehl: [npx, '--no', '--', 'playwright', 'test'], extra: true },
-    { name: 'codeql', titel: 'CodeQL (SAST)', ci: 'Analyze (…)', befehl: ['bash', 'scripts/codeql.sh'], extra: true }
+    { name: 'codeql', titel: 'CodeQL (SAST)', ci: 'Analyze (…)', befehl: ['bash', 'scripts/codeql.sh'], extra: true },
+    { name: 'mutation', titel: 'Mutation (Stryker)', ci: 'Mutation (wöchentlich)', befehl: [npm, 'run', '--silent', 'mutation'], extra: true, optional: true, detail: mutationDetail }
 ];
 
 const argumente = process.argv.slice(2);
@@ -106,5 +121,5 @@ for (const { check, ok } of ergebnisse)
 console.log('');
 if (fehler.length > 0) console.log(rot(`${fehler.length} Pflicht-Check(s) fehlgeschlagen.`));
 else console.log(gruen(`Alle Pflicht-Checks grün${warnungen.length > 0 ? `, ${warnungen.length} optionale(r) mit Befund` : ''}.`));
-if (!auswahl.some(c => c.extra)) console.log(grau('E2E und CodeQL nicht enthalten: npm run check -- --all'));
+if (!auswahl.some(c => c.extra)) console.log(grau('E2E, CodeQL und Mutation nicht enthalten: npm run check -- --all'));
 process.exit(fehler.length > 0 ? 1 : 0);

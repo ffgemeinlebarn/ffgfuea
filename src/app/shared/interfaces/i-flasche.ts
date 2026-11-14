@@ -1,4 +1,4 @@
-import { IFeuerwehrRef } from './i-feuerwehr';
+import type { IFeuerwehrRef } from './i-feuerwehr';
 
 /** Flasche, wie sie der MAT Sync-Service liefert */
 export interface IMatFlasche

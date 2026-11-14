@@ -1,7 +1,7 @@
 // Claude-Code-Hook (Stop, siehe .claude/settings.json): Bevor Claude eine Antwort beendet,
-// laufen Typecheck und Unit-Tests, sofern sich seit der letzten Prüfung Code geändert hat.
+// laufen Typecheck, Unit-Tests, Knip und Architekturregeln, sofern sich seit der letzten Prüfung Code geändert hat.
 // Ergänzt den PostToolUse-Hook (claude-hook-check.mjs), der nur die einzelne Datei prüft:
-// Typfehler in anderen Dateien und kaputte Tests fallen sonst erst beim Push auf.
+// Typfehler in anderen Dateien, kaputte Tests, verwaiste Exporte und Regelverstöße bei Imports fallen sonst erst beim Push auf.
 //
 // - Keine uncommitteten Änderungen an Code/Konfiguration: nichts zu tun.
 // - Gleicher Stand wie bei der letzten Prüfung: Ergebnis wird nicht wiederholt. War sie rot und
@@ -74,19 +74,23 @@ if (letzte?.fingerabdruck === fingerabdruck)
 {
     if (!letzte.ok)
     {
-        process.stdout.write(JSON.stringify({ systemMessage: 'Typecheck/Unit-Tests sind weiterhin rot (seit der letzten Prüfung unverändert).' }));
+        process.stdout.write(JSON.stringify({ systemMessage: 'Stop-Check (Typecheck, Unit-Tests, Knip, Architektur) ist weiterhin rot (seit der letzten Prüfung unverändert).' }));
     }
     process.exit(0);
 }
 
-const [typecheck, tests] = await Promise.all([
+const [typecheck, tests, knip, architektur] = await Promise.all([
     ausfuehren('npm', ['run', '--silent', 'typecheck']),
-    ausfuehren('npx', ['--no', '--', 'ng', 'test', '--watch=false'])
+    ausfuehren('npx', ['--no', '--', 'ng', 'test', '--watch=false']),
+    ausfuehren('npm', ['run', '--silent', 'knip']),
+    ausfuehren('npm', ['run', '--silent', 'depcruise'])
 ]);
 
 const befunde = [];
 if (typecheck.code !== 0) befunde.push(`Typecheck (npm run typecheck):\n${ende(typecheck.ausgabe)}`);
 if (tests.code !== 0) befunde.push(`Unit-Tests (npx ng test --watch=false):\n${ende(tests.ausgabe, 80)}`);
+if (knip.code !== 0) befunde.push(`Knip, ungenutzter Code (npm run knip):\n${ende(knip.ausgabe)}`);
+if (architektur.code !== 0) befunde.push(`Architekturregeln (npm run depcruise, Regeln in .dependency-cruiser.cjs):\n${ende(architektur.ausgabe)}`);
 
 try
 {
@@ -99,6 +103,6 @@ catch
 
 if (befunde.length > 0)
 {
-    process.stderr.write(`Stop-Check: uncommittete Änderungen brechen Typecheck oder Unit-Tests. Bitte beheben.\n\n${befunde.join('\n\n')}\n`);
+    process.stderr.write(`Stop-Check: uncommittete Änderungen brechen Typecheck, Unit-Tests, Knip oder Architekturregeln. Bitte beheben.\n\n${befunde.join('\n\n')}\n`);
     process.exit(2);
 }
