@@ -7,6 +7,12 @@ function ohneFarben(text: string): string
     return text.replace(new RegExp(String.raw`\u001b\[[0-9;]*m`, 'g'), '');
 }
 
+/** Text für eine Markdown-Tabellenzelle: erst Backslashes, dann Spaltentrenner escapen */
+function zelle(text: string): string
+{
+    return text.replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
+}
+
 /**
  * Schreibt das Ergebnis der E2E-Tests als Tabelle in die Job-Zusammenfassung von GitHub Actions
  * ($GITHUB_STEP_SUMMARY). Ohne diese Variable (lokal) tut der Reporter nichts.
@@ -45,8 +51,8 @@ export default class SummaryReporter implements Reporter
             md.push('', `| ${titel} | Datei | Fehler |`, '| --- | --- | --- |');
             for (const test of liste)
             {
-                const fehler = ohneFarben(this.tests.get(test)?.error?.message ?? '').split('\n')[0]?.replace(/\|/g, '\\|') ?? '';
-                md.push(`| ${test.titlePath().slice(3).join(' › ')} | \`${test.location.file.split(/[\\/]e2e[\\/]/).pop()}:${test.location.line}\` | ${fehler} |`);
+                const fehler = zelle(ohneFarben(this.tests.get(test)?.error?.message ?? '').split('\n')[0] ?? '');
+                md.push(`| ${zelle(test.titlePath().slice(3).join(' › '))} | \`${test.location.file.split(/[\\/]e2e[\\/]/).pop()}:${test.location.line}\` | ${fehler} |`);
             }
         };
         auflisten('Fehlgeschlagen', fehlgeschlagen);

@@ -18,9 +18,10 @@ function escapeProperty(text)
     return escapeData(text).replace(/:/g, '%3A').replace(/,/g, '%2C');
 }
 
+/** Text für eine Markdown-Tabellenzelle: erst Backslashes, dann Spaltentrenner escapen, Zeilenumbrüche entfernen */
 function escapeTabelle(text)
 {
-    return text.replace(/\|/g, '\\|').replace(/\s+/g, ' ');
+    return text.replace(/\\/g, '\\\\').replace(/\|/g, '\\|').replace(/\s+/g, ' ');
 }
 
 export default function format(results, context)

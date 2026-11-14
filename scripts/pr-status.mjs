@@ -71,11 +71,19 @@ for (const check of fehlgeschlagen)
     const job = /\/actions\/runs\/\d+\/job\/(\d+)/.exec(check.link ?? '')?.[1];
     if (!job) continue;
     const log = await gh(['run', 'view', '--job', job, '--log-failed']);
+    // Zeilen haben das Format "<job>\t<step>\t<zeit> <text>". Aufräum-Schritte (Post …, Complete job)
+    // sagen nichts über den Fehler und werden weggelassen.
     const zeilen = log.stdout.trimEnd().split('\n')
-        // Präfix "<job>\t<step>\t<zeit> " entfernen
-        .map(z => z.split('\t').slice(2).join('\t').replace(/^\S+Z /, ''));
-    console.log(`\n── Log: ${check.name} (letzte 40 Zeilen) ──`);
-    console.log(zeilen.slice(-40).join('\n'));
+        .map(z =>
+        {
+            const [, schritt = '', ...rest] = z.split('\t');
+            return { schritt, text: rest.join('\t').replace(/^\S+Z /, '') };
+        })
+        .filter(z => !z.schritt.startsWith('Post ') && z.schritt !== 'Complete job');
+    const fehlerzeilen = zeilen.filter(z => z.text.includes('##[error]')).map(z => `${z.schritt}: ${z.text.replace('##[error]', '')}`);
+    console.log(`\n── Log: ${check.name} ──`);
+    if (fehlerzeilen.length > 0) console.log(`Fehler:\n${fehlerzeilen.slice(0, 20).join('\n')}\n`);
+    console.log(`Letzte Zeilen des fehlgeschlagenen Schritts:\n${zeilen.slice(-25).map(z => z.text).join('\n')}`);
 }
 
 const alerts = json((await gh(['api', `repos/{owner}/{repo}/code-scanning/alerts?ref=refs/pull/${pr.number}/merge&state=open&per_page=100`])).stdout, []);
