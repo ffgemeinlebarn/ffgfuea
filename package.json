@@ -7,12 +7,19 @@
     "build": "ng build",
     "test": "ng test",
     "test:coverage": "ng test --watch=false --coverage",
+    "typecheck": "ngc -p tsconfig.app.json --noEmit && ngc -p tsconfig.spec.json --noEmit && tsc --noEmit -p e2e/tsconfig.json",
+    "check": "node scripts/check.mjs",
+    "pr:status": "node scripts/pr-status.mjs",
     "sast:codeql": "bash scripts/codeql.sh",
     "secrets:scan": "bash scripts/gitleaks.sh",
     "check:licenses": "node scripts/check-licenses.mjs",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
     "lint": "eslint .",
+    "lint:actions": "bash scripts/actions-lint.sh",
+    "knip": "knip",
+    "depcruise": "depcruise src --config .dependency-cruiser.cjs",
+    "mutation": "stryker run",
     "prepare": "node scripts/lefthook-install.mjs"
   },
   "private": true,
@@ -36,20 +43,29 @@
     "@angular/build": "~22.2.6",
     "@angular/cli": "~22.2.6",
     "@angular/compiler-cli": "~22.2.5",
+    "@axe-core/playwright": "4.14.0",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.65.0",
+    "@stryker-mutator/core": "10.1.1",
     "@stylistic/eslint-plugin": "5.10.0",
     "@types/node": "^26.6.6",
     "@vitest/coverage-v8": "5.1.0",
     "angular-eslint": "22.6.0",
+    "dependency-cruiser": "18.7.0",
     "eslint": "10.14.0",
     "fake-indexeddb": "^6.2.8",
     "globals": "17.14.0",
     "jsdom": "^30.1.3",
+    "knip": "6.42.1",
     "lefthook": "2.2.2",
     "pdf-lib": "1.17.1",
     "typescript": "~6.0.3",
     "typescript-eslint": "8.72.1",
     "vitest": "^5.1.0"
+  },
+  "overrides": {
+    "typed-rest-client": {
+      "qs": "6.16.1"
+    }
   }
 }

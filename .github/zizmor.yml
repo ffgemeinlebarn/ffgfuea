@@ -1,0 +1,7 @@
+# Konfiguration für zizmor (scripts/actions-lint.sh, CI-Job "Workflows (actionlint, zizmor)").
+# Jede Ausnahme mit Begründung.
+rules:
+  # GitHub kennt seit Juli 2026 "uses: $/…" für Actions im eigenen Repo. actionlint 1.7.12 versteht
+  # die Syntax noch nicht und meldet sie als Fehler. Umstellen, sobald actionlint sie unterstützt.
+  self-repository:
+    disable: true

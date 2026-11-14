@@ -1,0 +1,30 @@
+// Knip: ungenutzte Dateien, Exporte und Abhängigkeiten (npm run knip, CI-Job "Knip (ungenutzter Code)").
+// Jede Ausnahme mit Begründung.
+{
+    "$schema": "https://unpkg.com/knip@6.42.1/schema-jsonc.json",
+    // Einstiegspunkte, die Knip nicht selbst findet
+    "entry": [
+        // Specs und Setup laufen über @angular/build:unit-test (angular.json), ohne vitest.config
+        "src/**/*.spec.ts",
+        "src/test-setup.ts",
+        "e2e/**/*.e2e.ts",
+        // Reporter wird in playwright.config.ts als Pfad eingebunden
+        "e2e/summary-reporter.ts",
+        // Aufgerufen aus package.json, lefthook.yml, .claude/settings.json und Shell-Skripten
+        "scripts/*.mjs"
+    ],
+    "project": [
+        "src/**/*.ts",
+        "e2e/**/*.ts",
+        "scripts/**/*.mjs"
+    ],
+    "ignoreDependencies": [
+        // testRunner "command" ist in @stryker-mutator/core eingebaut, das Knip-Plugin erwartet ein eigenes Paket
+        "@stryker-mutator/command-runner"
+    ],
+    // Typen, die nur in exportierten Typen derselben Datei vorkommen, dürfen exportiert bleiben
+    "ignoreExportsUsedInFile": {
+        "interface": true,
+        "type": true
+    }
+}

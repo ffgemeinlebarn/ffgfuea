@@ -11,7 +11,7 @@ updates:
     # Let new releases settle for a few days before proposing them (supply-chain safety).
     # Security updates are not delayed.
     cooldown:
-      default-days: 5
+      default-days: 7
       semver-major-days: 14
     open-pull-requests-limit: 5
     labels: [ dependencies, javascript ]
@@ -42,14 +42,15 @@ updates:
           - "@angular-devkit/*"
 
   - package-ecosystem: github-actions
-    directory: /
+    # Workflows und die lokale Composite-Action (.github/actions/setup)
+    directories: [ "/", "/.github/actions/*" ]
     schedule:
       interval: weekly
       day: monday
       time: "06:00"
       timezone: Europe/Vienna
     cooldown:
-      default-days: 5
+      default-days: 7
     open-pull-requests-limit: 3
     labels: [ dependencies, github-actions ]
     commit-message:

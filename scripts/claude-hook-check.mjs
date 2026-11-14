@@ -1,5 +1,6 @@
 // Claude-Code-Hook (PostToolUse auf Edit|Write|MultiEdit, siehe .claude/settings.json):
-// prüft nur die gerade geänderte Datei mit ESLint und gitleaks.
+// prüft nur die gerade geänderte Datei mit ESLint und gitleaks, Dateien unter .github/ zusätzlich
+// mit actionlint und zizmor.
 //
 // Eingabe: Hook-JSON auf stdin (tool_input.file_path).
 // Exit 0 ohne Ausgabe: alles in Ordnung oder Datei nicht zu prüfen.
@@ -55,6 +56,8 @@ if (rel === '' || rel.startsWith('../') || isAbsolute(rel)) process.exit(0);
 if (ausgenommen.some(pfad => rel.startsWith(pfad)) || rel.includes('/node_modules/')) process.exit(0);
 
 const pruefungen = [];
+/** Einrichtungsfehler (z. B. Download offline): nur Hinweis für den Menschen, kein Befund für Claude */
+let hinweis = null;
 
 if (eslintEndungen.has(extname(rel)))
 {
@@ -66,8 +69,19 @@ if (eslintEndungen.has(extname(rel)))
     }
 }
 
+// Workflows, Composite-Action, Dependabot: actionlint und zizmor (prüfen immer alle Dateien unter .github/)
+if (/^\.github\/.*\.ya?ml$/.test(rel))
+{
+    pruefungen.push(ausfuehren('bash', [join(root, 'scripts', 'actions-lint.sh')])
+        .then(({ code, ausgabe }) =>
+        {
+            if (code === 1) return `actionlint/zizmor (.github/):\n${ausgabe}`;
+            if (code !== 0) hinweis = `actionlint/zizmor konnten .github/ nicht prüfen:\n${ausgabe}`;
+            return null;
+        }));
+}
+
 // gitleaks: 1 = Secret gefunden, 2 = Einrichtungsfehler (z. B. Download offline)
-let hinweis = null;
 pruefungen.push(ausfuehren('bash', [join(root, 'scripts', 'gitleaks.sh'), '--files', rel])
     .then(({ code, ausgabe }) =>
     {

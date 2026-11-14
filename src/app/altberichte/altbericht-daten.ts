@@ -11,10 +11,10 @@ import { feuerwehrberichtDateinamen, gesamtberichtDateiname } from '../shared/se
 // Bewusst eigene Konstanten, damit spätere Änderungen an den neuen Berichten das alte Layout nicht verändern.
 export const ALT_KOPF = 'Füllbericht';
 export const ALT_KOPF_ZUSATZ = 'der Atemluftfüllstelle Gemeinlebarn';
-export const ALT_GESAMTBERICHT = 'Gesamtbericht';
+const ALT_GESAMTBERICHT = 'Gesamtbericht';
 export const ALT_NACHTRAEGLICH = '(nachträglich erstellt)';
 
-export function altFeuerwehrberichtTitel(feuerwehrName: string): string
+function altFeuerwehrberichtTitel(feuerwehrName: string): string
 {
     return `Bericht für die Feuerwehr ${feuerwehrName}`;
 }

@@ -242,7 +242,7 @@ export class AltberichteService
 }
 
 /** Ob im Ordner bereits eine Datei (oder ein Eintrag) dieses Namens existiert */
-export async function dateiVorhanden(ordner: FileSystemDirectoryHandle, name: string): Promise<boolean>
+async function dateiVorhanden(ordner: FileSystemDirectoryHandle, name: string): Promise<boolean>
 {
     try
     {
