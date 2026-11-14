@@ -67,6 +67,7 @@ Pull Requests nach `main` brauchen ein Review von @jakob-fyi (`.github/CODEOWNER
 | Workflows: Syntax (actionlint) und Sicherheit (zizmor) | `npm run lint:actions` | **Workflows (actionlint, zizmor)** (CI) | Pflicht über **CI ok** | wie oben |
 | CodeQL (SAST, Suite `security-extended`) für App und Workflows | `npm run sast:codeql` | **Analyze (javascript-typescript)**, **Analyze (actions)** (CodeQL) | Pflicht, zusätzlich *Code scanning results* im Ruleset | Push auf `main`, jeder PR, montags |
 | Neu eingeführte Schwachstellen in Abhängigkeiten (OSV-Scanner) | – (siehe unten) | **Scan PR / osv-scan** (OSV-Scanner) | Pflicht | jeder PR |
+| Coverage als Kommentar im PR (gegen main und für geänderte Dateien) | `node scripts/coverage-comment.mjs` (Vorschau) | **Coverage-Kommentar (optional)** (CI) | optional, kein Gate | PRs aus diesem Repo (nicht Forks, nicht Dependabot) |
 | Mutation-Testing der Fachlogik (Stryker) | `npm run mutation` | **Stryker** (Mutation) | optional, nur Bericht | montags, manuell |
 | npm audit (nur Produktionsabhängigkeiten, ab *high*) | `npm audit --omit=dev --audit-level=high` | **npm audit (optional)** (CI) | optional: kann ohne Zutun des PRs rot werden | wie **Lint** |
 | Alle bekannten Schwachstellen (OSV-Scanner) | – | **Scan / osv-scan** (OSV-Scanner) | optional, nur Alerts | Push auf `main`, montags |
@@ -99,7 +100,7 @@ Alle Actions sind per Commit-SHA gepinnt (Kommentar mit Version dahinter), Depen
 
 - **CodeQL / OSV-Scanner / Scorecard:** GitHub → *Security → Code scanning*. Jeder Alert zeigt Regel, Fundstelle und bei CodeQL den Datenfluss (*Show paths*). Lokal: Ausgabe von `npm run sast:codeql` oder `reports/codeql.sarif` z. B. mit der VS-Code-Erweiterung *SARIF Viewer* öffnen.
 - **Im PR:** ESLint-, Knip-, actionlint- und zizmor-Befunde sowie fehlgeschlagene Unit- und E2E-Tests erscheinen als Annotation direkt an der Codezeile (*Files changed*). Jeder Lauf von **CI** hat eine Zusammenfassung (*Checks → CI → Summary*) mit ESLint-Befunden, Coverage je Metrik gegen die Schwellen, E2E-Ergebnis, bei Fehlern Knip- und Architektur-Befunden und der Tabelle der Pflicht-Jobs von **CI ok**. Coverage-Bericht, Playwright-Bericht und Traces liegen als Artefakte beim Lauf.
-- **Coverage:** Tabelle je Metrik gegen die Schwellen in der Zusammenfassung von **Unit-Tests & Coverage**, vollständiger HTML-Bericht im Artefakt `coverage`. GitHub Code Quality (kostenpflichtig) wird bewusst nicht verwendet; das Gate sind die Schwellen in `angular.json`.
+- **Coverage:** Im PR ein Kommentar (wird bei jedem Push aktualisiert) mit den vier Metriken gegen die Schwellen und gegen den letzten Lauf auf `main`, dazu die Zeilen- und Zweig-Coverage der im PR geänderten Dateien (`scripts/coverage-comment.mjs`). Dieselbe Tabelle ohne Vergleich steht in der Zusammenfassung von **Unit-Tests & Coverage**, der vollständige HTML-Bericht im Artefakt `coverage`. GitHub Code Quality (kostenpflichtig) wird bewusst nicht verwendet; das Gate sind die Schwellen in `angular.json`.
 - **Mutation-Testing:** *Actions → Mutation → letzter Lauf → Summary* (Score je Datei); überlebende Mutanten mit Fundstelle im Artefakt `mutation-report`.
 - **Im Terminal:** `npm run pr:status` (siehe oben).
 - **gitleaks:** Ausgabe im Log des Checks **Secrets (gitleaks)** (Datei, Zeile, Regel, Commit; das Secret selbst ist geschwärzt).
