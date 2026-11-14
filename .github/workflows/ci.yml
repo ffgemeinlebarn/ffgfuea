@@ -5,7 +5,7 @@ name: CI
 # (Ruleset "Main") als required eingetragen ist. Neue Pflicht-Jobs also nur unter
 # "needs" von "CI ok" ergänzen, nicht im Ruleset.
 #
-# Optionale Checks (blockieren nicht): "npm audit (optional)".
+# Optionale Checks (blockieren nicht): "npm audit (optional)", "Coverage-Kommentar (optional)".
 # Mutation-Testing läuft wöchentlich im eigenen Workflow mutation.yml.
 # Deploy nur bei Release-Tags (v*) oder manuell von main, und nur wenn "CI ok" grün ist.
 
@@ -156,6 +156,51 @@ jobs:
           name: coverage
           path: coverage/
           retention-days: 14
+
+  # Optional: Coverage als Kommentar im PR, mit Vergleich zu main und den geänderten Dateien
+  # (scripts/coverage-comment.mjs). Ersatz für GitHub Code Quality, das kostenpflichtig ist.
+  # Nur PRs aus diesem Repo: PRs aus Forks und von Dependabot bekommen kein Schreibrecht.
+  coverage-comment:
+    name: Coverage-Kommentar (optional)
+    needs: [ unit ]
+    if: ${{ !cancelled() && needs.unit.result != 'skipped' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      # Coverage-Artefakt des letzten Laufs auf main laden
+      actions: read
+      contents: read
+      # Kommentar anlegen bzw. aktualisieren
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Download coverage report
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: coverage
+          path: coverage
+
+      # Artefakte bleiben 14 Tage; ohne erfolgreichen Lauf auf main in dieser Zeit fehlt nur der Vergleich
+      - name: Coverage von main laden
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          run_id=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow ci.yml --branch main --event push --status success -L 1 --json databaseId --jq '.[0].databaseId // empty')
+          if [ -n "$run_id" ] && gh run download "$run_id" --repo "$GITHUB_REPOSITORY" -n coverage -D coverage-main; then
+            echo "COVERAGE_BASELINE=$PWD/coverage-main/ffgfuea/coverage-summary.json" >> "$GITHUB_ENV"
+          else
+            echo "::notice::Keine Coverage von main gefunden, Kommentar ohne Vergleich."
+          fi
+
+      - name: Kommentar im PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: node scripts/coverage-comment.mjs --post
 
   build:
     name: Build
