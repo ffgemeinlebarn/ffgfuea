@@ -29,7 +29,7 @@ npx playwright show-report        # HTML-Bericht der letzten Ausführung
 - `PW_WORKERS=4 npm run e2e` ändert die Anzahl paralleler Browser (Standard 2).
 - Bei Fehlern liegen Trace, Screenshot und Video in `test-results/` (`npx playwright show-trace <trace.zip>`).
 
-In GitHub Actions laufen die Tests bei jedem Pull Request und bei Pushes auf `main` und `refactoring` (`.github/workflows/e2e.yml`); der HTML-Bericht und bei Fehlern die Traces werden als Artefakte hochgeladen.
+In GitHub Actions laufen die Tests bei jedem Pull Request und bei Pushes auf `main` (`.github/workflows/e2e.yml`); der HTML-Bericht und bei Fehlern die Traces werden als Artefakte hochgeladen.
 
 ## Release
 

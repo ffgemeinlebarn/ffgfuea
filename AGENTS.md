@@ -69,14 +69,13 @@ Vor jedem Commit: Lint, Unit-Tests und Build grün. Bei Änderungen an Abläufen
 
 ## Git-Workflow
 
-- Die laufende Arbeit liegt lokal auf dem langlebigen Branch `refactoring`. Jede Änderung bekommt einen eigenen Branch davon (`feature/…`, `fix/…`) und wird mit `--no-ff` zurück nach `refactoring` gemergt.
-- Auf GitHub liegt `refactoring` als **`refactoring-next`** (PR nach `main`). Push: `git push https://github.com/ffgemeinlebarn/ffgfuea.git refactoring:refactoring-next`. In der Sandbox funktioniert der SSH-Remote `origin` nicht, HTTPS schon.
-- `main` wird per Squash-Merge eines PRs aktualisiert, danach `main` lokal in `refactoring` mergen.
+- Jede Änderung bekommt einen eigenen Branch von `main` (`feature/…`, `fix/…`, `docs/…`), geht per PR nach `main` und wird dort per Squash gemergt. Danach den Branch lokal und auf GitHub löschen.
+- Push über HTTPS: `git push https://github.com/ffgemeinlebarn/ffgfuea.git <branch>`. In der Sandbox funktioniert der SSH-Remote `origin` nicht.
 - Nur pushen oder PRs anlegen, wenn darum gebeten wurde.
 
 ## Fallstricke
 
-- **Worktrees für Subagents** starten teils von `main` statt vom aktuellen Branch. Immer zuerst `git checkout -b <branch> refactoring` und den HEAD prüfen. `.claude/worktrees/` nie committen (lokal in `.git/info/exclude`).
+- **Worktrees für Subagents** starten teils von einem veralteten Stand. Immer zuerst `git checkout -b <branch> main` (aktuellen Stand holen) und den HEAD prüfen. `.claude/worktrees/` nie committen (lokal in `.git/info/exclude`).
 - **Parallele Last:** Vitest lässt ~30 jsdom-Dateien parallel laufen. Laufen daneben Playwright oder CodeQL, gibt es Timeouts (das Test-Setup erlaubt bereits 20 s). Schwere Läufe nicht parallel starten.
 - **Playwright:** Port 4200 gehört dem Entwickler, E2E nutzt 4300. Dateien mit `setInputFiles` als Buffer übergeben, nicht als Pfad: Die Ausgabeordner enthalten Umlaute aus den Testnamen, und mit solchen Pfaden setzt Playwright die Datei stillschweigend nicht.
 - **Dev-Modus:** Die Fake-MAT-API meldet bei jedem Laden neue Daten, deshalb synchronisiert die App bei jedem Start und zeigt ein blockierendes Overlay. In E2E-Tests darauf warten.
