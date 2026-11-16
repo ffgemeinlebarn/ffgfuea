@@ -72,9 +72,20 @@ Pull Requests nach `main` brauchen ein Review von @jakob-fyi (`.github/CODEOWNER
 | npm audit (nur Produktionsabhängigkeiten, ab *high*) | `npm audit --omit=dev --audit-level=high` | **npm audit (optional)** (CI) | optional: kann ohne Zutun des PRs rot werden | wie **Lint** |
 | Alle bekannten Schwachstellen (OSV-Scanner) | – | **Scan / osv-scan** (OSV-Scanner) | optional, nur Alerts | Push auf `main`, montags |
 | OpenSSF Scorecard (Supply-Chain-Praktiken) | – | **Scorecard analysis** (Scorecard) | optional, nur Alerts | Push auf `main`, montags |
-| Updates von npm-Paketen und Actions | – | Dependabot (`.github/dependabot.yml`) | – | montags |
+| Updates von npm-Paketen und Actions | – | Dependabot (`.github/dependabot.yml`), Auto-Merge nach Freigabe (siehe unten) | – | montags |
 
 Deployt wird nur, wenn **CI ok** grün ist (Job **Deploy via FTP**, siehe [Release](#release)).
+
+### Dependabot-Updates
+
+Dependabot schlägt montags Updates vor (`.github/dependabot.yml`, neue Versionen erst nach 7 Tagen Cooldown). Für **Patch- und Minor-Updates** schaltet `.github/workflows/dependabot-auto-merge.yml` *Auto-Merge* (Squash) ein:
+
+1. Den PR ansehen (Changelog, betroffene Pakete) und **freigeben** (*Approve*).
+2. Sobald alle Pflicht-Checks grün sind, mergt GitHub selbst und löscht den Branch.
+
+Ohne Freigabe wird nichts gemergt. **Major-Updates** und Updates, bei denen Dependabot *Maintainer changes* meldet (Warnsignal für Supply-Chain-Angriffe), bekommen kein Auto-Merge und werden von Hand geprüft und gemergt; der Grund steht in der Zusammenfassung des Laufs.
+
+Ist ein PR nicht mehr aktuell (das Ruleset verlangt einen aktuellen Branch), mit dem Kommentar `@dependabot rebase` aktualisieren lassen. Die Freigabe verfällt dabei (neuer Commit) und muss erneuert werden. Merges über Auto-Merge starten keine Workflows auf `main`; die CI lief aber auf genau diesem Stand, CodeQL, OSV und Scorecard laufen zusätzlich wöchentlich.
 
 ### Lokal: Hooks und Übersicht
 
@@ -144,10 +155,11 @@ Diese Einstellungen kann nur ein Admin der Organisation bzw. des Repos setzen:
    - **Code scanning**: kein *Default setup* aktivieren, der Workflow `codeql.yml` ist das *Advanced setup* (beides gleichzeitig ist nicht möglich).
    - **Code Quality** nicht aktivieren (kostenpflichtig pro Committer); Coverage prüft die CI selbst.
 2. *Settings → Actions → General*: *Workflow permissions* auf **Read repository contents and packages permissions** stellen; *Allow GitHub Actions to create and approve pull requests* aus.
+   *Settings → General → Pull Requests*: **Allow auto-merge** und **Automatically delete head branches** an (für Dependabot-Auto-Merge und das Aufräumen gemergter Branches).
 3. *Settings → Rules → Rulesets* → neues Branch-Ruleset für `main` (Default branch):
    - *Restrict deletions*, *Block force pushes*, *Require a pull request before merging* (nur Squash) mit *Required approvals* 1, *Require review from Code Owners*, *Dismiss stale pull request approvals when new commits are pushed* und *Require approval of the most recent reviewable push*.
    - *Bypass list*: Rolle *Repository admin* mit *For pull requests only*, damit eigene PRs von @jakob-fyi (ohne zweiten Reviewer) gemergt werden können.
-   - *Require status checks to pass* mit genau diesen Checks (Quelle GitHub Actions), *Require branches to be up to date* aus:
+   - *Require status checks to pass* mit genau diesen Checks (Quelle GitHub Actions), *Require branches to be up to date* an:
      - `CI ok`
      - `Analyze (javascript-typescript)`
      - `Analyze (actions)`

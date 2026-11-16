@@ -1,0 +1,72 @@
+name: Dependabot Auto-Merge
+
+# Schaltet bei Dependabot-PRs mit Patch- oder Minor-Updates "Auto-Merge" (Squash) ein.
+# Gemergt wird erst, wenn das Ruleset erfüllt ist: Approval durch @jakob-fyi (Code Owner)
+# und alle Pflicht-Checks grün. Ohne Approval passiert nichts.
+#
+# Nicht automatisch: Major-Updates und Updates mit gewechselten Maintainern (Warnsignal für
+# Supply-Chain-Angriffe). Dort bleibt es beim normalen Merge von Hand.
+#
+# Hinweis: Merges über Auto-Merge laufen unter dem GITHUB_TOKEN und starten deshalb keine
+# Push-Workflows auf main (CI, CodeQL, OSV, Scorecard). Geprüft ist der Stand trotzdem: Das
+# Ruleset verlangt einen aktuellen Branch, CI lief also auf genau dem Ergebnis des Merges.
+# CodeQL, OSV und Scorecard laufen zusätzlich wöchentlich.
+#
+# Kein Code des PRs wird ausgecheckt oder ausgeführt. pull_request statt pull_request_target:
+# Bei Dependabot-PRs lassen sich die Rechte des GITHUB_TOKEN über "permissions" erhöhen.
+
+on:
+  pull_request:
+
+permissions: {}
+
+# Ein Lauf pro PR; neuere Pushes (z. B. nach "@dependabot rebase") ersetzen ältere Läufe
+concurrency:
+  group: ${{ github.workflow }}-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  auto-merge:
+    name: Auto-Merge einschalten
+    # Autor des PRs, nicht github.actor (der kann bei erneutem Ausführen ein Mensch sein)
+    if: ${{ github.event.pull_request.user.login == 'dependabot[bot]' && github.repository == 'ffgemeinlebarn/ffgfuea' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      # Auto-Merge einschalten (gh pr merge --auto) braucht Schreibrechte auf Inhalt und PR
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Dependabot-Metadaten
+        id: metadata
+        uses: dependabot/fetch-metadata@25dd0e34f4fe68f24cc83900b1fe3fe149efef98 # v3.1.0
+
+      - name: Auto-Merge einschalten
+        if: ${{ steps.metadata.outputs.maintainer-changes != 'true' && (steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+          PAKETE: ${{ steps.metadata.outputs.dependency-names }}
+        run: |
+          gh pr merge --auto --squash "$PR_URL"
+          {
+            echo '### Auto-Merge eingeschaltet'
+            echo ''
+            echo "Update: \`$UPDATE_TYPE\`, Pakete: \`$PAKETE\`"
+            echo ''
+            echo 'Wird gemergt, sobald @jakob-fyi freigegeben hat und alle Pflicht-Checks grün sind.'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Kein Auto-Merge
+        if: ${{ steps.metadata.outputs.maintainer-changes == 'true' || (steps.metadata.outputs.update-type != 'version-update:semver-patch' && steps.metadata.outputs.update-type != 'version-update:semver-minor') }}
+        env:
+          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+          MAINTAINER: ${{ steps.metadata.outputs.maintainer-changes }}
+        run: |
+          echo "::notice::Kein Auto-Merge (Update: $UPDATE_TYPE, Maintainer gewechselt: $MAINTAINER). Bitte von Hand prüfen und mergen."
+          {
+            echo '### Kein Auto-Merge'
+            echo ''
+            echo "Update: \`$UPDATE_TYPE\`, Maintainer gewechselt: \`$MAINTAINER\`. Bitte von Hand prüfen und mergen."
+          } >> "$GITHUB_STEP_SUMMARY"
